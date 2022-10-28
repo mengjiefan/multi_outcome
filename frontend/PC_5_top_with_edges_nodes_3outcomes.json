@@ -1,0 +1,54 @@
+{
+    "nodes": [
+        
+        
+        {"id": "education_tri", "group": 1}, 
+        {"id": "death", "group": 0},
+        
+        {"id": "multimorbidity_base", "group": 1},
+        {"id": "g15c1_CVD", "group": 1}, 
+        {"id": "g15a1_HT", "group": 1}, 
+        {"id": "eye_base", "group": 1}, 
+        {"id": "g15b1_DM", "group": 1},
+        {"id": "multimorbidity_incid_byte", "group": 0},
+        
+        {"id": "MMSE_base_byte", "group": 1}, 
+        {"id": "hear", "group": 1}, 
+        {"id": "physi_limit_base", "group": 1}, 
+        {"id": "dependence_base", "group": 1}, 
+        {"id": "frailty_base_tri", "group": 1}, 
+        {"id": "MMSE_MCI_incid", "group": 0}
+        
+    ],
+    "links":[
+        {"source": "frailty_base_tri", "target": "death", "value": 0.232},
+        {"source": "MMSE_base_byte", "target": "death", "value": 0.21}, 
+        {"source": "hear", "target": "death", "value": 0.177}, 
+        {"source": "physi_limit_base", "target": "death", "value": 0.164},
+        {"source": "education_tri", "target": "death", "value": -0.152},
+        
+        {"source": "g15c1_CVD", "target": "multimorbidity_base", "value": 0.421}, 
+        {"source": "g15a1_HT", "target": "multimorbidity_base", "value": 0.323}, 
+        {"source": "g15b1_DM", "target": "multimorbidity_base", "value": 0.257}, 
+        {"source": "multimorbidity_base", "target": "multimorbidity_incid_byte", "value": 0.716}, 
+        {"source": "g15c1_CVD", "target": "eye_base", "value": 0.103}, 
+        {"source": "g15c1_CVD", "target": "multimorbidity_incid_byte", "value": 0.322}, 
+        {"source": "g15a1_HT", "target": "eye_base", "value": 0.045}, 
+        {"source": "g15a1_HT", "target": "multimorbidity_incid_byte", "value": 0.271}, 
+        {"source": "g15b1_DM", "target": "eye_base", "value": 0.054}, 
+        {"source": "eye_base", "target": "multimorbidity_incid_byte", "value": 0.217},
+       
+        {"source": "hear", "target": "MMSE_base_byte", "value": 0.436}, 
+        {"source": "MMSE_base_byte", "target": "physi_limit_base", "value": 0.368}, 
+        {"source": "dependence_base", "target": "MMSE_base_byte", "value": 0.268}, 
+        {"source": "frailty_base_tri", "target": "MMSE_base_byte", "value": 0.402}, 
+        {"source": "hear", "target": "physi_limit_base", "value": 0.318}, 
+        {"source": "dependence_base", "target": "hear", "value": 0.263}, 
+        {"source": "frailty_base_tri", "target": "hear", "value": 0.341}, 
+        {"source": "MMSE_MCI_incid", "target": "hear", "value": -0.096}, 
+        {"source": "physi_limit_base", "target": "dependence_base", "value": 0.368}, 
+        {"source": "physi_limit_base", "target": "frailty_base_tri", "value": 0.437}, 
+        {"source": "MMSE_MCI_incid", "target": "physi_limit_base", "value": -0.092}
+        
+    ]
+}
