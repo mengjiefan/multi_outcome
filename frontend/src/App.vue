@@ -20,6 +20,7 @@
     name:'App',
     components: { AppHeader, AppNavbar, AppMainCharacter, AppMainPlot } , // 有s
     mounted() {
+      // console.log(Vue.version); 
       // console.log('App',this)
     },
   };

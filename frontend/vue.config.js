@@ -3,6 +3,9 @@ module.exports = defineConfig({
   transpileDependencies: true,
   lintOnSave:false,    //关闭语法检查
   assetsDir: 'static',// 静态资源打包输出目录 (js, css, img, fonts)，相应的url路径也会改变
+ configureWebpack: {
+  devtool: 'source-map'
+ }
 //开启代理服务器，方式一：此种方法1.只能访问一个代理；2.当项目下的public文件下
   //有目标文件同名文件时，会无法判断要不要访问代理   
   // devServer:{
