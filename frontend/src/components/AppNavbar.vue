@@ -13,14 +13,14 @@
         class="list-group-item"
         active-class="active"
         to="/AppMainPlot/CausalGraphView"
-        >Get CausalGraph (static)</router-link
+        >Get CausalGraph (Not used component now)</router-link
       >
       <!-- 缓存一个路由组件 -->
       
     </div>
     <hr /> 
     <div class="AnalysisHistory">
-      <CausalAnalysisHistory></CausalAnalysisHistory>
+      <!-- <CausalAnalysisHistory></CausalAnalysisHistory> -->
       <CausalAnalysisHistory_copy></CausalAnalysisHistory_copy>
     </div>
   </div>

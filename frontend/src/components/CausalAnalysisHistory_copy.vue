@@ -59,7 +59,7 @@
             scope.row.top_factors_list
           }}</template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="120">
+        <el-table-column fixed="right" label="Operation" width="120">
           <template slot-scope="scope">
             <el-button
               @click.native.prevent="deleteRow(scope.$index, tableData)"
@@ -73,21 +73,22 @@
       </el-table>
     </div>
     <div style="margin-top: 20px">
-      <el-button @click="btnSelect()">获取选中项并对比</el-button>
+      <el-button @click="btnSelect()">Get the selected item and compare them</el-button>
     </div>
-    <div style="margin-top: 20px">
+    <!-- other button options -->
+    <!-- <div style="margin-top: 20px">
       <el-button @click="toggleSelection([tableData[1], tableData[2]])"
         >切换第二、第三行的选中状态</el-button
       >
       <el-button @click="toggleSelection()">取消选择</el-button> <br />
       <el-button @click="GetHypergraph()">Get Hypergraph</el-button>
-    </div>
+    </div> -->
     <br />
     <router-link
       class="list-group-item"
       active-class="active"
       to="/AppMainPlot/MultiOutcomesView"
-      >Get MultiOutcomes matrix (static)</router-link
+      >Get MultiOutcomes matrix (Not used component now)</router-link
     >
   </div>
 </template>

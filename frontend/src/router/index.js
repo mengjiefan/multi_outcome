@@ -8,7 +8,7 @@ import AppMainPlot from "../components/AppMainPlot"
 // import DimensionView from '../pages/dimensionView.vue'
 import CausalGraph from '../components/CausalGraphView'
 import MultiOutcomes from '../components/MultiOutcomesView'
-import ForceDirectedGraph from '../components/ForceDirectedGraphView'
+import DirectedGraph from '../components/DirectedGraphView'
 // import CausalAnalysisHistory from '../pages/causalAnalysisHistory.vue'
 
 
@@ -37,8 +37,8 @@ export default  new VueRouter({
 					component:MultiOutcomes,
 				},
 				{
-					path:'ForceDirectedGraphView',
-					component:ForceDirectedGraph,
+					path:'DirectedGraphView',
+					component:DirectedGraph,
 				}
 			]  
 		  }

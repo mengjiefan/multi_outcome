@@ -24,7 +24,7 @@
     <!-- 通过v-model双向绑定，完成input框值获取。 -->
     <br />
     <button @click="getOutcomeCovariant()">
-      Show the top {{ CovariantNum }} variables and save to history
+      Show the top {{ CovariantNum }} variables
     </button>
     <br />
     <ul class="variables">
@@ -32,7 +32,7 @@
         {{ index + 1}}-{{ item }}
       </li>
     </ul>
-    <table border="1">
+    <!-- <table border="1">
         <tr>
           <td>Outcome</td>
           <td>CovariantNum</td>
@@ -43,14 +43,14 @@
           <td>{{ Variables_result.CovariantNum }}</td>
           <td>{{ Variables_result.top_factors_list }}</td>
         </tr>
-      </table>
-    <button @click="AppMsg()">Transmit data between components</button>
+      </table> -->
+    <button @click="AppMsg()">Transmit data to history component</button>
     <br />
     <router-link
       class="list-group-item"
       active-class="active"
-      to="/AppMainPlot/ForceDirectedGraphView"
-      >Get ForceDirectedGraph (dynamic)</router-link
+      to="/AppMainPlot/DirectedGraphView"
+      >Get DirectedGraph (dynamic)</router-link
     >
     <hr />  
   </div>

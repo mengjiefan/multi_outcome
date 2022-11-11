@@ -1,7 +1,7 @@
 <template>
     <div class = "VariablesCheckbox" >
         <h5>VariablesCheckbox</h5>
-        <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
+        <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">Select All</el-checkbox>
         <div style="margin: 15px 0;"></div>
         <el-checkbox-group v-model="checkedVariables" @change="handleCheckedVariablesChange">
             <el-checkbox v-for="Variable in Variables" :label="Variable" :key="Variable">{{Variable}}</el-checkbox>
