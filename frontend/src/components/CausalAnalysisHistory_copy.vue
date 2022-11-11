@@ -84,6 +84,27 @@
       <el-button @click="GetHypergraph()">Get Hypergraph</el-button>
     </div> -->
     <br />
+    <!-- Several router components to show in the AppMainPlot component-->
+    <h6>Several router components to show after getting the selected item in the AppMainPlot component</h6>
+    <p style="color:blue;font-size:15px;">We now only use the DirectedGraph router component</p>
+    <br />
+    <router-link
+      class="list-group-item"
+      active-class="active"
+      to="/AppMainPlot/DirectedGraphView"
+      >Get DirectedGraph (dynamic)</router-link
+    >
+    <br />
+    <br />
+    <router-link
+        class="list-group-item"
+        active-class="active"
+        to="/AppMainPlot/CausalGraphView">
+      Get CausalGraph (Not used component now)
+    </router-link>
+     <!-- 缓存一个路由组件 -->
+    <br />
+    <br />
     <router-link
       class="list-group-item"
       active-class="active"
@@ -137,7 +158,7 @@ import VueAxios from "vue-axios";
 import bus from "../componentsInteraction/bus.js";
 import {mapState,mapGetters,mapMutations,mapActions} from 'vuex'
 export default {
-  name: "CausalAnalysisHistory_copy",
+  name: "CausalAnalysisHistory",
   data() {
     return {
       value: "",

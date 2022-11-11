@@ -6,21 +6,13 @@
     <hr />
     <div class="CharacterSelector">
       <OutcomeSelector></OutcomeSelector>
-      <VariablesCheckbox></VariablesCheckbox>
-      <button>Save Variables</button><br />
-      <button>Variables Characters</button><br />
-      <router-link
-        class="list-group-item"
-        active-class="active"
-        to="/AppMainPlot/CausalGraphView"
-        >Get CausalGraph (Not used component now)</router-link
-      >
-      <!-- 缓存一个路由组件 -->
+      <!-- change the layout of checkbox to acheive Adding or Deleting a Node -->
+      <!-- <VariablesCheckbox></VariablesCheckbox> -->
       
     </div>
     <hr /> 
     <div class="AnalysisHistory">
-      <!-- <CausalAnalysisHistory></CausalAnalysisHistory> -->
+      <!-- <CausalAnalysisHistory111></CausalAnalysisHistory111> -->
       <CausalAnalysisHistory_copy></CausalAnalysisHistory_copy>
     </div>
   </div>
@@ -30,11 +22,11 @@
 // import upload from "./upload";
 import OutcomeSelector from "./OutcomeSelector";
 import VariablesCheckbox from "./VariablesCheckbox.vue";
-import CausalAnalysisHistory from "./CausalAnalysisHistory";
+// import CausalAnalysisHistory111 from "./CausalAnalysisHistory111";
 import CausalAnalysisHistory_copy from "./CausalAnalysisHistory_copy";
 export default {
   name: "AppNavbar",
-  components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory, CausalAnalysisHistory_copy },
+  components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory_copy },
  
 };
 </script>
