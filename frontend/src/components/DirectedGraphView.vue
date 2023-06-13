@@ -108,17 +108,21 @@ export default {
       // Run the renderer. This is what draws the final graph.
       render(inner, g);
 
+      //nodes' hover action: tooltip & shadow
       inner
         .selectAll("g.node")
         .on("mouseover", (v) => {
           console.log(v);
           const hoverName = v.fromElement.__data__;
+          v.fromElement.setAttribute("id", 'hover-node');
           if (hoverName) {
             this.tipVisible(hoverName, {pageX: v.pageX, pageY:v.pageY});
+            let nowNode = g.node(hoverName);
           }
         })
-        .on("mouseout", () => {
+        .on("mouseout", (v) => {
           this.tipHidden();
+          v.fromElement.setAttribute("id", '');
         });
 
       // Center the graph
@@ -220,5 +224,13 @@ export default {
 
 .tooltip > div {
   padding: 10px;
+}
+
+rect#hover-node {
+  stroke: rgb(169, 169, 169);
+  stroke-width: 1.5px;
+}
+.node {
+  cursor: pointer;
 }
 </style>
