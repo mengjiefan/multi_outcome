@@ -67,7 +67,6 @@ export default {
         g.setNode(state.id, {
           label: state.id,
           type: state.type,
-          tooltip: state.id,
         });
       });
 
@@ -112,17 +111,29 @@ export default {
       inner
         .selectAll("g.node")
         .on("mouseover", (v) => {
-          console.log(v);
           const hoverName = v.fromElement.__data__;
-          v.fromElement.setAttribute("id", 'hover-node');
+          v.fromElement.setAttribute("id", "hover-node");
           if (hoverName) {
-            this.tipVisible(hoverName, {pageX: v.pageX, pageY:v.pageY});
+            this.tipVisible(hoverName, { pageX: v.pageX, pageY: v.pageY });
             let nowNode = g.node(hoverName);
           }
         })
         .on("mouseout", (v) => {
           this.tipHidden();
-          v.fromElement.setAttribute("id", '');
+          v.fromElement.setAttribute("id", "");
+        });
+
+      var onmousepath = d3.selectAll(".edgePath");
+      var allpathes = onmousepath.select(".path");
+      allpathes
+        .on("mouseout", function (d, id) {
+          console.log(d, id);
+          allpathes.style("opacity", "1");       
+        })
+        .on("mouseover", function (d, id) {
+          console.log(d, id);
+          allpathes.style("opacity", ".2"); /* set all edges opacity 0.2 */
+          d3.select(this).style("opacity", "1");
         });
 
       // Center the graph
@@ -232,5 +243,8 @@ rect#hover-node {
 }
 .node {
   cursor: pointer;
+}
+.path {
+  transition-duration: .2s
 }
 </style>
