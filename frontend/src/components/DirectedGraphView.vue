@@ -114,7 +114,10 @@ export default {
           const hoverName = v.fromElement.__data__;
           v.fromElement.setAttribute("id", "hover-node");
           if (hoverName) {
-            this.tipVisible(hoverName, { pageX: v.pageX, pageY: v.pageY });
+            this.tipVisible('<div class="node-name">' + hoverName + "</div>", {
+              pageX: v.pageX,
+              pageY: v.pageY,
+            });
             let nowNode = g.node(hoverName);
           }
         })
@@ -125,15 +128,23 @@ export default {
 
       var onmousepath = d3.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
+      const _this = this;
       allpathes
         .on("mouseout", function (d, id) {
-          console.log(d, id);
-          allpathes.style("opacity", "1");       
+          allpathes.style("opacity", "1");
         })
         .on("mouseover", function (d, id) {
-          console.log(d, id);
           allpathes.style("opacity", ".2"); /* set all edges opacity 0.2 */
           d3.select(this).style("opacity", "1");
+        })
+        .on("click", function (d, id) {
+          //console.log(d, id, "click");
+          let hintHtml =
+            "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/><div class='operate-menu'>delete</div>";
+          _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+          setTimeout(() => {
+            _this.tipWatchBlur();
+          }, 0);
         });
 
       // Center the graph
@@ -152,6 +163,24 @@ export default {
 
       return data;
     },
+    tipWatchBlur() {
+      document.addEventListener("click", this.listener);
+    },
+    listener(e) {
+      let _this = this;
+      let clickDOM = e.target.className;
+      console.log(clickDOM, "click tooltip?");
+      if (
+        clickDOM !== "operate-menu" &&
+        clickDOM !== "hint-menu" &&
+        clickDOM !== "hint-list" &&
+        clickDOM !== "tooltip" &&
+        clickDOM !== "operate-header"
+      ) {
+        _this.tipHidden();
+        document.removeEventListener("click", _this.listener);
+      }
+    },
     // 创建提示框
     createTooltip() {
       return d3
@@ -163,9 +192,10 @@ export default {
     },
     // tooltip显示
     tipVisible(textContent, event) {
+      document.removeEventListener("click", this.listener);
       this.tooltip
         .transition()
-        .duration(400)
+        .duration(200)
         .style("opacity", 0.9)
         .style("display", "block");
       this.tooltip
@@ -173,12 +203,24 @@ export default {
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
     },
+    tip2Visible(textContent, event) {
+      document.removeEventListener("click", this.listener);
+      this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0.95)
+        .style("display", "block");
+      this.tooltip
+        .html(textContent)
+        .style("left", `${event.pageX}px`)
+        .style("top", `${event.pageY}px`);
+    },
 
     // tooltip隐藏
     tipHidden() {
       this.tooltip
         .transition()
-        .duration(400)
+        .duration(100)
         .style("opacity", 0)
         .style("display", "none");
     },
@@ -223,28 +265,66 @@ export default {
 }
 .tooltip {
   position: absolute;
-  font-size: 12px;
-  text-align: center;
+  text-align: left;
   background-color: white;
   border-radius: 3px;
   box-shadow: rgb(174, 174, 174) 0px 0px 10px;
-  cursor: pointer;
-  display: inline-block;
-  padding: 10px;
-}
 
+  padding-top: 5px;
+}
+.node-name {
+  padding-bottom: 5px;
+}
 .tooltip > div {
-  padding: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
-
 rect#hover-node {
   stroke: rgb(169, 169, 169);
   stroke-width: 1.5px;
+  transition-duration: 0.2s;
 }
 .node {
   cursor: pointer;
+  transition-duration: 0.2s;
 }
 .path {
-  transition-duration: .2s
+  transition-duration: 0.2s;
+}
+.tooltip {
+  font-size: 14px;
+}
+.hint-list {
+  font-weight: bold;
+  padding-top: 5px;
+  width: 60px;
+}
+.operate-menu {
+  width: 100px;
+  text-align: left;
+  cursor: pointer;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+hr {
+  padding: 0;
+  margin-bottom: 0;
+
+  margin-left: 10px;
+  margin-right: 10px;
+}
+.operate-menu:hover {
+  background-color: #e1e1e1;
+}
+.operate-header {
+  padding: 0;
+  display: flex;
+  line-height: 24px;
+  justify-content: space-between;
+}
+.close-button {
+  font-size: 24px;
+  margin-right: 5px;
+  cursor: pointer;
 }
 </style>
