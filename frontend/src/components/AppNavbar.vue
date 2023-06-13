@@ -1,7 +1,7 @@
 
 <template>
   <div class="navbar">
-    <h4>Navigation View</h4>
+    <div class="nav-title">Navigation View</div>
     <!-- <upload></upload> -->
     <hr />
     <div class="CharacterSelector">
@@ -35,5 +35,10 @@ export default {
 .navbar {
   /* position: absolute; */
   font-size: 20px;
+}
+.nav-title {
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
 }
 </style>
