@@ -16,7 +16,7 @@
       Show the Directed Graph
     </button>
     <hr />
-    <svg width="3072" height="900"><g /></svg>
+    <svg class='graph-svg'><g /></svg>
     <!-- 缓存一个路由组件 -->
   </div>
 </template>
@@ -96,8 +96,10 @@ export default {
       this.tooltip = this.createTooltip();
 
       // Set up zoom support
-      var zoom = d3.zoom().on("zoom", function () {
-        inner.attr("transform", d3.event.transform);
+      let that = this;
+      var zoom = d3.zoom().on("zoom", function (event) {
+        inner.attr("transform", event.transform);
+        that.tipHidden();
       });
       svg.call(zoom);
 
@@ -106,8 +108,7 @@ export default {
 
       // Run the renderer. This is what draws the final graph.
       render(inner, g);
-
-      //nodes' hover action: tooltip & shadow
+      //add hover effect & hover hint to nodes
       inner
         .selectAll("g.node")
         .on("mouseover", (v) => {
@@ -125,7 +126,8 @@ export default {
           this.tipHidden();
           v.fromElement.setAttribute("id", "");
         });
-
+      
+      // add hover effect & click hint to lines
       var onmousepath = d3.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;
@@ -153,8 +155,8 @@ export default {
         zoom.transform,
         d3.zoomIdentity
           .translate(
-            (svg.attr("width") - g.graph().width * initialScale) / 2,
-            20
+            1200,
+            200
           )
           .scale(initialScale)
       );
@@ -163,13 +165,15 @@ export default {
 
       return data;
     },
+    //add document click listener
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
     },
+    //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
       let clickDOM = e.target.className;
-      console.log(clickDOM, "click tooltip?");
+      //console.log(clickDOM, "click tooltip?");
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -181,7 +185,7 @@ export default {
         document.removeEventListener("click", _this.listener);
       }
     },
-    // 创建提示框
+    // create tooltip but not show it
     createTooltip() {
       return d3
         .select("body")
@@ -190,7 +194,7 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
-    // tooltip显示
+    // display node tooltip
     tipVisible(textContent, event) {
       document.removeEventListener("click", this.listener);
       this.tooltip
@@ -203,6 +207,7 @@ export default {
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
     },
+    //display line tooltip
     tip2Visible(textContent, event) {
       document.removeEventListener("click", this.listener);
       this.tooltip
@@ -327,4 +332,10 @@ hr {
   margin-right: 5px;
   cursor: pointer;
 }
+.graph-svg {
+  width: 100%;
+  height: 800px;
+  display: flex;
+}
+
 </style>
