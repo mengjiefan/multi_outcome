@@ -7,16 +7,11 @@
     <!-- <p>获取到的多对比数据的节点为：{{multipleSearchValue[0].nodes}}</p> -->
     <!-- <p>获取到的多对比数据的边为：{{$store.state.multipleSearchValue.links}}</p> -->
     <!-- <p>获取到的多对比数据为：{{$store.state.multipleSearchValue}}</p> -->
-    <h4>The obtained multi-comparison data is:</h4>
-    <h5>Nodes are:</h5>
-    <p>{{ multipleSearchValue.nodesList }}</p>
-    <h5>Links are:</h5>
-    <p>{{ multipleSearchValue.linksList }}</p>
-    <button @click="drawGraph" style="background-color: #ffc0cb">
+    <button @click="drawGraph" class="draw-directed-button">
       Show the Directed Graph
     </button>
     <hr />
-    <svg class='graph-svg'><g /></svg>
+    <svg class="graph-svg"><g /></svg>
     <!-- 缓存一个路由组件 -->
   </div>
 </template>
@@ -87,7 +82,7 @@ export default {
       g.nodes().forEach(function (v) {
         var node = g.node(v);
         node.rx = node.ry = 5;
-        if (node.type == 0) node.style = "fill: #f77";
+        if (node.type == 0) node.style = "fill: #f77;";
       });
 
       var svg = d3.select("svg");
@@ -126,7 +121,7 @@ export default {
           this.tipHidden();
           v.fromElement.setAttribute("id", "");
         });
-      
+
       // add hover effect & click hint to lines
       var onmousepath = d3.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
@@ -153,12 +148,7 @@ export default {
       var initialScale = 0.75;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity
-          .translate(
-            600,
-            200
-          )
-          .scale(initialScale)
+        d3.zoomIdentity.translate(600, 200).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
@@ -259,9 +249,8 @@ export default {
 </script>
 
 <style>
-.node {
-  stroke: #fff;
-  stroke-width: 1.5px;
+.label > g > text {
+  fill: white;
 }
 
 .link {
@@ -337,5 +326,20 @@ hr {
   height: 800px;
   display: flex;
 }
-
+.draw-directed-button{
+  background-color: #fa95a6;
+  color: white;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px 8px 16px;
+}
+.draw-directed-button:hover {
+  box-shadow: 0 0 3px 1px #cbcbcb;
+  transition-duration: .1s;
+}
+.draw-directed-button:active {
+  background-color: #f77;
+  color: white;
+}
 </style>
