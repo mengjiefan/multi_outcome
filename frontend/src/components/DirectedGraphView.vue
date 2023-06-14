@@ -23,6 +23,7 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import bus from "../componentsInteraction/bus.js";
 import { mapState } from "vuex";
+import { node } from "dagre-d3/lib/intersect/index.js";
 
 var cmap = [
   "#1f77b4",
@@ -137,7 +138,12 @@ export default {
         .on("click", function (d, id) {
           //console.log(d, id, "click");
           let hintHtml =
-            "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/><div class='operate-menu'>delete</div>";
+            "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>delete edge<br/>(" +
+            id.v +
+            ", " +
+            id.w +
+            ")</div>";
           _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
           setTimeout(() => {
             _this.tipWatchBlur();
@@ -173,6 +179,24 @@ export default {
       ) {
         _this.tipHidden();
         document.removeEventListener("click", _this.listener);
+      } else if (clickDOM === "operate-menu") {
+        let text = e.target.innerText;
+        this.deleteEdge(text);
+      }
+    },
+    deleteEdge(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      console.log(nodes[0], "from");
+      console.log(nodes[1], "to");
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === nodes[0] && row.target === nodes[1]) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        this.multipleSearchValue.linksList.splice(index, 1);
+        this.tipHidden();
+        this.drawGraph();
       }
     },
     // create tooltip but not show it
@@ -294,7 +318,7 @@ rect#hover-node {
   width: 60px;
 }
 .operate-menu {
-  width: 100px;
+  width: auto;
   text-align: left;
   cursor: pointer;
   padding-top: 5px;
@@ -326,7 +350,7 @@ hr {
   height: 800px;
   display: flex;
 }
-.draw-directed-button{
+.draw-directed-button {
   background-color: #fa95a6;
   color: white;
   cursor: pointer;
@@ -336,7 +360,7 @@ hr {
 }
 .draw-directed-button:hover {
   box-shadow: 0 0 3px 1px #cbcbcb;
-  transition-duration: .1s;
+  transition-duration: 0.1s;
 }
 .draw-directed-button:active {
   background-color: #f77;
