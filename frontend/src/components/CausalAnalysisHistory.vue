@@ -56,7 +56,9 @@
       </el-table>
     </div>
     <div style="margin-top: 20px">
-      <el-button @click="btnSelect()">Get the lists and compare them </el-button>
+      <el-button @click="btnSelect()"
+        >Get the lists and compare them
+      </el-button>
     </div>
 
     <br />
@@ -139,6 +141,17 @@ export default {
   data() {
     return {
       value: "",
+      OutcomeOptions: [
+        "death",
+        "follow_dura",
+        "multimorbidity_incid_byte",
+        "hospital_freq",
+        "MMSE_MCI_incid",
+        "physi_limit_incid",
+        "dependence_incid",
+        "b11_incid",
+        "b121_incid",
+      ],
       CovariantNum: "",
       SelectedVariables: [],
       Variables_result: {},
@@ -147,7 +160,7 @@ export default {
       //   {
       //     // Outcome: "", //value.outcome
       //     // CovariantNum: "", //value.CovariantNum,
-      //     // Variables: "", // value.top_factors_list,
+      //     // Variables: "", // value.Variables,
       //     // value:{}
       //   },
       // ],
@@ -237,16 +250,29 @@ export default {
       }).then(
         (response) => {
           console.log("请求成功了", response.data);
-          var selection_result = response.data;
-          this.selection_result = selection_result;
-          this.nodesList = selection_result.nodesList;
-          this.linksList = selection_result.linksList;
+          this.selection_result = response.data;
+          this.nodesList = this.selection_result.nodesList;
+          this.linksList = this.selection_result.linksList;
           // console.log("nodesList:", nodesList);
           // console.log("linksList:", linksList);
-          console.log("selection_result:", selection_result);
+          console.log("selection_result:", this.selection_result);
           localStorage.setItem(
             "GET_JSON_RESULT",
-            JSON.stringify(selection_result)
+            JSON.stringify({
+              nodesList: response.data.nodesList.map((row) => {
+                if (this.OutcomeOptions.includes(row))
+                  return {
+                    type: 0,
+                    id: row,
+                  };
+                else
+                  return {
+                    type: 1,
+                    id: row,
+                  };
+              }),
+              linksList: response.data.linksList,
+            })
           );
         },
         (error) => {
@@ -271,6 +297,7 @@ export default {
       console.log("saveMode");
       let newRow = JSON.parse(localStorage.getItem("GET_JSON_RESULT"));
       const outcomeId = newRow.nodesList[0].id;
+      const allnodesList = newRow.nodesList;
       if (newRow) {
         newRow.nodesList.splice(0, 1);
         console.log({
@@ -286,8 +313,15 @@ export default {
           Variables: newRow.nodesList.map((row) => {
             return row.id;
           }),
+          nodes: allnodesList.map((row) => {
+            return row.id;
+          }),
+          links: newRow.linksList,
         });
       }
+      this.$router.push({
+        path: this.$route.path,
+      });
     },
 
     //...mapMutations({ GET_JSON_RESULT: "GET_JSON_RESULT" }),
