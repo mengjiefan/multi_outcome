@@ -29,23 +29,18 @@
         <!-- 在列中设置sortable属性即可实现以该列为基准的排序，接受一个Boolean，默认为false。 -->
         <el-table-column
           fixed
-          prop="Outcome"
+          prop="outcome"
           label="Outcome"
           sortable
           width="100"
-        >
-          <template slot-scope="scope">{{ scope.row.outcome }}</template>
-          <!-- <template slot-scope="scope">{{ scope.row.value.outcome }}</template> -->
-        </el-table-column>
+        />
+         
         <el-table-column
           prop="CovariantNum"
           label="CovariantNum"
           sortable
           width="80"
-        >
-          <template slot-scope="scope">{{ scope.row.CovariantNum }}</template>
-          <!-- <template slot-scope="scope">{{ scope.row.value.outcome }}</template> -->
-        </el-table-column>
+        />
         <!-- 默认情况下若内容过多会折行显示，若需要单行显示可以使用show-overflow-tooltip属性，它接受一个Boolean，为true时多余的内容会在 hover 时以 tooltip 的形式显示出来。 -->
         <!-- formatter属性，它用于格式化指定列的值，接受一个Function，会传入两个参数：row和column，可以根据自己的需求进行处理。 -->
         <el-table-column
@@ -56,7 +51,7 @@
           :formatter="formatter"
         >
           <template slot-scope="scope">{{
-            scope.row.top_factors_list
+            scope.row.top_factors_list.join()
           }}</template>
         </el-table-column>
         <el-table-column fixed="right" label="Operation" width="120">
@@ -66,7 +61,7 @@
               type="text"
               size="small"
             >
-              delete
+              Delete
             </el-button>
           </template>
         </el-table-column>
@@ -281,7 +276,7 @@ export default {
   mounted() {
     bus.$on("getOnBus", (val) => {
       this.value = val;
-      console.log("接收到的传递的后台数据为：" + val)
+      console.log("接收到的传递的后台数据为：" , val)
       //重新生成需要的对象数组
       this.tableData.push(val);
       // 实现表格数据去重（定义unique函数）
@@ -300,6 +295,7 @@ export default {
         return array;
       }
       this.tableData = unique(this.tableData);
+
     });
   },
 };

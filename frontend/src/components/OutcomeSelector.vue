@@ -43,6 +43,7 @@
         Confirm
       </el-button>
     </div>
+    <div class="loading-box"></div>
     <ul class="variables">
       <li v-for="(item, index) in SelectedVariables" :key="index">
         {{ index + 1 }}-{{ item }}
@@ -98,6 +99,8 @@
 import axios from "axios";
 import VueAxios from "vue-axios";
 import bus from "../componentsInteraction/bus.js";
+import { Loading } from "element-ui";
+
 const VariablesOptions = [
   "frailty_base_tri",
   "age_group_decade",
@@ -183,6 +186,7 @@ export default {
         },
       ],
       value: "",
+      loadingInstance: null,
       // 注意：v-model需要在data内声明，才能this获取
       CovariantNum: "",
       SelectedVariables: [],
@@ -198,11 +202,15 @@ export default {
       // var outcome = getElementById("outcomeSelector").value
       // alert(value)
       var outcome = this.value;
-      // alert(outcome)
-      // window.console.log(this.value)
+      if(!outcome) {
+        this.showErrorMsg("Please choose outcome!")
+        return;
+      } 
       var CovariantNum = this.CovariantNum;
-      // alert(CovariantNum)
-      // window.console.log(this.CovariantNum)
+      if(!CovariantNum) {
+        this.showErrorMsg("Please enter the number of variables!")
+        return;
+      }
 
       // 目前axios仅能请求成功，但无法获取py文件的结果
       // 1. axios方式一
@@ -222,6 +230,7 @@ export default {
       //     }
       //   );
       // 2. axios方式二
+      this.showLoading();
       axios({
         //请求类型
         method: "GET",
@@ -234,7 +243,9 @@ export default {
         },
       }).then(
         (response) => {
-          console.log("请求成功了", response.data);
+          console.log("variable list", response.data);
+          this.loadingInstance.close();
+          this.loadingInstance = null;
           var Variables_result = response.data;
           this.Variables_result = Variables_result;
           this.SelectedVariables = Variables_result.top_factors_list;
@@ -260,6 +271,21 @@ export default {
       //       console.log("请求失败了",error.message)
       //     }
       //    );
+    },
+    showErrorMsg(msg) {
+      this.$message({
+          showClose: true,
+          message: msg,
+          type: 'error'
+        });
+    },
+    showLoading() {
+      const options = {
+        target: document.getElementsByClassName("loading-box")[0],
+        background: "transparent",
+        customClass: 'loading-anime'
+      };
+      this.loadingInstance = Loading.service(options);
     },
     AppMsg() {
       bus.$emit("getOnBus", this.Variables_result);
@@ -304,6 +330,10 @@ export default {
 .el-button {
   font-size: 18px !important;
 }
+.loading-anime {
+  position: relative!important;
+  height: 80px;
+}
 </style>
 <style scoped>
 .OutcomeSelector {
@@ -336,8 +366,14 @@ export default {
   width: 70px;
   font-size: 18px;
 }
-.show-variable-button {
-  margin-left:50px;
-  height: 36px;
+.loading-box {
+  height: auto
+
 }
+.show-variable-button {
+  margin-left: 50px;
+  height: 36px;
+  display: flex;
+}
+
 </style>

@@ -155,7 +155,7 @@ export default {
         zoom.transform,
         d3.zoomIdentity
           .translate(
-            1300,
+            600,
             200
           )
           .scale(initialScale)
