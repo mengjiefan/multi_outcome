@@ -1,16 +1,35 @@
 <template>
   <div id="DirectedGraph">
     <div class="graph-info-header">
-      <h2>DirectedGraph View</h2>
-      <h3 style="color: red; font-size: 25px">
+      <div class="graph-title">DirectedGraph View</div>
+      <!--
         Todo:To achieve real-time rendering
-      </h3>
-      <!-- <p>获取到的多对比数据的节点为：{{multipleSearchValue[0].nodes}}</p> -->
-      <!-- <p>获取到的多对比数据的边为：{{$store.state.multipleSearchValue.links}}</p> -->
-      <!-- <p>获取到的多对比数据为：{{$store.state.multipleSearchValue}}</p> -->
+      -->
+      <div class="graph-main-title">· VariablesCheckbox</div>
+
+      <!--
+        Todo:To achieve getting variables from VariablesCheckbox
+      -->
+      <el-checkbox v-model="checkAll" @change="handleCheckAllChange"
+        >Select All</el-checkbox
+      >
+      <div style="margin: 15px 0"></div>
+      <el-checkbox-group
+        v-model="checkedVariables"
+        @change="handleCheckedVariablesChange"
+      >
+        <el-checkbox
+          v-for="Variable in VariablesOptions"
+          :label="Variable"
+          :key="Variable"
+          >{{ Variable }}</el-checkbox
+        >
+      </el-checkbox-group>
+      <br />
       <button @click="drawGraph" class="draw-directed-button">
         Show the Directed Graph
       </button>
+      <button @click="saveToTable" class="save-button">Save to Table</button>
     </div>
     <hr />
     <div class="drawing-canvas">
@@ -27,7 +46,8 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import bus from "../componentsInteraction/bus.js";
 import { mapState } from "vuex";
-import { node } from "dagre-d3/lib/intersect/index.js";
+import { ref } from "vue";
+import VariablesOptions from "@/plugin/variable";
 
 var cmap = [
   "#1f77b4",
@@ -44,22 +64,36 @@ var cmap = [
 
 export default {
   name: "DirectedGraph",
+  setup() {
+    return {};
+  },
   data() {
     return {
       tooltip: null,
+      checkAll: ref(false),
+      VariablesOptions,
+      checkedVariables: ref([]),
     };
   },
   mounted() {
     this.drawGraph();
   },
   methods: {
+    saveToTable() {
+      this.$router.push({
+        path: this.$route.path,
+        query: {
+          mode: "save",
+        },
+      });
+    },
     drawGraph() {
       var data = this.multipleSearchValue;
       // {
       console.log(data);
       var g = new dagreD3.graphlib.Graph().setGraph({});
 
-      // Test with our 3 outcome graph(s)
+      // Test with our 3 graph graph(s)
       var states = data.nodesList;
 
       // Automatically label each of the nodes
@@ -169,6 +203,14 @@ export default {
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
     },
+    handleCheckAllChange(val) {
+      if (val === true) {
+        this.checkedVariables = VariablesOptions;
+      } else {
+        this.checkedVariables = [];
+      }
+    },
+    handleCheckedVariablesChange(value) {},
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
@@ -249,15 +291,20 @@ export default {
     },
   },
   mounted() {
-    this.drawGraph();
-  },
-
-  computed: {
-    ...mapState(["multipleSearchValue"]),
+    this.multipleSearchValue = JSON.parse(
+      localStorage.getItem("GET_JSON_RESULT")
+    );
+    console.log(this.multipleSearchValue);
+    if (this.multipleSearchValue) {
+      this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
+        return node.id;
+      });
+      this.drawGraph();
+    }
   },
 
   // methods: {
-  //   // getMultipleOutcome() {
+  //   // getMultiplegraph() {
   //   //   console.log('FDG中接收到的表格数据为：',this.$store.state.multipleSearchValue[0])
   //   // },
 
@@ -349,12 +396,31 @@ hr {
   margin-right: 5px;
   cursor: pointer;
 }
-.graph-svg {
-  width: 100%;
+</style>
+<style scoped>
+#DirectedGraph {
+  max-width: 1300px;
+  flex: 3;
   display: flex;
-  height: 100%;
+  flex-direction: column;
+}
+.graph-info-header {
+  padding: 16px;
+  height: auto;
+}
+.graph-title {
+  font-size: 36px;
 }
 .draw-directed-button {
+  background-color: #fa95a6;
+  color: white;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px 8px 16px;
+}
+.save-button {
+  margin-left: 8px;
   background-color: #fa95a6;
   color: white;
   cursor: pointer;
@@ -373,12 +439,20 @@ hr {
 .drawing-canvas {
   flex: 1;
 }
-#DirectedGraph {
-  width: 1300px;
+.graph-svg {
+  width: 100%;
   display: flex;
-  flex-direction: column;
+  height: 100%;
 }
-.graph-info-header {
-  height: auto;
+.graph-main-title {
+  font-size: 20px;
+  margin-top: 20px;
+  font-weight: bold;
+  line-height: 36px;
+}
+.graph-subtitle {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 32px;
 }
 </style>

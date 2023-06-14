@@ -1,19 +1,7 @@
 <template>
   <div>
-    <h5>History of top most relevant variables to the outcome</h5>
+    <h5>History of variables and the outcome</h5>
     <div>
-      <!-- <table border="1">
-        <tr>
-          <td>Outcome</td>
-          <td>CovariantNum</td>
-          <td>Variables</td>
-        </tr>
-        <tr>
-          <td>{{ value.outcome }}</td>
-          <td>{{ value.CovariantNum }}</td>
-          <td>{{ value.top_factors_list }}</td>
-        </tr>
-      </table> -->
       <el-table
         ref="multipleTable"
         :data="tableData"
@@ -34,7 +22,7 @@
           sortable
           width="100"
         />
-         
+
         <el-table-column
           prop="CovariantNum"
           label="CovariantNum"
@@ -51,7 +39,7 @@
           :formatter="formatter"
         >
           <template slot-scope="scope">{{
-            scope.row.top_factors_list.join()
+            scope.row.Variables.join()
           }}</template>
         </el-table-column>
         <el-table-column fixed="right" label="Operation" width="120">
@@ -68,36 +56,29 @@
       </el-table>
     </div>
     <div style="margin-top: 20px">
-      <el-button @click="btnSelect()">Get the selected item and compare them</el-button>
+      <el-button @click="btnSelect()">Get the lists and compare them </el-button>
     </div>
-    <!-- other button options -->
-    <!-- <div style="margin-top: 20px">
-      <el-button @click="toggleSelection([tableData[1], tableData[2]])"
-        >切换第二、第三行的选中状态</el-button
-      >
-      <el-button @click="toggleSelection()">取消选择</el-button> <br />
-      <el-button @click="GetHypergraph()">Get Hypergraph</el-button>
-    </div> -->
+
     <br />
     <!-- Several router components to show in the AppMainPlot component-->
-    <h6>Several router components to show after getting the selected item in the AppMainPlot component</h6>
+    <!--Several router components to show after getting the selected item in the AppMainPlot component</h6>
     <p style="color:blue;font-size:15px;">We now only use the DirectedGraph router component</p>
-    <br />
+    -->
+    <div
+      class="list-group-item"
+      active-class="active"
+      @click="toDirectedGraph()"
+    >
+      Get DirectedGraph (dynamic)
+    </div>
     <router-link
       class="list-group-item"
       active-class="active"
-      to="/AppMainPlot/DirectedGraphView"
-      >Get DirectedGraph (dynamic)</router-link
+      to="/AppMainPlot/CausalGraphView"
     >
-    <br />
-    <br />
-    <router-link
-        class="list-group-item"
-        active-class="active"
-        to="/AppMainPlot/CausalGraphView">
       Get CausalGraph (Not used component now)
     </router-link>
-     <!-- 缓存一个路由组件 -->
+    <!-- 缓存一个路由组件 -->
     <br />
     <br />
     <router-link
@@ -150,8 +131,9 @@ tableData_test: [
 // 引入axios
 import axios from "axios";
 import VueAxios from "vue-axios";
+import { watch } from "vue";
 import bus from "../componentsInteraction/bus.js";
-import {mapState,mapGetters,mapMutations,mapActions} from 'vuex'
+import { mapState, mapGetters, mapMutations, mapActions } from "vuex";
 export default {
   name: "CausalAnalysisHistory",
   data() {
@@ -172,32 +154,47 @@ export default {
       // 在tableData赋值的地方，顺便随机设置下key，页面就会刷新了
       // this.itemKey = Math.random()
       multipleSelection: [],
-      selection : [],
+      selection: [],
       search: "",
-      selection_result : {},
-      nodesList : [],
-      linksList : []
+      selection_result: {},
+      nodesList: [],
+      linksList: [],
     };
   },
-  computed:{
-
+  watch: {
+    $route: {
+      handler: function (route) {
+        console.log(route);
+        if (route.query.mode === "save") {
+          this.saveToTable();
+        }
+      },
+      immediate: true,
+    },
   },
+  computed: {},
   methods: {
     // 实现表格数据去重（定义unique函数）
     unique(arr) {
-        if (!Array.isArray(arr)) {
-          console.log("type error!");
-          return;
+      if (!Array.isArray(arr)) {
+        console.log("type error!");
+        return;
+      }
+      arr = arr.sort();
+      var array = [arr[0]];
+      for (var i = 1; i < arr.length; i++) {
+        if (arr[i] !== arr[i - 1]) {
+          array.push(arr[i]);
         }
-        arr = arr.sort();
-        var array = [arr[0]];
-        for (var i = 1; i < arr.length; i++) {
-          if (arr[i] !== arr[i - 1]) {
-            array.push(arr[i]);
-          }
-        }
-        return array;
-      },
+      }
+      return array;
+    },
+    toDirectedGraph() {
+      this.$router.push({
+        path: "/AppMainPlot/redirect",
+        query: { next: "DirectedGraphView" },
+      });
+    },
     toggleSelection(rows) {
       if (rows) {
         rows.forEach((row) => {
@@ -213,12 +210,12 @@ export default {
     handleSelectionChange(selection) {
       console.log(selection);
     },
-    
+
     // 通过公用数据库store进行数据管理
     btnSelect() {
       let selection = this.$refs.multipleTable.selection;
-      console.log('选中的比较结局数据为：',selection);
-      console.log(typeof selection);  //object类型数据
+      console.log("选中的比较结局数据为：", selection);
+      console.log(typeof selection); //object类型数据
       // console.log(JSON.stringify(selection));
       // bus.$emit('getOnBusLinksNodes',this.selection)
       axios({
@@ -227,19 +224,19 @@ export default {
         //URL
         url: "http://localhost:8000/api/linksnodes/",
         //当数据量较大时，使用请求body的方式进行传参
-        data:{
+        data: {
           selection: selection,
-          selection1:"test1"
+          selection1: "test1",
         },
         //参数
         // params: {
         //   selection: selection,
         //   selection1:"test1"
-          
+
         // },
       }).then(
         (response) => {
-          console.log("请求成功了", response.data); 
+          console.log("请求成功了", response.data);
           var selection_result = response.data;
           this.selection_result = selection_result;
           this.nodesList = selection_result.nodesList;
@@ -247,7 +244,10 @@ export default {
           // console.log("nodesList:", nodesList);
           // console.log("linksList:", linksList);
           console.log("selection_result:", selection_result);
-          this.$store.commit('GET_JSON_RESULT',selection_result)
+          localStorage.setItem(
+            "GET_JSON_RESULT",
+            JSON.stringify(selection_result)
+          );
         },
         (error) => {
           console.log("请求失败了", error.message);
@@ -256,7 +256,7 @@ export default {
       // this.$store.commit('GET_JSON_RESULT',selection)
       // this.$store.commit('GET_JSON_RESULT',selection_result)
     },
-  
+
     formatter(row, column) {
       return row.Variables;
     },
@@ -267,16 +267,36 @@ export default {
     deleteRow(index, rows) {
       rows.splice(index, 1);
     },
-    GetHypergraph() {},
-    getOutcomeCovariant() {},
+    saveToTable() {
+      console.log("saveMode");
+      let newRow = JSON.parse(localStorage.getItem("GET_JSON_RESULT"));
+      const outcomeId = newRow.nodesList[0].id;
+      if (newRow) {
+        newRow.nodesList.splice(0, 1);
+        console.log({
+          CovariantNum: newRow.CovariantNum,
+          outcome: outcomeId,
+          Variables: newRow.nodesList.map((row) => {
+            return row.id;
+          }),
+        });
+        this.tableData.push({
+          CovariantNum: newRow.CovariantNum,
+          outcome: outcomeId,
+          Variables: newRow.nodesList.map((row) => {
+            return row.id;
+          }),
+        });
+      }
+    },
 
-    ...mapMutations({GET_JSON_RESULT:'GET_JSON_RESULT'})
+    //...mapMutations({ GET_JSON_RESULT: "GET_JSON_RESULT" }),
   },
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
     bus.$on("getOnBus", (val) => {
       this.value = val;
-      console.log("接收到的传递的后台数据为：" , val)
+      console.log("接收到的传递的后台数据为：", val);
       //重新生成需要的对象数组
       this.tableData.push(val);
       // 实现表格数据去重（定义unique函数）
@@ -295,14 +315,13 @@ export default {
         return array;
       }
       this.tableData = unique(this.tableData);
-
     });
   },
 };
 </script>
 
 <style>
-/* .demo{
-		background-color: orange;
-	} */
+.list-group-item {
+  cursor: pointer;
+}
 </style>

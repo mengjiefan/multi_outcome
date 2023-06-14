@@ -33,18 +33,20 @@ body {
 .page-box {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
+  height: 100vh;
+  max-height: 100vh;
 }
 /* 头部样式 */
 .header {
   position: relative;
   line-height: 100px;
   background-color: #cff7f7;
+  height: auto;
 }
 .content {
   width: 100%;
   display: flex;
-
+  height: auto;
   flex: 1;
 }
 /* 左侧样式 */

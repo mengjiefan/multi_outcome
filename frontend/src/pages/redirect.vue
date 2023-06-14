@@ -1,0 +1,25 @@
+<template>
+  <div class="blank-content"></div>
+</template>
+
+<script>
+export default {
+  setup() {},
+  mounted() {
+    //刷新数据用的
+    const path = "/AppMainPlot/" + this.$route.query.next;
+    setTimeout(() => {
+      this.$router.push({
+        path: path,
+      });
+    }, 0);
+  },
+};
+</script>
+
+<style scoped>
+.blank-content {
+  max-width: 1300px;
+  flex: 3;
+}
+</style>

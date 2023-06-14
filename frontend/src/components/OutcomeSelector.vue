@@ -49,47 +49,8 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
-    <!-- <table border="1">
-        <tr>
-          <td>Outcome</td>
-          <td>CovariantNum</td>
-          <td>Variables</td>
-        </tr>
-        <tr>
-          <td>{{ Variables_result.outcome }}</td>
-          <td>{{ Variables_result.CovariantNum }}</td>
-          <td>{{ Variables_result.top_factors_list }}</td>
-        </tr>
-      </table> -->
-    <div class="outcome-main-title">· VariablesCheckbox</div>
-    <div class="outcome-subtitle">(Meant to Adding or Deleting Nodes)</div>
-    <p style="color: red; font-size: 20px">
-      Todo:To achieve getting variables from VariablesCheckbox
-    </p>
-    <el-checkbox
-      :indeterminate="isIndeterminate"
-      v-model="checkAll"
-      @change="handleCheckAllChange"
-      >Select All</el-checkbox
-    >
-    <div style="margin: 15px 0"></div>
-    <el-checkbox-group
-      v-model="checkedVariables"
-      @change="handleCheckedVariablesChange"
-    >
-      <el-checkbox
-        v-for="Variable in Variables"
-        :label="Variable"
-        :key="Variable"
-        >{{ Variable }}</el-checkbox
-      >
-    </el-checkbox-group>
-    <br />
-    <button>
-      Save and Show Variables Characters in the AppMainCharacter component
-    </button>
-    <br />
-    <button @click="AppMsg()">Transmit data to history component</button>
+    <!--<el-button @click="AppMsg()">Save to Table</el-button>-->
+    <el-button @click="saveSingleData">Get the list</el-button>
     <br />
   </div>
 </template>
@@ -100,54 +61,16 @@ import axios from "axios";
 import VueAxios from "vue-axios";
 import bus from "../componentsInteraction/bus.js";
 import { Loading } from "element-ui";
-import { ref } from 'vue';
+import VariablesOptions from "@/plugin/variable";
+import { ref } from "vue";
 
-const VariablesOptions = [
-  "frailty_base_tri",
-  "age_group_decade",
-  "a1_sex",
-  "residenc_byte",
-  "education_tri",
-  "smoke",
-  "drink",
-  "sleep",
-  "sport",
-  "hear",
-  "visual",
-  "g511_sbp",
-  "g521_dbp",
-  "g71_hr",
-  "BMI_cate",
-  "MMSE_base_byte",
-  "physi_limit_base",
-  "multimorbidity_base",
-  "b11_byte",
-  "b121_byte",
-  "income",
-  "f64_sum",
-  "a51_byte",
-  "f31_sum",
-  "f5_whocaresick",
-  "dependence_base",
-  "g15a1_HT",
-  "g15b1_DM",
-  "g15c1_CVD",
-  "g15e1_COPD",
-  "g15n1_RA",
-  "g15o1_dementia",
-  "g15k1_gastric",
-  "g15v1_hepatitis",
-  "eye_base",
-  "g15i1_cancer",
-  "g15l1_parkinson",
-  "g15j1_prostate",
-  "g15p1_mental",
-  "g15r1_others",
-];
 export default {
   name: "OutcomeSelector",
-  data() {
+  setup() {
     return {
+      CovariantNum: ref(""),
+      value: ref(""),
+      SelectedVariables: ref([]),
       options: [
         {
           value: "death",
@@ -186,16 +109,13 @@ export default {
           label: "b121_incid",
         },
       ],
-      value: "",
+    };
+  },
+  data() {
+    return {
       loadingInstance: null,
-      // 注意：v-model需要在data内声明，才能this获取
-      CovariantNum: "",
-      SelectedVariables: [],
       Variables_result: {},
-      checkAll: false,
-      checkedVariables: ref([]),
       Variables: VariablesOptions,
-      isIndeterminate: true,
     };
   },
   methods: {
@@ -204,13 +124,13 @@ export default {
       // alert(value)
       this.SelectedVariables = [];
       var outcome = this.value;
-      if(!outcome) {
-        this.showErrorMsg("Please choose outcome!")
+      if (!outcome) {
+        this.showErrorMsg("Please choose outcome!");
         return;
-      } 
+      }
       var CovariantNum = this.CovariantNum;
-      if(!CovariantNum) {
-        this.showErrorMsg("Please enter the number of variables!")
+      if (!CovariantNum) {
+        this.showErrorMsg("Please enter the number of variables!");
         return;
       }
 
@@ -279,16 +199,16 @@ export default {
     },
     showErrorMsg(msg) {
       this.$message({
-          showClose: true,
-          message: msg,
-          type: 'error'
-        });
+        showClose: true,
+        message: msg,
+        type: "error",
+      });
     },
     showLoading() {
       const options = {
         target: document.getElementsByClassName("loading-box")[0],
         background: "transparent",
-        customClass: 'loading-anime'
+        customClass: "loading-anime",
       };
       this.loadingInstance = Loading.service(options);
     },
@@ -296,15 +216,27 @@ export default {
       // only the top node & links & list
       bus.$emit("getOnBus", this.Variables_result);
     },
-    handleCheckAllChange(val) {
-      this.checkedVariables = val ? VariablesOptions : [];
-      this.isIndeterminate = false;
-    },
-    handleCheckedVariablesChange(value) {
-      let checkedCount = value.length;
-      this.checkAll = checkedCount === this.Variables.length;
-      this.isIndeterminate =
-        checkedCount > 0 && checkedCount < this.Variables.length;
+    saveSingleData() {
+      let nodesList = [];
+
+      nodesList.push({
+        type: 0,
+        id: this.Variables_result.outcome,
+      });
+      this.Variables_result.top_factors_list.forEach((row) => {
+        nodesList.push({
+          type: 1,
+          id: row,
+        });
+      });
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify({
+          nodesList: nodesList,
+          linksList: this.Variables_result.links,
+          CovariantNum: this.Variables_result.CovariantNum,
+        })
+      );
     },
   },
   // 只是监视了，但尚未实现实时组件间数据传输
@@ -337,13 +269,14 @@ export default {
   font-size: 18px !important;
 }
 .loading-anime {
-  position: relative!important;
+  position: relative !important;
   height: 80px;
 }
 </style>
 <style scoped>
 .OutcomeSelector {
   padding: 10px;
+  height: auto;
 }
 .outcome-main-title {
   font-size: 20px;
@@ -373,13 +306,11 @@ export default {
   font-size: 18px;
 }
 .loading-box {
-  height: auto
-
+  height: auto;
 }
 .show-variable-button {
   margin-left: 50px;
   height: 36px;
   display: flex;
 }
-
 </style>

@@ -29,15 +29,22 @@ export default  new VueRouter({
 			component: AppMainPlot,// 组件对象
 			children:[
 				{
-					path:'CausalGraphView',
+					path: '/AppMainPlot/redirect',
+					component: () =>
+					import(
+						'../pages/redirect.vue'
+					),	
+				},
+				{
+					path:'/AppMainPlot/CausalGraphView',
 					component:CausalGraph,
 				},
 				{
-					path:'MultiOutcomesView',
+					path:'/AppMainPlot/MultiOutcomesView',
 					component:MultiOutcomes,
 				},
 				{
-					path:'DirectedGraphView',
+					path:'/AppMainPlot/DirectedGraphView',
 					component:DirectedGraph,
 				}
 			]  
