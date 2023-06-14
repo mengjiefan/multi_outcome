@@ -45,7 +45,7 @@ Vue.use(ElementUI);
 
 
 new Vue({
-	el:'#root',
+	el:'#app',
 	// router,
 	// components: { Layout },
 	// template: '<Layout/>',

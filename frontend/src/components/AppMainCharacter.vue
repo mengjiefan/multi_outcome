@@ -7,21 +7,20 @@
     <hr>
 		<button>
 			<router-link class="list-group-item" active-class="active" to="/AppMainPlot/MultiOutcomesView">Get MultiOutcomes matrix</router-link>
-		</button> -->  
+		</button> -->
   </div>
 </template>
  
 <script>
-    export default {
-        name: "AppMainCharacter"
-    }
+export default {
+  name: "AppMainCharacter",
+};
 </script>
  
 <style scoped>
 .mainCharacter {
-    /* position: absolute; */
-    font-size: 20px;
-    
-  }
- 
+  font-size: 20px;
+  background-color: rgb(231, 235, 213);
+  flex: 1;
+}
 </style>

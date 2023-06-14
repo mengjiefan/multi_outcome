@@ -33,8 +33,12 @@ export default {
  
 <style scoped>
 .navbar {
-  /* position: absolute; */
+  width: 500px;
   font-size: 20px;
+  position: relative;
+  padding: 10px;
+  overflow-y: auto; /* 当内容过多时y轴出现滚动条 */
+  background-color: #e0eeee;
 }
 .nav-title {
   font-size: 32px;

@@ -1,36 +1,18 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="UTF-8" />
-		<!-- <title>MultiOutcome Causality Explore</title> -->
-		<h1 align = "center">MultiOutcome Causality Explore</h1>
-		<!-- 
-		引入pyscript，会影响vue的效果呈现，故仍考虑Ajax前后端交互的方式
-		<link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />   
-    	<script defer src="https://pyscript.net/alpha/pyscript.js"></script>
- 		-->
-		
-		<style>
-			
-		</style>
-	</head>
+<html lang="">
+  <head >
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    <script type="text/javascript" src="./static/IPConfig.js" async></script>
 
-	<!--
-	<py-env>
-    	- networkx
-      	- matplotlib
-    </py-env>
-	-->
-
-	<body>
-		<!-- 准备一个容器 -->
-		<div id="root"></div>
-		<!-- <script type="text/javascript" src="../js/vue.js"></script>
-		<script type="text/javascript" src="./main.js"></script> -->
-
-		<!--
-		<py-script src="C:\MyProjects_yuxi\6-comparativeVis\important_dataset_processing/dependence_incid_dag.py">  </py-script>
-		-->
-		
-	</body>
+  </head>
+  <body>
+    <noscript>
+      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <div id="app"></div>
+    <!-- built files will be auto injected -->
+  </body>
 </html>

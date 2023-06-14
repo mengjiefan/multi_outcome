@@ -1,17 +1,21 @@
 <template>
   <div id="DirectedGraph">
-    <h2>DirectedGraph View</h2>
-    <h3 style="color: red; font-size: 25px">
-      Todo:To achieve real-time rendering
-    </h3>
-    <!-- <p>获取到的多对比数据的节点为：{{multipleSearchValue[0].nodes}}</p> -->
-    <!-- <p>获取到的多对比数据的边为：{{$store.state.multipleSearchValue.links}}</p> -->
-    <!-- <p>获取到的多对比数据为：{{$store.state.multipleSearchValue}}</p> -->
-    <button @click="drawGraph" class="draw-directed-button">
-      Show the Directed Graph
-    </button>
+    <div class="graph-info-header">
+      <h2>DirectedGraph View</h2>
+      <h3 style="color: red; font-size: 25px">
+        Todo:To achieve real-time rendering
+      </h3>
+      <!-- <p>获取到的多对比数据的节点为：{{multipleSearchValue[0].nodes}}</p> -->
+      <!-- <p>获取到的多对比数据的边为：{{$store.state.multipleSearchValue.links}}</p> -->
+      <!-- <p>获取到的多对比数据为：{{$store.state.multipleSearchValue}}</p> -->
+      <button @click="drawGraph" class="draw-directed-button">
+        Show the Directed Graph
+      </button>
+    </div>
     <hr />
-    <svg class="graph-svg"><g /></svg>
+    <div class="drawing-canvas">
+      <svg class="graph-svg"><g /></svg>
+    </div>
     <!-- 缓存一个路由组件 -->
   </div>
 </template>
@@ -154,7 +158,7 @@ export default {
       var initialScale = 0.75;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity.translate(600, 200).scale(initialScale)
+        d3.zoomIdentity.translate(100, 200).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
@@ -347,8 +351,8 @@ hr {
 }
 .graph-svg {
   width: 100%;
-  height: 800px;
   display: flex;
+  height: 100%;
 }
 .draw-directed-button {
   background-color: #fa95a6;
@@ -365,5 +369,16 @@ hr {
 .draw-directed-button:active {
   background-color: #f77;
   color: white;
+}
+.drawing-canvas {
+  flex: 1;
+}
+#DirectedGraph {
+  width: 1300px;
+  display: flex;
+  flex-direction: column;
+}
+.graph-info-header {
+  height: auto;
 }
 </style>

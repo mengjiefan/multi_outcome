@@ -100,6 +100,7 @@ import axios from "axios";
 import VueAxios from "vue-axios";
 import bus from "../componentsInteraction/bus.js";
 import { Loading } from "element-ui";
+import { ref } from 'vue';
 
 const VariablesOptions = [
   "frailty_base_tri",
@@ -192,7 +193,7 @@ export default {
       SelectedVariables: [],
       Variables_result: {},
       checkAll: false,
-      checkedVariables: ["frailty_base_tri", "age_group_decade"],
+      checkedVariables: ref([]),
       Variables: VariablesOptions,
       isIndeterminate: true,
     };
@@ -201,6 +202,7 @@ export default {
     getOutcomeCovariant() {
       // var outcome = getElementById("outcomeSelector").value
       // alert(value)
+      this.SelectedVariables = [];
       var outcome = this.value;
       if(!outcome) {
         this.showErrorMsg("Please choose outcome!")
@@ -244,12 +246,15 @@ export default {
       }).then(
         (response) => {
           console.log("variable list", response.data);
+          //hide loading anime
           this.loadingInstance.close();
           this.loadingInstance = null;
-          var Variables_result = response.data;
-          this.Variables_result = Variables_result;
-          this.SelectedVariables = Variables_result.top_factors_list;
-          console.log("Variables_result:", Variables_result);
+          //include node & links & list
+          this.Variables_result = response.data;
+          //only the list
+          this.SelectedVariables = this.Variables_result.top_factors_list;
+          console.log("Variables_result:", this.Variables_result);
+          this.checkedVariables = this.Variables_result.top_factors_list;
         },
         (error) => {
           console.log("请求失败了", error.message);
@@ -288,6 +293,7 @@ export default {
       this.loadingInstance = Loading.service(options);
     },
     AppMsg() {
+      // only the top node & links & list
       bus.$emit("getOnBus", this.Variables_result);
     },
     handleCheckAllChange(val) {
