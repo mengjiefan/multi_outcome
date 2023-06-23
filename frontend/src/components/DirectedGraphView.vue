@@ -24,7 +24,7 @@
         >
       </el-checkbox-group>
       <br />
-      <button @click="drawGraph" class="draw-directed-button">
+      <button @click="getLinks" class="draw-directed-button">
         Show the Directed Graph
       </button>
       <button @click="saveToTable" class="save-button">Save to Table</button>
@@ -42,8 +42,7 @@
 <script>
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import bus from "../componentsInteraction/bus.js";
-import { mapState } from "vuex";
+import axios from "axios";
 import { ref } from "vue";
 import VariablesOptions from "@/plugin/variable";
 
@@ -73,9 +72,7 @@ export default {
       checkedVariables: ref([]),
     };
   },
-  mounted() {
-    this.drawGraph();
-  },
+  mounted() {},
   methods: {
     saveToTable() {
       this.$router.push({
@@ -197,6 +194,40 @@ export default {
 
       return data;
     },
+    getLinks() {
+      let newFac = [];
+      let newOut = [];
+      this.multipleSearchValue.nodesList.forEach((row) => {
+        if (row.type === 1) newFac.push(row.id);
+      });
+      this.multipleSearchValue.nodesList.map((row) => {
+        if (row.type === 0) newOut.push(row.id);
+      });
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/getLink",
+        //参数
+        params: {
+          outcomes: newOut.join(),
+          factors: newFac.join(),
+        },
+      })
+        .then((response) => {
+          
+          console.log("new links", response.data);
+          this.multipleSearchValue = {
+            linksList: response.data.links,
+            nodesList: response.data.nodes,
+          };
+
+          this.drawGraph();
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
     //add document click listener
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
@@ -241,9 +272,10 @@ export default {
           type: 1,
           id: factor,
         });
-      } else if (!value && factor >= 0) {
+      } else if (!value && ifIndex >= 0) {
         this.multipleSearchValue.nodesList.splice(ifIndex, 1);
       }
+      console.log(this.multipleSearchValue.nodesList)
     },
     //document click listener => to close line tooltip
     listener(e) {
