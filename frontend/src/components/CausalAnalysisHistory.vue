@@ -12,9 +12,6 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55"> </el-table-column>
-        //实现多选非常简单:
-        //手动添加一个el-table-column，设type属性为selection即可；
-        <!-- 在列中设置sortable属性即可实现以该列为基准的排序，接受一个Boolean，默认为false。 -->
         <el-table-column
           fixed
           prop="outcome"
@@ -29,8 +26,6 @@
           sortable
           width="80"
         />
-        <!-- 默认情况下若内容过多会折行显示，若需要单行显示可以使用show-overflow-tooltip属性，它接受一个Boolean，为true时多余的内容会在 hover 时以 tooltip 的形式显示出来。 -->
-        <!-- formatter属性，它用于格式化指定列的值，接受一个Function，会传入两个参数：row和column，可以根据自己的需求进行处理。 -->
         <el-table-column
           prop="Variables"
           label="Variables"
@@ -55,87 +50,28 @@
         </el-table-column>
       </el-table>
     </div>
-    <div style="margin-top: 20px">
-      <el-button @click="btnSelect()"
-        >Get the lists and compare them
+    <div class="drawing-command">
+      <el-select v-model="graphType" placeholder="请选择">
+        <el-option
+          v-for="item in graphOption"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        >
+        </el-option>
+      </el-select>
+      <el-button type="primary" size="small" @click="btnSelect()"
+        >Plot the rows
       </el-button>
     </div>
-
-    <br />
-    <!-- Several router components to show in the AppMainPlot component-->
-    <!--Several router components to show after getting the selected item in the AppMainPlot component</h6>
-    <p style="color:blue;font-size:15px;">We now only use the DirectedGraph router component</p>
-    -->
-    <div
-      class="list-group-item"
-      active-class="active"
-      @click="toDirectedGraph()"
-    >
-      Get DirectedGraph (dynamic)
-    </div>
-    <router-link
-      class="list-group-item"
-      active-class="active"
-      to="/AppMainPlot/CausalGraphView"
-    >
-      Get CausalGraph (Not used component now)
-    </router-link>
-    <!-- 缓存一个路由组件 -->
-    <br />
-    <br />
-    <router-link
-      class="list-group-item"
-      active-class="active"
-      to="/AppMainPlot/MultiOutcomesView"
-      >Get MultiOutcomes matrix (Not used component now)</router-link
-    >
   </div>
 </template>
 
 <script>
-/*
-tableData_test: [
-        {
-          Outcome: "death",
-          CovariantNum: "5",
-          Variables: [
-            "frailty_base_tri",
-            "MMSE_base_byte",
-            "hear",
-            "physi_limit_base",
-            "education_tri",
-          ],
-        },
-        {
-          Outcome: "hospital_freq",
-          CovariantNum: "5",
-          Variables: [
-            "multimorbidity_base",
-            "g15c1_CVD",
-            "hear",
-            "sleep",
-            "MMSE_base_byte",
-          ],
-        },
-        {
-          Outcome: "physi_limit_incid",
-          CovariantNum: "5",
-          Variables: [
-            "physi_limit_base",
-            "frailty_base_tri",
-            "dependence_base",
-            "MMSE_base_byte",
-            "hear",
-          ],
-        },
-      ]
-*/
 // 引入axios
 import axios from "axios";
-import VueAxios from "vue-axios";
-import { watch } from "vue";
+import { ref } from "vue";
 import bus from "../componentsInteraction/bus.js";
-import { mapState, mapGetters, mapMutations, mapActions } from "vuex";
 export default {
   name: "CausalAnalysisHistory",
   data() {
@@ -156,16 +92,18 @@ export default {
       SelectedVariables: [],
       Variables_result: {},
       tableData: [],
-      // tableData:[
-      //   {
-      //     // Outcome: "", //value.outcome
-      //     // CovariantNum: "", //value.CovariantNum,
-      //     // Variables: "", // value.Variables,
-      //     // value:{}
-      //   },
-      // ],
-      // 在tableData赋值的地方，顺便随机设置下key，页面就会刷新了
-      // this.itemKey = Math.random()
+      graphOption: [
+        {
+          value: "DirectedGraphView",
+          label: "DirectedGraph",
+        },
+        {
+          label: "CausalGraphView",
+          value: "CausalGraphView",
+        },
+        { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },
+      ],
+      graphType: ref("DirectedGraphView"),
       multipleSelection: [],
       selection: [],
       search: "",
@@ -279,10 +217,14 @@ export default {
           console.log("请求失败了", error.message);
         }
       );
-      // this.$store.commit('GET_JSON_RESULT',selection)
-      // this.$store.commit('GET_JSON_RESULT',selection_result)
+      this.routeToGraph();
     },
-
+    routeToGraph() {
+      this.$router.push({
+        path: "/AppMainPlot/redirect",
+        query: { next: this.graphType },
+      });
+    },
     formatter(row, column) {
       return row.Variables;
     },
@@ -354,8 +296,15 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .list-group-item {
   cursor: pointer;
+}
+.drawing-command {
+  margin-top: 20px;
+  display: flex;
+  gap: 16px;
+
+  padding-bottom: 20px;
 }
 </style>

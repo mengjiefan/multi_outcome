@@ -40,14 +40,13 @@ body {
 .header {
   position: relative;
   line-height: 100px;
+  height: 8vh;
   background-color: #cff7f7;
-  height: auto;
 }
 .content {
   width: 100%;
   display: flex;
-  height: auto;
-  flex: 1;
+  height: 92vh;
 }
 /* 左侧样式 */
 

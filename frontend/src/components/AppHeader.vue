@@ -12,9 +12,7 @@
  
 <style scoped>
 .header {
-    /* position: absolute; */
     font-size: 50px;
-    
   }
  
 </style>

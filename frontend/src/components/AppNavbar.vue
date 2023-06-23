@@ -33,11 +33,14 @@ export default {
   max-width: 500px;
   font-size: 20px;
   position: relative;
-  padding: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  height: 92vh;
   overflow-y: auto; /* 当内容过多时y轴出现滚动条 */
   background-color: #e0eeee;
 }
 .nav-title {
+  padding-top: 10px;
   font-size: 32px;
   font-weight: bold;
   text-align: center;

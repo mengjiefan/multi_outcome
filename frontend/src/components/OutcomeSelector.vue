@@ -18,6 +18,7 @@
         </el-option>
       </el-select>
     </div>
+    <div class="outcome-main-title">· Variables</div>
     <!--original h6-->
     <div class="outcome-subtitle">
       Choose n Covariant most relevant to the outcome:
@@ -35,6 +36,7 @@
       </div>
       <div>variables</div>
       <el-button
+      :disabled="loadingInstance!==null"
         size="small"
         class="show-variable-button"
         type="primary"
@@ -49,8 +51,21 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
-    <!--<el-button @click="AppMsg()">Save to Table</el-button>-->
-    <el-button @click="saveSingleData">Get the list</el-button>
+    <div class="drawing-command">
+      <el-select v-model="graphType" placeholder="请选择">
+        <el-option
+          v-for="item in graphOption"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        >
+        </el-option>
+      </el-select>
+
+      <el-button size="small" type="primary" @click="saveSingleData"
+        >Plot the list</el-button
+      >
+    </div>
     <br />
   </div>
 </template>
@@ -58,8 +73,6 @@
 <script>
 // 引入axios
 import axios from "axios";
-import VueAxios from "vue-axios";
-import bus from "../componentsInteraction/bus.js";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import { ref } from "vue";
@@ -109,11 +122,23 @@ export default {
           label: "b121_incid",
         },
       ],
+      graphOption: [
+        {
+          value: "DirectedGraphView",
+          label: "DirectedGraph",
+        },
+        {
+          label: "CausalGraphView",
+          value: "CausalGraphView",
+        },
+        { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },
+      ],
+      graphType: ref("DirectedGraphView"),
     };
   },
   data() {
     return {
-      loadingInstance: null,
+      loadingInstance: ref(null),
       Variables_result: {},
       Variables: VariablesOptions,
     };
@@ -134,24 +159,6 @@ export default {
         return;
       }
 
-      // 目前axios仅能请求成功，但无法获取py文件的结果
-      // 1. axios方式一
-      //axios
-      //   .get("http://localhost:8000/#/api/covariant", {
-      //     params: {
-      //       outcome: outcome,
-      //       CovariantNum: CovariantNum,
-      //     },
-      //   })
-      //   .then(
-      //     (response) => {
-      //       console.log("请求成功了", response);  //response.data返回的是html的文字信息
-      //     },
-      //     (error) => {
-      //       console.log("请求失败了", error.message);
-      //     }
-      //   );
-      // 2. axios方式二
       this.showLoading();
       axios({
         //请求类型
@@ -163,8 +170,8 @@ export default {
           outcome: outcome,
           CovariantNum: CovariantNum,
         },
-      }).then(
-        (response) => {
+      })
+        .then((response) => {
           console.log("variable list", response.data);
           //hide loading anime
           this.loadingInstance.close();
@@ -175,27 +182,10 @@ export default {
           this.SelectedVariables = this.Variables_result.top_factors_list;
           console.log("Variables_result:", this.Variables_result);
           this.checkedVariables = this.Variables_result.top_factors_list;
-        },
-        (error) => {
+        })
+        .catch((error) => {
           console.log("请求失败了", error.message);
-        }
-      );
-      // }).then(function (ret) {
-      //     console.log(ret)
-      // });
-
-      //     axios.get('http://localhost:8080/factor_selector_pc_dag.py', {
-      //       params: {
-      //           outcome: '',
-      //           CovariantNum: ''
-      //         }
-      // }).then(response => {
-      //     console.log('请求成功了',response.data)
-      //     },
-      //     error => {
-      //       console.log("请求失败了",error.message)
-      //     }
-      //    );
+        });
     },
     showErrorMsg(msg) {
       this.$message({
@@ -212,13 +202,12 @@ export default {
       };
       this.loadingInstance = Loading.service(options);
     },
-    AppMsg() {
-      // only the top node & links & list
-      bus.$emit("getOnBus", this.Variables_result);
-    },
     saveSingleData() {
       let nodesList = [];
-
+      if (!this.Variables_result.top_factors_list) {
+        this.showErrorMsg("Please choose outcome and the number!");
+        return;
+      }
       nodesList.push({
         type: 0,
         id: this.Variables_result.outcome,
@@ -237,16 +226,15 @@ export default {
           CovariantNum: this.Variables_result.CovariantNum,
         })
       );
+      this.routeToGraph();
+    },
+    routeToGraph() {
+      this.$router.push({
+        path: "/AppMainPlot/redirect",
+        query: { next: this.graphType },
+      });
     },
   },
-  // 只是监视了，但尚未实现实时组件间数据传输
-  // watch: {
-  //   Variables_result:{
-  //     handler(newValue,oldValue){
-  //       console.log('Variables_result被修改了',newValue,oldValue)
-  //     }
-  //   }
-  // },
 };
 </script>
 
@@ -312,5 +300,9 @@ export default {
   margin-left: 50px;
   height: 36px;
   display: flex;
+}
+.drawing-command {
+  display: flex;
+  gap: 16px;
 }
 </style>
