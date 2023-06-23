@@ -167,8 +167,6 @@ export default {
       let selection = this.$refs.multipleTable.selection;
       console.log("选中的比较结局数据为：", selection);
       console.log(typeof selection); //object类型数据
-      // console.log(JSON.stringify(selection));
-      // bus.$emit('getOnBusLinksNodes',this.selection)
       axios({
         //请求类型
         method: "POST",
@@ -179,20 +177,12 @@ export default {
           selection: selection,
           selection1: "test1",
         },
-        //参数
-        // params: {
-        //   selection: selection,
-        //   selection1:"test1"
-
-        // },
       }).then(
         (response) => {
           console.log("请求成功了", response.data);
           this.selection_result = response.data;
           this.nodesList = this.selection_result.nodesList;
           this.linksList = this.selection_result.linksList;
-          // console.log("nodesList:", nodesList);
-          // console.log("linksList:", linksList);
           console.log("selection_result:", this.selection_result);
           localStorage.setItem(
             "GET_JSON_RESULT",
@@ -228,9 +218,6 @@ export default {
     formatter(row, column) {
       return row.Variables;
     },
-    // handleEdit(index, row) {
-    //   console.log(index, row);
-    // },
 
     deleteRow(index, rows) {
       rows.splice(index, 1);

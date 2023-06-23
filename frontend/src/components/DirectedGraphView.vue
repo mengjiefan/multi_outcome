@@ -14,14 +14,12 @@
         >Select All</el-checkbox
       >
       <div style="margin: 15px 0"></div>
-      <el-checkbox-group
-        v-model="checkedVariables"
-        @change="handleCheckedVariablesChange"
-      >
+      <el-checkbox-group v-model="checkedVariables">
         <el-checkbox
           v-for="Variable in VariablesOptions"
           :label="Variable"
           :key="Variable"
+          @change="handleCheckedVariablesChange($event, Variable)"
           >{{ Variable }}</el-checkbox
         >
       </el-checkbox-group>
@@ -206,11 +204,47 @@ export default {
     handleCheckAllChange(val) {
       if (val === true) {
         this.checkedVariables = VariablesOptions;
+        this.checkedVariables.forEach((factor) => {
+          let ifIndex = this.multipleSearchValue.nodesList.findIndex(function (
+            row
+          ) {
+            if (row.id === factor) return true;
+            else return false;
+          });
+          if (ifIndex < 0) {
+            this.multipleSearchValue.nodesList.push({
+              type: 1,
+              id: factor,
+            });
+          }
+        });
       } else {
         this.checkedVariables = [];
+        let newNodes = [];
+        this.multipleSearchValue.nodesList.forEach((row) => {
+          if (row.type === 0) {
+            newNodes.push(row);
+          }
+        });
+        this.multipleSearchValue.nodesList = newNodes;
       }
     },
-    handleCheckedVariablesChange(value) {},
+    handleCheckedVariablesChange(value, factor) {
+      let ifIndex = this.multipleSearchValue.nodesList.findIndex(function (
+        row
+      ) {
+        if (row.id === factor) return true;
+        else return false;
+      });
+      if (value && ifIndex < 0) {
+        this.multipleSearchValue.nodesList.push({
+          type: 1,
+          id: factor,
+        });
+      } else if (!value && factor >= 0) {
+        this.multipleSearchValue.nodesList.splice(ifIndex, 1);
+      }
+    },
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
