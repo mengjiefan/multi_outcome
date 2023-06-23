@@ -7,6 +7,7 @@ urlpatterns = [
     # path('add/',views.add,name='add'), #调用views中的add方法
     path("covariant/",views.select_factor,name='select_factor'),
     path("linksnodes/",views.list_dict_duplicate_removal,name='list_dict_duplicate_removal'),
+    path("getLink/",views.get_causal_edges,name='get_causal_edges'),
     path("test11/",views.test11),
     path("test22/",views.variable_show),
     # path("find/<int:sid>",views.find),

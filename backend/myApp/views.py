@@ -31,7 +31,9 @@ from functools import reduce
 
 sys.path.append("")
 
-
+# 以列表形式告诉程序哪些变量是结局变量，其他变量均视为因素变量
+results = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
+           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
 # SETTINGS.verbose = True
 
 # Create your views here.
@@ -47,6 +49,102 @@ sys.path.append("")
 def test11(request):
     return HttpResponse("test...")  # 测试成功
 
+#根据outcome和factor获取所有节点和边
+def get_causal_edges(request):
+    filename = "./myApp/MissingValue_fill_data_all.xlsx"
+
+    factors = request.GET.get("factors").split(",")
+    print("所有因素为{}",factors)
+    outcomes = request.GET.get("outcomes").split(",")
+
+    dataset = pd.read_excel(filename, index_col=0)
+
+    df = dataset.drop(columns=list(set(results) - set(outcomes)))
+    df.dropna(inplace=True)
+    labels = list(dataset.columns.values)
+    otherFactors = list(set(labels) - set(results)- set(factors))
+    df.drop(columns=list(otherFactors), inplace=True)
+
+    top_factors_list = list(factors)
+
+    nodes_list = list(outcomes)
+
+    nodes_list_all = top_factors_list + nodes_list
+
+    data = df.to_numpy()
+
+
+    cg_without_background_knowledge = pc(data, 0.05, fisherz, True, 0,
+                                         3)  # Run PC and obtain the estimated graph (CausalGraph object)
+    nodes_pc = cg_without_background_knowledge.G.get_nodes()
+
+
+    replace_dict = {}
+    # node = nodes_list_all
+    for i in range(len(nodes_list_all)):
+        print('节点为：{}---{}'.format(nodes_pc[i], GraphNode(nodes_list_all[i])))
+
+        replace_dict_single = {str(nodes_pc[i]): str(GraphNode(nodes_list_all[i]))}
+        print(replace_dict_single)
+        # 向字典中添加元素
+        replace_dict[str(nodes_pc[i])] = str(GraphNode(nodes_list_all[i]))
+        print('---------')
+    print('节点对应标签replace_dict为:\n', replace_dict)
+
+    result_data = str(cg_without_background_knowledge.G)
+    print(result_data)
+
+    origin_edges = re.findall('X\d --> X\d', result_data)
+    print('origin_edges:\n', origin_edges)
+
+    new_edges = []
+    for ele in origin_edges:
+        ele_sin = ele.split(' --> ')
+        new_ele_sin = [replace_dict[j] if j in replace_dict else j for j in ele_sin]
+        # print(new_ele_sin)
+        X1 = new_ele_sin[0]
+        X2 = new_ele_sin[1]
+
+        data_corr = df[X1].corr(df[X2])
+        print("变量{}和{}的回归系数为{}".format(X1, X2, "%.3f" % data_corr))
+        new_ele_sin.append(float("%.3f" % data_corr))
+        print(new_ele_sin)
+        new_edges.append(new_ele_sin)
+
+    print('替换后的边new_edges为:\n', new_edges)
+
+    # 获取特定结局的PC因果算法所得的边
+    links = []
+    for link_ele in new_edges:
+        link_sin = {}
+        link_sin['source'] = link_ele[0]
+        link_sin['target'] = link_ele[1]
+        link_sin['value'] = link_ele[2]
+
+        links.append(link_sin)
+    print('因果图的有向边为：\n', links)
+
+    # 获取特定结局的PC因果算法所得的节点
+    nodes_variables = []
+    for outcome in outcomes:
+        node_outcome = {}  # TypeError: list indices must be integers or slices, not str --- 设成对象而非数组
+        node_outcome['id'] = outcome
+        node_outcome['type'] = 0
+        nodes_variables.append(node_outcome)
+    print(node_outcome)
+    for node_ele in top_factors_list:
+        node_sin = {}
+        node_sin['id'] = node_ele
+        node_sin['type'] = 1
+        nodes_variables.append(node_sin)
+    print(nodes_variables)
+    print('因果图的节点为：\n', nodes_variables)
+
+
+    return JsonResponse({'outcome': outcomes,
+                         'nodes_list_all': nodes_list_all,
+                         'nodes': nodes_variables, 'links': links})
+
 
 def select_factor(request):
     # 数据文件的路径，需要为excel表格;Django读取失败时，需 install openpyxl，Excel文件路径前的r是为了Windows转义用
@@ -60,14 +158,13 @@ def select_factor(request):
     # if CovariantNum == 5 and outcome == "death":
     #     return HttpResponse('数据渲染成功')
 
-    # 以列表形式告诉程序哪些变量是结局变量，其他变量均视为因素变量
-    results = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-               'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
     dataset = pd.read_excel(filename, index_col=0)
+
     labels = list(dataset.columns.values)
     num_results = len(results)
     factors = list(set(labels) - set(results))
     num_factors = len(factors)
+
     # if num_factors < CovariantNum:
     #     print("指定的选出因素变量的数目大于所有的因素变量数目")
     #     sys.exit(0)
@@ -83,6 +180,7 @@ def select_factor(request):
         est = sm.OLS(y, X2)
         est2 = est.fit()
         top_factors[factor] = abs(est2.pvalues[1])
+
     top_factors = sorted(top_factors.items(), key=lambda x: x[1])
     top_factors = dict(top_factors)
     top_factors_list = list(top_factors)[:int(CovariantNum)]
