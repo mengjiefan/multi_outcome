@@ -72,6 +72,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import bus from "../componentsInteraction/bus.js";
+import { node } from "dagre-d3/lib/intersect/index.js";
 export default {
   name: "CausalAnalysisHistory",
   data() {
@@ -202,12 +203,12 @@ export default {
               linksList: response.data.linksList,
             })
           );
+          this.routeToGraph();
         },
         (error) => {
           console.log("请求失败了", error.message);
         }
       );
-      this.routeToGraph();
     },
     routeToGraph() {
       this.$router.push({
@@ -224,36 +225,83 @@ export default {
     },
     saveToTable() {
       console.log("saveMode");
-      let newRow = JSON.parse(localStorage.getItem("GET_JSON_RESULT"));
-      const outcomeId = newRow.nodesList[0].id;
-      const allnodesList = newRow.nodesList;
-      if (newRow) {
-        newRow.nodesList.splice(0, 1);
-        console.log({
-          CovariantNum: newRow.CovariantNum,
-          outcome: outcomeId,
-          Variables: newRow.nodesList.map((row) => {
-            return row.id;
-          }),
-        });
-        this.tableData.push({
-          CovariantNum: newRow.CovariantNum,
-          outcome: outcomeId,
-          Variables: newRow.nodesList.map((row) => {
-            return row.id;
-          }),
-          nodes: allnodesList.map((row) => {
-            return row.id;
-          }),
-          links: newRow.linksList,
-        });
-      }
+      const newRow = JSON.parse(localStorage.getItem("GET_JSON_RESULT"));
+      this.getDifferentRows(newRow.nodesList, newRow.linksList);
       this.$router.push({
         path: this.$route.path,
       });
     },
+    getDifferentRows(nodesList, linksList) {
+      console.log("split", nodesList, linksList);
+      let outcomes = nodesList.filter((node) => node.type === 0);
+      outcomes = outcomes.map((outcome) => {
+        return outcome.id;
+      });
+      outcomes.forEach((outcome) => {
+        let rowNodes = [];
+        let nextNodes = [];
+        rowNodes.push({
+          id: outcome,
+          type: 0,
+        });
+        nextNodes.push(outcome);
+        let rowLinks = [];
 
-    //...mapMutations({ GET_JSON_RESULT: "GET_JSON_RESULT" }),
+        let flag = false;
+        while (!flag) {
+          flag = true;
+          linksList.forEach((link) => {
+            if (nextNodes.includes(link.source)) {
+              if (
+                !outcomes.includes(link.target) &&
+                !nextNodes.includes(link.target)
+              ) {
+                nextNodes.push(link.target);
+                rowNodes.push({
+                  id: link.target,
+                  type: 1,
+                });
+                flag = false;
+              }
+            } else if (nextNodes.includes(link.target)) {
+              if (
+                !outcomes.includes(link.source) &&
+                !nextNodes.includes(link.source)
+              ) {
+                nextNodes.push(link.source);
+                rowNodes.push({
+                  id: link.source,
+                  type: 1,
+                });
+                flag = false;
+              }
+            }
+          });
+        }
+        linksList.forEach((link) => {
+          if (
+            nextNodes.includes(link.source) &&
+            nextNodes.includes(link.target)
+          ) {
+            rowLinks.push(link);
+          }
+        });
+        nextNodes.splice(0, 1);
+        this.tableData.push({
+          CovariantNum: nextNodes.length,
+          outcome: outcome,
+          Variables: nextNodes,
+          nodes: rowNodes.map((node) => {
+            return node.id;
+          }),
+          links: rowLinks,
+          originData: {
+            nodesList: rowNodes,
+            linksList: rowLinks,
+          },
+        });
+      });
+    },
   },
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {

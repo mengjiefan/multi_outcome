@@ -29,14 +29,29 @@
         class="draw-directed-button"
         :disabled="countingGraph"
       >
-        Show the Directed Graph
+        Plot the nodes selected
       </el-button>
-      <el-button @click="saveToTable" class="save-button"
-        >Save to Table</el-button
-      >
+      <div class="hint">
+        <span>Note: </span>Modifying Nodes will affect previous changes to
+        edges; Re-layout is only possible after removing edges
+      </div>
     </div>
     <hr />
     <div class="drawing-canvas">
+      <div class="drawing-buttons">
+        <el-button @click="saveToTable" type="success" size="small" round
+          >Save to Table</el-button
+        >
+        <el-button
+          @click="truelyDelete()"
+          type="success"
+          round
+          size="small"
+          :disabled="hasNoHidden"
+        >
+          Relayout
+        </el-button>
+      </div>
       <svg class="graph-svg"><g /></svg>
     </div>
     <!-- 缓存一个路由组件 -->
@@ -79,11 +94,16 @@ export default {
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
+      hasNoHidden: ref(true),
+      multipleSearchValue: ref({
+        nodesList: [],
+        linksList: [],
+      }),
     };
   },
-  mounted() {},
   methods: {
     saveToTable() {
+      this.saveData();
       this.$router.push({
         path: this.$route.path,
         query: {
@@ -91,10 +111,19 @@ export default {
         },
       });
     },
+    truelyDelete() {
+      console.log("delete edge");
+      let linksList = this.multipleSearchValue.linksList.filter(
+        (link) => !link.hidden
+      );
+      this.multipleSearchValue.linksList = linksList;
+      this.hasNoHidden = true;
+      this.saveData();
+      this.drawGraph();
+    },
     drawGraph() {
       var data = this.multipleSearchValue;
       // {
-      console.log(data);
       var g = new dagreD3.graphlib.Graph().setGraph({});
 
       // Test with our 3 graph graph(s)
@@ -113,12 +142,20 @@ export default {
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
         var edgeColor = "stroke: " + cmap[0];
-
-        g.setEdge(edge.source, edge.target, {
-          style: edgeColor + ";" + styleString + ";fill: transparent",
-          curve: d3.curveBasis,
-          label: edge.value.toString(),
-        });
+        if (edge.hidden) {
+          g.setEdge(edge.source, edge.target, {
+            style:
+              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
+            curve: d3.curveBasis,
+            label: edge.value.toString(),
+          });
+        } else {
+          g.setEdge(edge.source, edge.target, {
+            style: edgeColor + ";" + styleString + ";fill: transparent",
+            curve: d3.curveBasis,
+            label: edge.value.toString(),
+          });
+        }
       });
 
       // Set some general styles
@@ -152,19 +189,23 @@ export default {
       inner
         .selectAll("g.node")
         .on("mouseover", (v) => {
-          const hoverName = v.fromElement.__data__;
           v.fromElement.setAttribute("id", "hover-node");
-          if (hoverName) {
-            this.tipVisible('<div class="node-name">' + hoverName + "</div>", {
-              pageX: v.pageX,
-              pageY: v.pageY,
-            });
-            let nowNode = g.node(hoverName);
-          }
         })
         .on("mouseout", (v) => {
-          this.tipHidden();
           v.fromElement.setAttribute("id", "");
+        })
+        .on("click", (d, id) => {
+          if (!this.ifOutCome(id)) {
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete node " +
+              id +
+              "</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              _this.tip2WatchBlur();
+            }, 0);
+          }
         });
 
       // add hover effect & click hint to lines
@@ -176,29 +217,32 @@ export default {
           allpathes.style("opacity", "1");
         })
         .on("mouseover", function (d, id) {
-          allpathes.style("opacity", ".2"); /* set all edges opacity 0.2 */
-          d3.select(this).style("opacity", "1");
+          if (_this.isVisible(id)) {
+            allpathes.style("opacity", ".2"); /* set all edges opacity 0.2 */
+            d3.select(this).style("opacity", "1");
+          }
         })
         .on("click", function (d, id) {
-          //console.log(d, id, "click");
-          let hintHtml =
-            "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-            <div class='operate-menu'>delete edge<br/>(" +
-            id.v +
-            ", " +
-            id.w +
-            ")</div>";
-          _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-          setTimeout(() => {
-            _this.tipWatchBlur();
-          }, 0);
+          if (_this.isVisible(id)) {
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete edge<br/>(" +
+              id.v +
+              ", " +
+              id.w +
+              ")</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              _this.tipWatchBlur();
+            }, 0);
+          }
         });
 
       // Center the graph
-      var initialScale = 0.75;
+      var initialScale = 1;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity.translate(100, 200).scale(initialScale)
+        d3.zoomIdentity.translate(300, 200).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
@@ -213,7 +257,29 @@ export default {
       };
       this.loadingInstance = Loading.service(options);
     },
+    ifOutCome(node) {
+      let allOut = [];
+      this.multipleSearchValue.nodesList.map((row) => {
+        if (row.type === 0) allOut.push(row.id);
+      });
+      if (allOut.includes(node)) return true;
+      else return false;
+    },
+    isVisible(path) {
+      let link = this.multipleSearchValue.linksList.filter(
+        (item) => item.source === path.v && item.target === path.w
+      );
+      if (link[0].hidden === true) return false;
+      else return true;
+    },
+    saveData() {
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify(this.multipleSearchValue)
+      );
+    },
     getLinks() {
+      this.hasNoHidden = true;
       let newFac = [];
       let newOut = [];
       this.multipleSearchValue.nodesList.forEach((row) => {
@@ -238,18 +304,15 @@ export default {
         .then((response) => {
           console.log("new links", response.data);
           this.multipleSearchValue = {
-            CovariantNum: newFac.length,
             linksList: response.data.links,
             nodesList: response.data.nodes,
           };
 
           this.loadingInstance.close();
           this.loadingInstance = null;
+
+          this.saveData();
           this.drawGraph();
-          localStorage.setItem(
-            "GET_JSON_RESULT",
-            JSON.stringify(this.multipleSearchValue)
-          );
           this.countingGraph = false;
         })
         .catch((error) => {
@@ -259,6 +322,9 @@ export default {
     //add document click listener
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
+    },
+    tip2WatchBlur() {
+      document.addEventListener("click", this.listener2);
     },
     handleCheckAllChange(val) {
       if (val === true) {
@@ -303,13 +369,11 @@ export default {
       } else if (!value && ifIndex >= 0) {
         this.multipleSearchValue.nodesList.splice(ifIndex, 1);
       }
-      console.log(this.multipleSearchValue.nodesList);
     },
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
       let clickDOM = e.target.className;
-      //console.log(clickDOM, "click tooltip?");
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -324,17 +388,65 @@ export default {
         this.deleteEdge(text);
       }
     },
+    listener2(e) {
+      let _this = this;
+      let clickDOM = e.target.className;
+      if (
+        clickDOM !== "operate-menu" &&
+        clickDOM !== "hint-menu" &&
+        clickDOM !== "hint-list" &&
+        clickDOM !== "tooltip" &&
+        clickDOM !== "operate-header"
+      ) {
+        _this.tipHidden();
+        document.removeEventListener("click", _this.listener);
+      } else if (clickDOM === "operate-menu") {
+        let text = e.target.innerText;
+        this.deleteNode(text);
+      }
+    },
+    deleteNode(node) {
+      console.log("delete node");
+
+      let nodeName = node.split(" ")[2];
+      let nodeList = this.multipleSearchValue.nodesList.filter(
+        (node) => node.id !== nodeName
+      );
+      this.multipleSearchValue.nodesList = nodeList;
+      let index = this.checkedVariables.indexOf(nodeName);
+      this.checkedVariables.splice(index, 1);
+      this.tipHidden();
+      this.getLinks();
+      /*
+      let linkList = this.multipleSearchValue.linksList.filter(
+        (link) => link.source !== nodeName && link.target !== nodeName
+      );
+      this.multipleSearchValue = {
+        nodesList: nodeList,
+        linksList: linkList,
+        CovariantNum: this.multipleSearchValue.CovariantNum - 1,
+      };
+
+      this.drawGraph();
+      */
+    },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
-      console.log(nodes[0], "from");
-      console.log(nodes[1], "to");
+
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (row.source === nodes[0] && row.target === nodes[1]) {
           return true;
         } else return false;
       });
       if (index > -1) {
-        this.multipleSearchValue.linksList.splice(index, 1);
+        this.multipleSearchValue.linksList[index] = {
+          source: this.multipleSearchValue.linksList[index].source,
+          target: this.multipleSearchValue.linksList[index].target,
+          value: this.multipleSearchValue.linksList[index].value,
+          hidden: true,
+        };
+        this.saveData();
+        this.hasNoHidden = false;
         this.tipHidden();
         this.drawGraph();
       }
@@ -351,6 +463,7 @@ export default {
     // display node tooltip
     tipVisible(textContent, event) {
       document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
         .duration(200)
@@ -364,6 +477,7 @@ export default {
     //display line tooltip
     tip2Visible(textContent, event) {
       document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
         .duration(100)
@@ -374,7 +488,6 @@ export default {
         .style("left", `${event.pageX}px`)
         .style("top", `${event.pageY}px`);
     },
-
     // tooltip隐藏
     tipHidden() {
       this.tooltip
@@ -384,6 +497,7 @@ export default {
         .style("display", "none");
     },
   },
+
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
@@ -393,27 +507,14 @@ export default {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
         return node.id;
       });
+      let hiddenNodes = this.multipleSearchValue.linksList.filter(
+        (link) => link.hidden
+      );
+      if (hiddenNodes.length > 0) this.hasNoHidden = false;
       this.drawGraph();
     }
   },
 
-  // methods: {
-  //   // getMultiplegraph() {
-  //   //   console.log('FDG中接收到的表格数据为：',this.$store.state.multipleSearchValue[0])
-  //   // },
-
-  // },
-
-  /*
-  无关联的组件无法通过bus方法跨组件传递数据
-  // 到站接收数据，在接收组件的mounted中接收
-  mounted() {
-    bus.$on("getOnBusLinksNodes", (val) => {
-      this.value = val;
-      console.log("接收到的比较结局数据为：" + val)
-    });
-  },
-  */
 };
 </script>
 
@@ -521,21 +622,40 @@ hr {
   border-radius: 4px;
   padding: 8px 16px 8px 16px;
 }
+.hint {
+  font-size: 14px;
+  margin-top: 16px;
+}
+.hint span {
+  color: red;
+}
+.hint::before {
+  content: "* ";
+  color: red;
+}
 .draw-directed-button:hover {
-  box-shadow: 0 0 3px 1px #cbcbcb;
+  box-shadow: 0 0 3px 1px #e8e8e8;
   transition-duration: 0.1s;
 }
 .draw-directed-button:active {
   background-color: #f77;
   color: white;
 }
+.save-button:hover {
+  box-shadow: 0 0 3px 1px #e8e8e8;
+  transition-duration: 0.1s;
+}
 .drawing-canvas {
   flex: 1;
+}
+.drawing-buttons {
+  height: 10;
+  padding: 16px;
 }
 .graph-svg {
   width: 100%;
   display: flex;
-  height: 100%;
+  height: 90%;
 }
 .graph-main-title {
   font-size: 20px;
