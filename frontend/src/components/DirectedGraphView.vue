@@ -24,10 +24,16 @@
         >
       </el-checkbox-group>
       <br />
-      <button @click="getLinks" class="draw-directed-button">
+      <el-button
+        @click="getLinks"
+        class="draw-directed-button"
+        :disabled="countingGraph"
+      >
         Show the Directed Graph
-      </button>
-      <button @click="saveToTable" class="save-button">Save to Table</button>
+      </el-button>
+      <el-button @click="saveToTable" class="save-button"
+        >Save to Table</el-button
+      >
     </div>
     <hr />
     <div class="drawing-canvas">
@@ -44,6 +50,7 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
+import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 
 var cmap = [
@@ -66,6 +73,8 @@ export default {
   },
   data() {
     return {
+      loadingInstance: ref(null),
+      countingGraph: ref(false),
       tooltip: null,
       checkAll: ref(false),
       VariablesOptions,
@@ -121,7 +130,9 @@ export default {
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
-
+      if (this.tooltip) {
+        this.tipHidden();
+      }
       this.tooltip = this.createTooltip();
 
       // Set up zoom support
@@ -194,6 +205,14 @@ export default {
 
       return data;
     },
+    showLoading() {
+      const options = {
+        target: document.getElementsByClassName("drawing-canvas")[0],
+        background: "rgba(255, 255, 255, 0.5)",
+        customClass: "counting-anime",
+      };
+      this.loadingInstance = Loading.service(options);
+    },
     getLinks() {
       let newFac = [];
       let newOut = [];
@@ -203,6 +222,8 @@ export default {
       this.multipleSearchValue.nodesList.map((row) => {
         if (row.type === 0) newOut.push(row.id);
       });
+      this.countingGraph = true;
+      this.showLoading();
       axios({
         //请求类型
         method: "GET",
@@ -215,14 +236,21 @@ export default {
         },
       })
         .then((response) => {
-          
           console.log("new links", response.data);
           this.multipleSearchValue = {
+            CovariantNum: newFac.length,
             linksList: response.data.links,
             nodesList: response.data.nodes,
           };
 
+          this.loadingInstance.close();
+          this.loadingInstance = null;
           this.drawGraph();
+          localStorage.setItem(
+            "GET_JSON_RESULT",
+            JSON.stringify(this.multipleSearchValue)
+          );
+          this.countingGraph = false;
         })
         .catch((error) => {
           console.log("请求失败了", error.message);
@@ -275,7 +303,7 @@ export default {
       } else if (!value && ifIndex >= 0) {
         this.multipleSearchValue.nodesList.splice(ifIndex, 1);
       }
-      console.log(this.multipleSearchValue.nodesList)
+      console.log(this.multipleSearchValue.nodesList);
     },
     //document click listener => to close line tooltip
     listener(e) {
@@ -360,7 +388,7 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
-    console.log(this.multipleSearchValue);
+    console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
         return node.id;
@@ -465,7 +493,6 @@ hr {
 </style>
 <style scoped>
 #DirectedGraph {
-  max-width: 1300px;
   flex: 3;
   display: flex;
   flex-direction: column;
@@ -520,5 +547,12 @@ hr {
   font-size: 18px;
   font-weight: bold;
   line-height: 32px;
+}
+</style>
+<style>
+.counting-anime {
+  position: absolute !important;
+  top: 0;
+  height: 100%;
 }
 </style>

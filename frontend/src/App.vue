@@ -3,7 +3,9 @@
     <AppHeader></AppHeader>
     <div class="content">
       <AppNavbar></AppNavbar>
-      <router-view></router-view>
+      <div class="main-part">
+        <router-view></router-view>
+      </div>
     </div>
   </div>
 </template>
@@ -44,11 +46,13 @@ body {
   background-color: #cff7f7;
 }
 .content {
-  width: 100%;
+  width: 100vw;
   display: flex;
   height: 92vh;
 }
+
+.main-part {
+  flex: 1;
+}
 /* 左侧样式 */
-
-
 </style>

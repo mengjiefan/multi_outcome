@@ -19,7 +19,6 @@ export default {
 
 <style scoped>
 .blank-content {
-  max-width: 1300px;
   flex: 3;
 }
 </style>
