@@ -85,7 +85,6 @@
 import axios from "axios";
 import { ref } from "vue";
 import bus from "../componentsInteraction/bus.js";
-import { node } from "dagre-d3/lib/intersect/index.js";
 export default {
   name: "CausalAnalysisHistory",
   data() {

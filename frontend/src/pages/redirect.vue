@@ -1,10 +1,10 @@
 <template>
-  <div class="blank-content"></div>
+  <div class="blank-content">
+  </div>
 </template>
 
 <script>
 export default {
-  setup() {},
   mounted() {
     //刷新数据用的
     const path = "/AppMainPlot/" + this.$route.query.next;
