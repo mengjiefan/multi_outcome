@@ -67,6 +67,7 @@ import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
+import dagre from "dagre-d3/lib/dagre";
 
 var cmap = [
   "#1f77b4",
@@ -164,6 +165,8 @@ export default {
         node.rx = node.ry = 5;
         if (node.type == 0) node.style = "fill: #f77;";
       });
+      dagre.layout(g);
+      this.setNodes(g);
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
@@ -218,7 +221,7 @@ export default {
         })
         .on("mouseover", function (d, id) {
           if (_this.isVisible(id)) {
-            allpathes.style("opacity", ".2"); /* set all edges opacity 0.2 */
+            allpathes.style("opacity", ".2"); // set all edges opacity 0.2
             d3.select(this).style("opacity", "1");
           }
         })
@@ -248,6 +251,66 @@ export default {
       svg.attr("height", g.graph().height * initialScale + 40);
 
       return data;
+    },
+    setNodes(g) {
+      //get Layout data(not used yet)
+      let layout = [];
+      let y = [];
+      g.nodes().forEach((v) => {
+        let pos = g.node(v);
+        console.log(pos.y);
+        if (!y.includes(pos.y)) {
+          let i = 0;
+          for (; i < y.length; i++) {
+            if (pos.y < y[i]) {
+              if (i === 0) {
+                y.unshift(pos.y);
+                layout.unshift([
+                  {
+                    id: pos.label,
+                    x: pos.x,
+                    y: pos.y,
+                    type: pos.type,
+                  },
+                ]);
+                break;
+              } else {
+                y.splice(i - 1, 0, pos.y);
+                layout.splice(i, 0, [
+                  {
+                    id: pos.label,
+                    x: pos.x,
+                    y: pos.y,
+                    type: pos.type,
+                  },
+                ]);
+                break;
+              }
+            }
+          }
+          if (i == y.length) {
+            y.push(pos.y);
+            layout.push([
+              {
+                id: pos.label,
+                x: pos.x,
+                y: pos.y,
+                type: pos.type,
+              },
+            ]);
+          }
+        } else {
+          let index = y.indexOf(pos.y);
+          layout[index].push({
+            id: pos.label,
+            x: pos.x,
+            y: pos.y,
+            type: pos.type,
+          });
+        }
+      });
+      console.log(y);
+      console.log(layout);
     },
     showLoading() {
       const options = {
@@ -514,7 +577,6 @@ export default {
       this.drawGraph();
     }
   },
-
 };
 </script>
 

@@ -51,16 +51,29 @@
       </el-table>
     </div>
     <div class="drawing-command">
-      <el-select v-model="graphType" placeholder="请选择">
-        <el-option
-          v-for="item in graphOption"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
+      <div class="selections">
+        <el-select
+          v-model="graphType"
+          placeholder="Please select the graph type"
         >
-        </el-option>
-      </el-select>
-      <el-button type="primary" size="small" @click="btnSelect()"
+          <el-option
+            v-for="item in graphOption"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          >
+          </el-option>
+        </el-select>
+        <el-select v-model="selectType" placeholder="Please Choose the mode">
+          <el-option value="1" label="Reserve Configurations"></el-option>
+          <el-option value="2" label="Select Only the Nodes"></el-option>
+        </el-select>
+      </div>
+      <el-button
+        type="primary"
+        size="small"
+        :loading="loading"
+        @click="btnSelect()"
         >Plot the rows
       </el-button>
     </div>
@@ -105,11 +118,13 @@ export default {
         { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },
       ],
       graphType: ref("DirectedGraphView"),
+      selectType: ref("1"),
       multipleSelection: [],
       selection: [],
       search: "",
       selection_result: {},
       nodesList: [],
+      loading: ref(false),
       linksList: [],
     };
   },
@@ -162,12 +177,107 @@ export default {
     handleSelectionChange(selection) {
       console.log(selection);
     },
-
+    getLinks(outcomes, factors) {
+      this.loading = true;
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/getLink",
+        //参数
+        params: {
+          outcomes: outcomes.join(),
+          factors: factors.join(),
+        },
+      })
+        .then((response) => {
+          console.log("new links", response.data);
+          localStorage.setItem(
+            "GET_JSON_RESULT",
+            JSON.stringify({
+              nodesList: response.data.nodes,
+              linksList: response.data.links,
+            })
+          );
+          this.loading = false;
+          this.routeToGraph();
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
     // 通过公用数据库store进行数据管理
     btnSelect() {
-      let selection = this.$refs.multipleTable.selection;
-      console.log("选中的比较结局数据为：", selection);
-      console.log(typeof selection); //object类型数据
+      let selections = this.$refs.multipleTable.selection;
+      console.log("选中的比较结局数据为：", selections);
+      if (this.selectType === "2") {
+        let outcomes = [];
+        let factors = [];
+        selections.forEach((selection) => {
+          if (!outcomes.includes(selection.outcome)) {
+            outcomes.push(selection.outcome);
+          }
+          selection.Variables.forEach((variable) => {
+            if (!factors.includes(variable)) factors.push(variable);
+          });
+        });
+        this.getLinks(outcomes, factors);
+      } else {
+        let nodes = [];
+        let nodesList = [];
+        let linksList = [];
+        selections.forEach((selection) => {
+          if (!nodes.includes(selection.outcome)) {
+            nodes.push(selection.outcome);
+            nodesList.push({
+              id: selection.outcome,
+              type: 0,
+            });
+          }
+          selection.Variables.forEach((node) => {
+            if (!nodes.includes(node)) {
+              nodes.push(node);
+              nodesList.push({
+                id: node,
+                type: 1,
+              });
+            }
+          });
+          selection.links.forEach((link) => {
+            let index = linksList.findIndex((item) => {
+              if (item.target === link.target && item.source === link.source) {
+                return true;
+              } else if (
+                item.source === link.target &&
+                item.target === link.source
+              ) {
+                return true;
+              } else {
+                return false;
+              }
+            });
+            if (index < 0) {
+              linksList.push(link);
+            } else if (linksList[index].hidden && !link.hidden) {
+              linksList[index] = {
+                source: linksList[index].source,
+                target: linksList[index].target,
+                value: linksList[index].value,
+              };
+            }
+          });
+        });
+        localStorage.setItem(
+          "GET_JSON_RESULT",
+          JSON.stringify({
+            nodesList: nodesList,
+            linksList: linksList,
+          })
+        );
+        this.routeToGraph();
+      }
+      return;
+      /*
       axios({
         //请求类型
         method: "POST",
@@ -209,6 +319,7 @@ export default {
           console.log("请求失败了", error.message);
         }
       );
+      */
     },
     routeToGraph() {
       this.$router.push({
@@ -238,12 +349,8 @@ export default {
         return outcome.id;
       });
       outcomes.forEach((outcome) => {
-        let rowNodes = [];
         let nextNodes = [];
-        rowNodes.push({
-          id: outcome,
-          type: 0,
-        });
+
         nextNodes.push(outcome);
         let rowLinks = [];
 
@@ -257,10 +364,7 @@ export default {
                 !nextNodes.includes(link.target)
               ) {
                 nextNodes.push(link.target);
-                rowNodes.push({
-                  id: link.target,
-                  type: 1,
-                });
+
                 flag = false;
               }
             } else if (nextNodes.includes(link.target)) {
@@ -269,10 +373,7 @@ export default {
                 !nextNodes.includes(link.source)
               ) {
                 nextNodes.push(link.source);
-                rowNodes.push({
-                  id: link.source,
-                  type: 1,
-                });
+
                 flag = false;
               }
             }
@@ -291,14 +392,7 @@ export default {
           CovariantNum: nextNodes.length,
           outcome: outcome,
           Variables: nextNodes,
-          nodes: rowNodes.map((node) => {
-            return node.id;
-          }),
           links: rowLinks,
-          originData: {
-            nodesList: rowNodes,
-            linksList: rowLinks,
-          },
         });
       });
     },
@@ -337,9 +431,14 @@ export default {
 }
 .drawing-command {
   margin-top: 20px;
+  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+.selections {
   display: flex;
   gap: 16px;
-
-  padding-bottom: 20px;
 }
 </style>
