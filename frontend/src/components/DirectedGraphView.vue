@@ -52,7 +52,7 @@
           Relayout
         </el-button>
       </div>
-      <div class="graph-svg" id="paper"></div>
+      <svg class="graph-svg"><g /></svg>
     </div>
     <!-- 缓存一个路由组件 -->
   </div>
@@ -67,12 +67,7 @@ import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
-
-import dagre from "dagre";
-import graphlib from "graphlib";
-import * as joint from "jointjs";
-import "/node_modules/jointjs/dist/joint.css";
-import svgPanZoom from "svg-pan-zoom";
+import dagre from "dagre-d3/lib/dagre";
 
 var cmap = [
   "#1f77b4",
@@ -105,8 +100,6 @@ export default {
         nodesList: [],
         linksList: [],
       }),
-      graph: null,
-      paper: null,
     };
   },
   methods: {
@@ -127,149 +120,7 @@ export default {
       this.multipleSearchValue.linksList = linksList;
       this.hasNoHidden = true;
       this.saveData();
-      this.initGraph();
-    },
-    initGraph() {
-      let paper = document.getElementById("paper");
-      this.graph = new joint.dia.Graph();
-      this.paper = new joint.dia.Paper({
-        dagre: dagre,
-        graphlib: graphlib,
-        el: paper,
-        model: this.graph,
-        width: "100%",
-        height: "100%",
-        background: {},
-        /** 是否需要显示单元格以及单元格大小(px) */
-        // drawGrid: true,
-        // gridSize: 20,
-      });
-
-      this.createNode();
-      this.createLink();
-      this.randomLayout();
-      this.svgPanZoom();
-      this.paperEvent();
-    },
-    createNode() {
-      let nodes = this.multipleSearchValue.nodesList;
-      let nodeList = [];
-      nodes.forEach((ele) => {
-        let node = new joint.shapes.standard.Rectangle({
-          id: ele.id,
-          size: {
-            width: 200,
-            height: 50,
-          },
-          attrs: {
-            body: {
-              fill: ele.type === 0 ? "#f77" : "#000000",
-              stroke: "none",
-            },
-            label: {
-              text: ele.id,
-              fill: "#fff",
-            },
-          },
-        });
-
-        console.log(node);
-        /** 创建的节点对象放入list */
-        nodeList.push(node);
-      });
-      /** 通过graph的addCell方法向画布批量添加一个list */
-      this.graph.addCell(nodeList);
-    },
-    createLink() {
-      let links = this.multipleSearchValue.linksList;
-      let linkList = [];
-      links.forEach((ele) => {
-        let link = new joint.shapes.standard.Link({
-          source: {
-            id: ele.source,
-          },
-          target: {
-            id: ele.target,
-          },
-          attrs: {
-            line: {
-              connection: true,
-              stroke: "#1f77b4",
-              strokeWidth: ele.value * 10,
-              strokeDasharray: ele.value > 0 ? "none" : "4 1",
-            },
-          },
-        });
-        //link.connector("smooth");
-  
-        link.appendLabel({
-          attrs: {
-            text: {
-              text: ele.value,
-            },
-          },
-        });
-
-        /** 创建好的连线push进数组 */
-        linkList.push(link);
-      });
-      /** 通过graph.addCell向画布批量添加连线 */
-      this.graph.addCell(linkList);
-    },
-    randomLayout() {
-      joint.layout.DirectedGraph.layout(this.graph, {
-        dagre: dagre,
-        graphlib: graphlib,
-        /** 布局方向 TB | BT | LR | RL */
-        rankDir: "TB",
-        /** 表示列之间间隔的像素数 */
-        rankSep: 150,
-        /** 相同列中相邻接点之间的间隔的像素数 */
-        nodeSep: 80,
-        /** 同一列中相临边之间间隔的像素数 */
-        edgeSep: 50,
-      });
-    },
-    /** svgpanzoom 画布拖拽、缩放 */
-    svgPanZoom() {
-      /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
-      if (this.multipleSearchValue.nodesList.length) {
-        let svgZoom = svgPanZoom("#paper svg", {
-          /** 判断是否是节点的拖拽 */
-          beforePan: (oldPan, newPan) => {
-            if (this.currCell) {
-              return false;
-            }
-          },
-          /** 是否可拖拽 */
-          panEnabled: true,
-          /** 是否可缩放 */
-          zoomEnabled: true,
-          /** 双击放大 */
-          dblClickZoomEnabled: false,
-          /** 可缩小至的最小倍数 */
-          minZoom: 0.01,
-          /** 可放大至的最大倍数 */
-          maxZoom: 100,
-          /** 是否自适应画布尺寸 */
-          fit: true,
-          /** 图是否居中 */
-          center: true,
-        });
-        /** 手动设置缩放敏感度 */
-        svgZoom.setZoomScaleSensitivity(0.5);
-      }
-    },
-    /** 给paper添加事件 */
-    paperEvent() {
-      /** 确认点击的是节点 */
-      this.paper.on("element:pointerdown", (cellView, evt, x, y) => {
-        this.currCell = cellView;
-      });
-      /** 在鼠标抬起时恢复currCell为null */
-      this.paper.on("cell:pointerup blank:pointerup", (cellView, evt, x, y) => {
-        this.currCell = null;
-      });
+      this.drawGraph();
     },
     drawGraph() {
       var data = this.multipleSearchValue;
@@ -330,6 +181,7 @@ export default {
       dagre.layout(g);
       this.setNodes(g);
 
+   
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
@@ -411,6 +263,7 @@ export default {
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
+
     },
     setNodes(g) {
       //get Layout data(not used yet)
@@ -535,7 +388,7 @@ export default {
           this.loadingInstance = null;
 
           this.saveData();
-          this.initGraph();
+          this.drawGraph();
           this.countingGraph = false;
         })
         .catch((error) => {
@@ -671,7 +524,7 @@ export default {
         this.saveData();
         this.hasNoHidden = false;
         this.tipHidden();
-        this.initGraph();
+        this.drawGraph();
       }
     },
     // create tooltip but not show it
@@ -689,7 +542,7 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(200)
+        .duration(10)
         .style("opacity", 0.9)
         .style("display", "block");
       this.tooltip
@@ -703,7 +556,7 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(100)
+        .duration(10)
         .style("opacity", 0.95)
         .style("display", "block");
       this.tooltip
@@ -734,7 +587,7 @@ export default {
         (link) => link.hidden
       );
       if (hiddenNodes.length > 0) this.hasNoHidden = false;
-      this.initGraph();
+      this.drawGraph();
     }
   },
 };
@@ -766,7 +619,8 @@ export default {
   padding-right: 10px;
 }
 rect#hover-node {
-  stroke: rgb(169, 169, 169);
+  stroke: rgba(169, 169, 169, 0.562);
+  fill: #333;
   stroke-width: 1.5px;
   transition-duration: 0.2s;
 }
@@ -869,8 +723,6 @@ hr {
 }
 .drawing-canvas {
   flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 .drawing-buttons {
   height: 10;
@@ -880,7 +732,6 @@ hr {
   width: 100%;
   display: flex;
   height: 90%;
-  overflow: auto;
 }
 .graph-main-title {
   font-size: 20px;

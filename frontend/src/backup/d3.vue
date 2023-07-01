@@ -542,7 +542,7 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(200)
+        .duration(10)
         .style("opacity", 0.9)
         .style("display", "block");
       this.tooltip
@@ -556,7 +556,7 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(100)
+        .duration(10)
         .style("opacity", 0.95)
         .style("display", "block");
       this.tooltip
