@@ -68,6 +68,7 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
+import * as echarts from "echarts";
 
 var cmap = [
   "#1f77b4",
@@ -181,7 +182,6 @@ export default {
       dagre.layout(g);
       this.setNodes(g);
 
-   
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
@@ -223,6 +223,12 @@ export default {
               _this.tip2WatchBlur();
             }, 0);
           }
+        })
+        .attr("title", function (v) {
+          return v;
+        })
+        .each(function (v) {
+          $(this).tipsy({ gravity: "e", opacity: 1, html: true });
         });
 
       // add hover effect & click hint to lines
@@ -232,12 +238,17 @@ export default {
       allpathes
         .on("mouseout", function (d, id) {
           allpathes.style("opacity", "1");
+          _this.tipHidden();
         })
         .on("mouseover", function (d, id) {
           if (_this.isVisible(id)) {
             allpathes.style("opacity", ".2"); // set all edges opacity 0.2
             d3.select(this).style("opacity", "1");
           }
+          _this.tipVisible(id.v + "-" + id.w, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
         })
         .on("click", function (d, id) {
           if (_this.isVisible(id)) {
@@ -254,7 +265,6 @@ export default {
             }, 0);
           }
         });
-
       // Center the graph
       var initialScale = 1;
       svg.call(
@@ -263,7 +273,65 @@ export default {
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
+    },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
 
+      console.log(dom);
+      echarts.dispose(dom);
+      var myChart = echarts.init(dom);
+
+      let option = {
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+        },
+        yAxis: {
+          type: "value",
+        },
+        visualMap: {
+          type: "piecewise",
+          show: false,
+          dimension: 0,
+          seriesIndex: 0,
+          pieces: [
+            {
+              gt: 1,
+              lt: 3,
+              color: "rgba(0, 0, 180, 0.4)",
+            },
+            {
+              gt: 5,
+              lt: 7,
+              color: "rgba(0, 0, 180, 0.4)",
+            },
+          ],
+        },
+        series: [
+          {
+            type: "line",
+            smooth: 0.6,
+            symbol: "none",
+            lineStyle: {
+              color: "#5470C6",
+              width: 5,
+            },
+            markLine: {
+              symbol: ["none", "none"],
+              label: { show: false },
+              data: [{ xAxis: 1 }, { xAxis: 3 }, { xAxis: 5 }, { xAxis: 7 }],
+            },
+            areaStyle: {},
+            data: [
+              ["1", 200],
+              ["2", 560],
+              ["3", 750],
+              ["4", 580],
+            ],
+          },
+        ],
+      };
+      myChart.setOption(option);
     },
     setNodes(g) {
       //get Layout data(not used yet)
@@ -542,13 +610,18 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(10)
-        .style("opacity", 0.9)
+        .duration(0)
+        .style("opacity", 1)
         .style("display", "block");
       this.tooltip
-        .html(textContent)
+        .html(
+          '<div class="chart-box">'+textContent + '<div class="chart-hint ' + textContent + '"></div></div>'
+        )
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
+
+        this.plotChart(textContent);
+  
     },
     //display line tooltip
     tip2Visible(textContent, event) {
@@ -556,8 +629,8 @@ export default {
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(10)
-        .style("opacity", 0.95)
+        .duration(0)
+        .style("opacity", 1)
         .style("display", "block");
       this.tooltip
         .html(textContent)
@@ -750,5 +823,21 @@ hr {
   position: absolute !important;
   top: 0;
   height: 100%;
+}
+.chart-box {
+  display: flex;
+  padding: 8px;
+  flex-direction: column;
+  height: 180px;
+  justify-content: center;
+  
+  width: 300px;;
+  align-items: center;
+
+}
+.chart-hint {
+  display: flex;
+  height: 170px;
+  width: 284px
 }
 </style>

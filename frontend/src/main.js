@@ -18,7 +18,7 @@ import store from './store/index'
 // import 'babel-polyfill'
 import ElementUI from 'element-ui';             //全局引入element
 import 'element-ui/lib/theme-chalk/index.css';    //全局引入element的样式
-
+import * as echarts from "echarts";
 //关闭vue的生产提示
 Vue.config.productionTip = false
 
@@ -43,7 +43,7 @@ Vue.use(ElementUI);
 // axios.defaults.baseURL = 'http://127.0.0.1:8000/'
 
 
-
+Vue.prototype.$echarts = echarts
 new Vue({
 	el:'#app',
 	// router,

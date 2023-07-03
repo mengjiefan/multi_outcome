@@ -619,7 +619,8 @@ export default {
   padding-right: 10px;
 }
 rect#hover-node {
-  stroke: rgb(169, 169, 169);
+  stroke: rgba(169, 169, 169, 0.562);
+  fill: #333;
   stroke-width: 1.5px;
   transition-duration: 0.2s;
 }

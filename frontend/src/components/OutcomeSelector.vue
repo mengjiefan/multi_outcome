@@ -5,6 +5,8 @@
     <div class="outcome-input">
       <el-select
         v-model="value"
+        :disabled="loadingInstance!==null"
+        @change="reselect()"
         filterable
         placeholder="Please choose an outcome"
       >
@@ -62,7 +64,7 @@
         </el-option>
       </el-select>
 
-      <el-button size="small" type="primary" @click="saveSingleData"
+      <el-button size="small" type="primary" @click="saveSingleData" :disabled="!Variables_result"
         >Plot the list</el-button
       >
     </div>
@@ -139,15 +141,21 @@ export default {
   data() {
     return {
       loadingInstance: ref(null),
-      Variables_result: {},
+      Variables_result: ref(),
       Variables: VariablesOptions,
     };
   },
   methods: {
+    reselect(){
+      console.log('reselect');
+      this.Variables_result = null;
+      this.SelectedVariables = [];
+    },
     getOutcomeCovariant() {
       // var outcome = getElementById("outcomeSelector").value
       // alert(value)
       this.SelectedVariables = [];
+      this.Variables_result = null;
       var outcome = this.value;
       if (!outcome) {
         this.showErrorMsg("Please choose outcome!");
@@ -205,7 +213,7 @@ export default {
     saveSingleData() {
       let nodesList = [];
       if (!this.Variables_result.top_factors_list) {
-        this.showErrorMsg("Please choose outcome and the number!");
+        this.showErrorMsg("Please confirm first!");
         return;
       }
       nodesList.push({
