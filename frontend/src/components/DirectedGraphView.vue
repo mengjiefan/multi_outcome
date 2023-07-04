@@ -126,13 +126,13 @@ export default {
     },
     drawGraph() {
       var data = this.multipleSearchValue;
-      
+
       d3.select("svg").select("g").selectAll("*").remove();
       // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
-      
+
       // Test with our 3 graph graph(s)
       var states = data.nodesList;
 
@@ -151,7 +151,7 @@ export default {
           label: "",
           clusterLabelPos: "bottom",
           style:
-            "stroke-width:5;stroke:#ffd47f;fill: transparent;stroke-dasharray:4 4",
+            "stroke-width:5;stroke:red;fill: transparent;stroke-dasharray:4 4",
         });
         states.forEach(function (state) {
           if (state.type === -1) {
@@ -163,7 +163,7 @@ export default {
       edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
-        var edgeColor = "stroke: " + cmap[0];
+        var edgeColor = "stroke: " + cmap[edge.type % 10];
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -654,7 +654,9 @@ export default {
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
 
-      this.plotChart(textContent);
+      setTimeout(() => {
+        this.plotChart(textContent);
+      }, 100);
     },
     //display delete-menu tooltip
     tip2Visible(textContent, event) {

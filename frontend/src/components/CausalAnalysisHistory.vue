@@ -85,6 +85,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import bus from "../componentsInteraction/bus.js";
+import { node } from "dagre-d3/lib/intersect/index.js";
 export default {
   name: "CausalAnalysisHistory",
   data() {
@@ -250,6 +251,7 @@ export default {
             }
           });
           selection.links.forEach((link) => {
+            link["type"] = outcomeIndex;
             let index = linksList.findIndex((item) => {
               if (item.target === link.target && item.source === link.source) {
                 return true;
@@ -263,15 +265,26 @@ export default {
               }
             });
             if (index < 0) {
+              link;
               linksList.push(link);
             } else if (linksList[index].hidden && !link.hidden) {
               linksList[index] = {
                 source: linksList[index].source,
                 target: linksList[index].target,
                 value: linksList[index].value,
+                type: outcomeIndex,
               };
             }
           });
+        });
+        linksList.forEach((link) => {
+          if (outcomeIndex === 1) {
+            link.type = 0;
+          } else {
+            let stype = nodesList[nodes.indexOf(link.source)].type;
+            let ttype = nodesList[nodes.indexOf(link.target)].type;
+            if (stype < 0 && ttype < 0) link.type = 0;
+          }
         });
         localStorage.setItem(
           "GET_JSON_RESULT",
@@ -407,7 +420,7 @@ export default {
   },
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
-    this.tableData = JSON.parse(localStorage.getItem("tableData")) ;
+    this.tableData = JSON.parse(localStorage.getItem("tableData"));
     if (!this.tableData) this.tableData = [];
     console.log(this.tableData);
   },
