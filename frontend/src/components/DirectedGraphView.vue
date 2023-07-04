@@ -93,6 +93,7 @@ export default {
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
+      tooltip2: null,
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
@@ -187,13 +188,17 @@ export default {
       if (this.tooltip) {
         this.tipHidden();
       }
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
       this.tooltip = this.createTooltip();
-
+      this.tooltip2 = this.createTooltip();
       // Set up zoom support
       let that = this;
       var zoom = d3.zoom().on("zoom", function (event) {
         inner.attr("transform", event.transform);
         that.tipHidden();
+        that.tip2Hidden();
       });
       svg.call(zoom);
 
@@ -277,7 +282,6 @@ export default {
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
 
-      console.log(dom);
       echarts.dispose(dom);
       var myChart = echarts.init(dom);
 
@@ -466,9 +470,11 @@ export default {
     //add document click listener
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
+      console.log("listener");
     },
     tip2WatchBlur() {
       document.addEventListener("click", this.listener2);
+      console.log("listener");
     },
     handleCheckAllChange(val) {
       if (val === true) {
@@ -518,6 +524,7 @@ export default {
     listener(e) {
       let _this = this;
       let clickDOM = e.target.className;
+      _this.tip2Hidden();
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -525,7 +532,6 @@ export default {
         clickDOM !== "tooltip" &&
         clickDOM !== "operate-header"
       ) {
-        _this.tipHidden();
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
@@ -535,6 +541,7 @@ export default {
     listener2(e) {
       let _this = this;
       let clickDOM = e.target.className;
+      _this.tip2Hidden();
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -542,8 +549,7 @@ export default {
         clickDOM !== "tooltip" &&
         clickDOM !== "operate-header"
       ) {
-        _this.tipHidden();
-        document.removeEventListener("click", _this.listener);
+        document.removeEventListener("click", _this.listener2);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         this.deleteNode(text);
@@ -591,7 +597,7 @@ export default {
         };
         this.saveData();
         this.hasNoHidden = false;
-        this.tipHidden();
+        this.tip2Hidden();
         this.drawGraph();
       }
     },
@@ -604,7 +610,7 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
-    // display node tooltip
+    // display hover-line tooltip
     tipVisible(textContent, event) {
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
@@ -615,24 +621,27 @@ export default {
         .style("display", "block");
       this.tooltip
         .html(
-          '<div class="chart-box">'+textContent + '<div class="chart-hint ' + textContent + '"></div></div>'
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
         )
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
 
-        this.plotChart(textContent);
-  
+      this.plotChart(textContent);
     },
-    //display line tooltip
+    //display delete-menu tooltip
     tip2Visible(textContent, event) {
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
-      this.tooltip
+      this.tooltip2
         .transition()
         .duration(0)
         .style("opacity", 1)
         .style("display", "block");
-      this.tooltip
+      this.tooltip2
         .html(textContent)
         .style("left", `${event.pageX}px`)
         .style("top", `${event.pageY}px`);
@@ -640,6 +649,13 @@ export default {
     // tooltip隐藏
     tipHidden() {
       this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    tip2Hidden() {
+      this.tooltip2
         .transition()
         .duration(100)
         .style("opacity", 0)
@@ -830,14 +846,13 @@ hr {
   flex-direction: column;
   height: 180px;
   justify-content: center;
-  
-  width: 300px;;
-  align-items: center;
 
+  width: 300px;
+  align-items: center;
 }
 .chart-hint {
   display: flex;
   height: 170px;
-  width: 284px
+  width: 284px;
 }
 </style>
