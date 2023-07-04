@@ -52,7 +52,15 @@
           Relayout
         </el-button>
       </div>
-      <svg class="graph-svg"><g /></svg>
+      <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
+      <div v-else class="group-graphs">
+        <svg class="sum-svg"><g /></svg>
+        <div class="son-svg">
+          <div v-for="index in sonNum" :key="index">
+            <div :id="'paper' + index"></div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- 缓存一个路由组件 -->
   </div>
@@ -68,7 +76,8 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
-import * as echarts from "echarts";
+import { createChart } from "@/plugin/charts";
+import { drawSonCharts } from "@/plugin/sonGraph";
 
 var cmap = [
   "#1f77b4",
@@ -90,10 +99,13 @@ export default {
   },
   data() {
     return {
+      ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
+      nowLine: ref(),
       tooltip2: null,
+      sonNum: ref(1),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
@@ -102,6 +114,7 @@ export default {
         nodesList: [],
         linksList: [],
       }),
+      finalPos: ref([]),
     };
   },
   methods: {
@@ -124,28 +137,25 @@ export default {
       this.saveData();
       this.drawGraph();
     },
-    drawGraph() {
+    setGraph() {
       var data = this.multipleSearchValue;
-
+      var states = data.nodesList;
       d3.select("svg").select("g").selectAll("*").remove();
       // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
 
-      // Test with our 3 graph graph(s)
-      var states = data.nodesList;
-
       // Automatically label each of the nodes
-      let ifGroup = false;
       states.forEach(function (state) {
-        if (state.type === -1) ifGroup = true;
-        g.setNode(state.id, {
+        let node = {
           label: state.id,
           type: state.type,
-        });
+        };
+        if (node.type === 0) node["index"] = state.index;
+        g.setNode(state.id, node);
       });
-      if (ifGroup) {
+      if (this.ifGroup) {
         console.log("!");
         g.setNode("group", {
           label: "",
@@ -161,9 +171,13 @@ export default {
       }
       var edges = data.linksList;
       edges.forEach(function (edge) {
+        if (!edge.type) {
+          edge.type = 0;
+        }
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
-        var edgeColor = "stroke: " + cmap[edge.type % 10];
+        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        var edgeColor = "stroke: " + cmap[0];
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -197,7 +211,7 @@ export default {
         var node = g.node(v);
         node.rx = node.ry = 5;
         if (node.type == 0) node.style = "fill: #f77;";
-        else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
+        //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
       this.setNodes(g);
@@ -223,13 +237,8 @@ export default {
 
       // Create the renderer
       var render = new dagreD3.render();
-      try {
-        // Run the renderer. This is what draws the final graph.
-        render(inner, g);
-      } catch (err) {
-        console.log(err);
-        console.log("11", ifGroup);
-      }
+      // Run the renderer. This is what draws the final graph.
+      render(inner, g);
       //add hover effect & hover hint to nodes
       inner
         .selectAll("g.node")
@@ -280,13 +289,14 @@ export default {
         })
         .on("click", function (d, id) {
           if (_this.isVisible(id)) {
+            _this.nowLine = id;
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
             <div class='operate-menu'>Delete edge<br/>(" +
               id.v +
               ", " +
               id.w +
-              ")</div>";
+              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
               _this.tipWatchBlur();
@@ -301,124 +311,98 @@ export default {
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
+      if (this.ifGroup) {
+        this.drawSonGraphs();
+      }
+    },
+    drawGraph() {
+      this.ifGroup = false;
+      let that = this;
+      this.sonNum = 0;
+      this.multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === -1) that.ifGroup = true;
+        else if (state.type === 0) that.sonNum++;
+      });
+      console.log(this.ifGroup);
+      setTimeout(() => {
+        this.setGraph();
+      }, 0);
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
-
-      echarts.dispose(dom);
-      var myChart = echarts.init(dom);
-
-      let option = {
-        xAxis: {
-          type: "category",
-          boundaryGap: false,
-        },
-        yAxis: {
-          type: "value",
-        },
-        visualMap: {
-          type: "piecewise",
-          show: false,
-          dimension: 0,
-          seriesIndex: 0,
-          pieces: [
-            {
-              gt: 1,
-              lt: 3,
-              color: "rgba(0, 0, 180, 0.4)",
-            },
-            {
-              gt: 5,
-              lt: 7,
-              color: "rgba(0, 0, 180, 0.4)",
-            },
-          ],
-        },
-        series: [
-          {
-            type: "line",
-            smooth: 0.6,
-            symbol: "none",
-            lineStyle: {
-              color: "#5470C6",
-              width: 5,
-            },
-            markLine: {
-              symbol: ["none", "none"],
-              label: { show: false },
-              data: [{ xAxis: 1 }, { xAxis: 3 }, { xAxis: 5 }, { xAxis: 7 }],
-            },
-            areaStyle: {},
-            data: [
-              ["1", 200],
-              ["2", 560],
-              ["3", 750],
-              ["4", 580],
-            ],
-          },
-        ],
-      };
-      myChart.setOption(option);
+      createChart(dom, line);
     },
+
+    drawSonGraphs() {
+      for (let i = 1; i <= this.sonNum; i++) {
+        let dom = document.getElementById("paper" + i);
+        drawSonCharts(dom, this.finalPos[i].concat(this.finalPos[0]), this.multipleSearchValue.linksList);
+      }
+    },
+
     setNodes(g) {
       //get Layout data(not used yet)
-      let layout = [];
       let y = [];
+      let x = [];
       g.nodes().forEach((v) => {
         let pos = g.node(v);
-        console.log(pos.y);
+
         if (!y.includes(pos.y)) {
           let i = 0;
           for (; i < y.length; i++) {
             if (pos.y < y[i]) {
               if (i === 0) {
                 y.unshift(pos.y);
-                layout.unshift([
-                  {
-                    id: pos.label,
-                    x: pos.x,
-                    y: pos.y,
-                    type: pos.type,
-                  },
-                ]);
                 break;
               } else {
-                y.splice(i - 1, 0, pos.y);
-                layout.splice(i, 0, [
-                  {
-                    id: pos.label,
-                    x: pos.x,
-                    y: pos.y,
-                    type: pos.type,
-                  },
-                ]);
+                y.splice(i, 0, pos.y);
                 break;
               }
             }
           }
-          if (i == y.length) {
-            y.push(pos.y);
-            layout.push([
-              {
-                id: pos.label,
-                x: pos.x,
-                y: pos.y,
-                type: pos.type,
-              },
-            ]);
+          if (i == y.length) y.push(pos.y);
+        }
+        if (!x.includes(pos.x)) {
+          let i = 0;
+          for (; i < x.length; i++) {
+            if (pos.x < x[i]) {
+              if (i === 0) {
+                x.unshift(pos.x);
+                break;
+              } else {
+                x.splice(i, 0, pos.x);
+                break;
+              }
+            }
           }
-        } else {
-          let index = y.indexOf(pos.y);
-          layout[index].push({
-            id: pos.label,
-            x: pos.x,
-            y: pos.y,
-            type: pos.type,
-          });
+          if (i == x.length) x.push(pos.x);
         }
       });
-      console.log(y);
-      console.log(layout);
+      this.finalPos = [];
+      g.nodes().forEach((v) => {
+        let pos = g.node(v);
+        let newPos = {
+          id: pos.label,
+          x: x.indexOf(pos.x),
+          y: y.indexOf(pos.y),
+          type: pos.type,
+        };
+        if (pos.type === 0) {
+          console.log(pos);
+          while (this.finalPos.length < pos.index + 1) {
+            this.finalPos.push([]);
+          }
+          this.finalPos[pos.index].unshift(newPos);
+        } else if (pos.type > 0) {
+          while (this.finalPos.length < pos.type + 1) {
+            this.finalPos.push([]);
+          }
+          this.finalPos[pos.type].push(newPos);
+        } else if (pos.type) {
+          this.finalPos[0].push(newPos);
+        }
+      });
+      console.log(this.finalPos);
     },
     showLoading() {
       const options = {
@@ -559,7 +543,8 @@ export default {
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
-        this.deleteEdge(text);
+        if (text.includes("delete")) this.deleteEdge(text);
+        else reverseDirection();
       }
     },
     listener2(e) {
@@ -604,6 +589,7 @@ export default {
       this.drawGraph();
       */
     },
+    reverseDirection() {},
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
@@ -654,8 +640,13 @@ export default {
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
 
+      const _this = this;
       setTimeout(() => {
-        this.plotChart(textContent);
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
       }, 100);
     },
     //display delete-menu tooltip
@@ -840,6 +831,8 @@ hr {
 }
 .drawing-canvas {
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   flex: 1;
 }
 .drawing-buttons {
@@ -851,6 +844,25 @@ hr {
   display: flex;
   height: 90%;
 }
+.group-graphs {
+  width: 100%;
+  display: flex;
+  height: 90%;
+}
+.sum-svg {
+  width: 65%;
+  height: 100%;
+}
+.son-svg {
+  width: 35%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.son-svg div {
+  flex: 1;
+}
+
 .graph-main-title {
   font-size: 20px;
   margin-top: 20px;

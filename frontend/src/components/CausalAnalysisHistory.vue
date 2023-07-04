@@ -236,6 +236,7 @@ export default {
             nodesList.push({
               id: selection.outcome,
               type: 0,
+              index: outcomeIndex
             });
           }
           selection.Variables.forEach((node) => {
