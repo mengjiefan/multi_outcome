@@ -65,8 +65,8 @@
           </el-option>
         </el-select>
         <el-select v-model="selectType" placeholder="Please Choose the mode">
-          <el-option value="1" label="Reserve Configurations"></el-option>
-          <el-option value="2" label="Select Only the Nodes"></el-option>
+          <el-option value="1" label="Compare Different Rows"></el-option>
+          <el-option value="2" label="Merge All the Nodes"></el-option>
         </el-select>
       </div>
       <el-button
@@ -225,8 +225,12 @@ export default {
         let nodes = [];
         let nodesList = [];
         let linksList = [];
+        let outcomeIndex = 0;
         selections.forEach((selection) => {
+          let flag = false;
           if (!nodes.includes(selection.outcome)) {
+            flag = true;
+            outcomeIndex++;
             nodes.push(selection.outcome);
             nodesList.push({
               id: selection.outcome,
@@ -238,8 +242,11 @@ export default {
               nodes.push(node);
               nodesList.push({
                 id: node,
-                type: 1,
+                type: outcomeIndex,
               });
+            } else if (flag) {
+              let index = nodes.indexOf(node);
+              nodesList[index].type = -1;
             }
           });
           selection.links.forEach((link) => {
@@ -332,6 +339,7 @@ export default {
 
     deleteRow(index, rows) {
       rows.splice(index, 1);
+      localStorage.setItem("tableData", JSON.stringify(this.tableData));
     },
     saveToTable() {
       console.log("saveMode");
@@ -393,33 +401,15 @@ export default {
           Variables: nextNodes,
           links: rowLinks,
         });
+        localStorage.setItem("tableData", JSON.stringify(this.tableData));
       });
     },
   },
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
-    bus.$on("getOnBus", (val) => {
-      this.value = val;
-      console.log("接收到的传递的后台数据为：", val);
-      //重新生成需要的对象数组
-      this.tableData.push(val);
-      // 实现表格数据去重（定义unique函数）
-      function unique(arr) {
-        if (!Array.isArray(arr)) {
-          console.log("type error!");
-          return;
-        }
-        arr = arr.sort();
-        var array = [arr[0]];
-        for (var i = 1; i < arr.length; i++) {
-          if (arr[i] !== arr[i - 1]) {
-            array.push(arr[i]);
-          }
-        }
-        return array;
-      }
-      this.tableData = unique(this.tableData);
-    });
+    this.tableData = JSON.parse(localStorage.getItem("tableData")) ;
+    if (!this.tableData) this.tableData = [];
+    console.log(this.tableData);
   },
 };
 </script>

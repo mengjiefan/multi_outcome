@@ -126,21 +126,39 @@ export default {
     },
     drawGraph() {
       var data = this.multipleSearchValue;
+      
+      d3.select("svg").select("g").selectAll("*").remove();
       // {
-      var g = new dagreD3.graphlib.Graph().setGraph({
+      let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
+      
       // Test with our 3 graph graph(s)
       var states = data.nodesList;
 
       // Automatically label each of the nodes
+      let ifGroup = false;
       states.forEach(function (state) {
+        if (state.type === -1) ifGroup = true;
         g.setNode(state.id, {
           label: state.id,
           type: state.type,
         });
       });
-
+      if (ifGroup) {
+        console.log("!");
+        g.setNode("group", {
+          label: "",
+          clusterLabelPos: "bottom",
+          style:
+            "stroke-width:5;stroke:#ffd47f;fill: transparent;stroke-dasharray:4 4",
+        });
+        states.forEach(function (state) {
+          if (state.type === -1) {
+            g.setParent(state.id, "group");
+          }
+        });
+      }
       var edges = data.linksList;
       edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
@@ -179,6 +197,7 @@ export default {
         var node = g.node(v);
         node.rx = node.ry = 5;
         if (node.type == 0) node.style = "fill: #f77;";
+        else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
       this.setNodes(g);
@@ -204,9 +223,13 @@ export default {
 
       // Create the renderer
       var render = new dagreD3.render();
-
-      // Run the renderer. This is what draws the final graph.
-      render(inner, g);
+      try {
+        // Run the renderer. This is what draws the final graph.
+        render(inner, g);
+      } catch (err) {
+        console.log(err);
+        console.log("11", ifGroup);
+      }
       //add hover effect & hover hint to nodes
       inner
         .selectAll("g.node")
@@ -271,10 +294,10 @@ export default {
           }
         });
       // Center the graph
-      var initialScale = 1;
+      var initialScale = 0.75;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity.translate(300, 200).scale(initialScale)
+        d3.zoomIdentity.translate(100, 100).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
@@ -417,7 +440,7 @@ export default {
       let link = this.multipleSearchValue.linksList.filter(
         (item) => item.source === path.v && item.target === path.w
       );
-      if (link[0].hidden === true) return false;
+      if (link[0].hidden) return false;
       else return true;
     },
     saveData() {
@@ -431,13 +454,14 @@ export default {
       let newFac = [];
       let newOut = [];
       this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type === 1) newFac.push(row.id);
+        if (row.type !== 0) newFac.push(row.id);
       });
       this.multipleSearchValue.nodesList.map((row) => {
         if (row.type === 0) newOut.push(row.id);
       });
       this.countingGraph = true;
       this.showLoading();
+
       axios({
         //请求类型
         method: "GET",
@@ -464,7 +488,7 @@ export default {
           this.countingGraph = false;
         })
         .catch((error) => {
-          console.log("请求失败了", error.message);
+          console.log("请求失败了", error);
         });
     },
     //add document click listener
@@ -762,6 +786,8 @@ hr {
   flex: 3;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 .graph-info-header {
   padding: 16px;
@@ -811,6 +837,7 @@ hr {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
+  overflow: hidden;
   flex: 1;
 }
 .drawing-buttons {
