@@ -99,6 +99,7 @@ export default {
   },
   data() {
     return {
+      gap: ref({ xGap: 40, yGap: 45 }),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -214,7 +215,7 @@ export default {
         //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
-      this.setNodes(g);
+      if (this.ifGroup) this.setNodes(g);
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
@@ -336,7 +337,15 @@ export default {
     drawSonGraphs() {
       for (let i = 1; i <= this.sonNum; i++) {
         let dom = document.getElementById("paper" + i);
-        drawSonCharts(dom, this.finalPos[i].concat(this.finalPos[0]), this.multipleSearchValue.linksList);
+        drawSonCharts(
+          dom,
+          this.finalPos[i].concat(this.finalPos[0]),
+          this.multipleSearchValue.linksList.filter(link => {
+            return !link.hidden
+          }),
+          this.gap,
+          "paper"+i,
+        );
       }
     },
 
@@ -402,6 +411,12 @@ export default {
           this.finalPos[0].push(newPos);
         }
       });
+      if (x.length > 1) {
+        this.gap.xGap = 400/(x.length-1);
+      }
+      if(y.length>1) {
+        this.gap.yGap = 360/(y.length-1);
+      }
       console.log(this.finalPos);
     },
     showLoading() {
@@ -543,8 +558,8 @@ export default {
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
-        if (text.includes("delete")) this.deleteEdge(text);
-        else reverseDirection();
+        if (text.includes("Delete")) this.deleteEdge(text);
+        else this.reverseDirection();
       }
     },
     listener2(e) {
@@ -860,6 +875,7 @@ hr {
   flex-direction: column;
 }
 .son-svg div {
+  padding: 16px;
   flex: 1;
 }
 
