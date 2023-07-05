@@ -29,7 +29,8 @@ export default {
  <style>
 body {
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>
 <style scoped>

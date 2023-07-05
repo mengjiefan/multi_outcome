@@ -54,7 +54,12 @@
       </div>
       <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
       <div v-else class="group-graphs">
-        <svg class="sum-svg"><g /></svg>
+        <div class="sum-svg">
+          <div class="title">SuperGraph</div>
+          <svg>
+            <g />
+          </svg>
+        </div>
         <div class="son-svg">
           <div v-for="index in sonNum" :key="index">
             <div :id="'paper' + index"></div>
@@ -78,6 +83,7 @@ import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSonCharts } from "@/plugin/sonGraph";
+import { countPos, countSonPos } from "@/plugin/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -99,7 +105,6 @@ export default {
   },
   data() {
     return {
-      gap: ref({ xGap: 40, yGap: 45 }),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -150,7 +155,7 @@ export default {
       // Automatically label each of the nodes
       states.forEach(function (state) {
         let node = {
-          label: state.id,
+          label: "",
           type: state.type,
         };
         if (node.type === 0) node["index"] = state.index;
@@ -178,7 +183,7 @@ export default {
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
         //var edgeColor = "stroke: " + cmap[edge.type % 10];
-        var edgeColor = "stroke: " + cmap[0];
+        var edgeColor = "stroke: black";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -193,7 +198,7 @@ export default {
                 edgeColor +
                 ";" +
                 styleString +
-                ";fill: transparent;stroke-dasharray:4 1",
+                ";fill: transparent;stroke-dasharray:4 4",
               curve: d3.curveBasis,
               label: edge.value.toString(),
             });
@@ -206,17 +211,24 @@ export default {
           }
         }
       });
-
+      let that = this;
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 5;
+        node.rx = node.ry = 20;
+        node.width = 20;
+        node.height = 20;
         if (node.type == 0) node.style = "fill: #f77;";
+        else if (node.type < 0 || !that.ifGroup) {
+          node.style = "fill:" + cmap[0];
+        }
         //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
-      if (this.ifGroup) this.setNodes(g);
 
+      if (this.ifGroup) {
+        this.finalPos = countPos(g, this.multipleSearchValue.selections);
+      }
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
@@ -228,7 +240,7 @@ export default {
       this.tooltip = this.createTooltip();
       this.tooltip2 = this.createTooltip();
       // Set up zoom support
-      let that = this;
+   
       var zoom = d3.zoom().on("zoom", function (event) {
         inner.attr("transform", event.transform);
         that.tipHidden();
@@ -266,7 +278,7 @@ export default {
           return v;
         })
         .each(function (v) {
-          $(this).tipsy({ gravity: "e", opacity: 1, html: true });
+          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
         });
 
       // add hover effect & click hint to lines
@@ -305,13 +317,16 @@ export default {
           }
         });
       // Center the graph
-      var initialScale = 0.75;
+      var initialScale = 0.4;
+      let xOffset = (450 - g.graph().width * initialScale) / 2;
+      let yOffset = (450 - g.graph().height * initialScale) / 2;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity.translate(100, 100).scale(initialScale)
+        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
+
       if (this.ifGroup) {
         this.drawSonGraphs();
       }
@@ -335,90 +350,41 @@ export default {
     },
 
     drawSonGraphs() {
+      let sonGraphs = [];
+      let gap = {
+        xGap: 100,
+        yGap: 100,
+      };
+      for (let i = 1; i <= this.sonNum; i++) {
+        let ans = countSonPos(
+          this.finalPos[i].nodesList,
+          this.finalPos[0].nodesList
+        );
+        sonGraphs.push(ans.sonPos);
+        if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
+        else ans.gap.xGap = ans.gap.xGap / this.sonNum;
+        if (ans.gap.xGap < gap.xGap) {
+          gap.xGap = ans.gap.xGap;
+        }
+        if (this.sonNum > 8) ans.gap.yGap = ans.gap.yGap / 3;
+        else if (this.sonNum > 4) ans.gap.yGap = ans.gap.yGap / 2;
+        if (ans.gap.yGap < gap.yGap) {
+          gap.yGap = ans.gap.yGap;
+        }
+      }
+
       for (let i = 1; i <= this.sonNum; i++) {
         let dom = document.getElementById("paper" + i);
         drawSonCharts(
           dom,
-          this.finalPos[i].concat(this.finalPos[0]),
-          this.multipleSearchValue.linksList.filter(link => {
-            return !link.hidden
-          }),
-          this.gap,
-          "paper"+i,
+          sonGraphs[i - 1],
+          this.finalPos[i].linksList,
+          gap,
+          "paper" + i
         );
       }
     },
 
-    setNodes(g) {
-      //get Layout data(not used yet)
-      let y = [];
-      let x = [];
-      g.nodes().forEach((v) => {
-        let pos = g.node(v);
-
-        if (!y.includes(pos.y)) {
-          let i = 0;
-          for (; i < y.length; i++) {
-            if (pos.y < y[i]) {
-              if (i === 0) {
-                y.unshift(pos.y);
-                break;
-              } else {
-                y.splice(i, 0, pos.y);
-                break;
-              }
-            }
-          }
-          if (i == y.length) y.push(pos.y);
-        }
-        if (!x.includes(pos.x)) {
-          let i = 0;
-          for (; i < x.length; i++) {
-            if (pos.x < x[i]) {
-              if (i === 0) {
-                x.unshift(pos.x);
-                break;
-              } else {
-                x.splice(i, 0, pos.x);
-                break;
-              }
-            }
-          }
-          if (i == x.length) x.push(pos.x);
-        }
-      });
-      this.finalPos = [];
-      g.nodes().forEach((v) => {
-        let pos = g.node(v);
-        let newPos = {
-          id: pos.label,
-          x: x.indexOf(pos.x),
-          y: y.indexOf(pos.y),
-          type: pos.type,
-        };
-        if (pos.type === 0) {
-          console.log(pos);
-          while (this.finalPos.length < pos.index + 1) {
-            this.finalPos.push([]);
-          }
-          this.finalPos[pos.index].unshift(newPos);
-        } else if (pos.type > 0) {
-          while (this.finalPos.length < pos.type + 1) {
-            this.finalPos.push([]);
-          }
-          this.finalPos[pos.type].push(newPos);
-        } else if (pos.type) {
-          this.finalPos[0].push(newPos);
-        }
-      });
-      if (x.length > 1) {
-        this.gap.xGap = 400/(x.length-1);
-      }
-      if(y.length>1) {
-        this.gap.yGap = 360/(y.length-1);
-      }
-      console.log(this.finalPos);
-    },
     showLoading() {
       const options = {
         target: document.getElementsByClassName("drawing-canvas")[0],
@@ -794,8 +760,6 @@ hr {
   flex: 3;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
 .graph-info-header {
   padding: 16px;
@@ -845,7 +809,6 @@ hr {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -865,18 +828,35 @@ hr {
   height: 90%;
 }
 .sum-svg {
-  width: 65%;
-  height: 100%;
+  position: absolute;
+  left: 16px;
+  top: calc(8vh + 650px);
+  padding: 16px;
+  width: 458px;
+  height: 480px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.sum-svg .title {
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: bold;
+}
+.sum-svg svg {
+  height: 450px;
+  width: 458px;
 }
 .son-svg {
-  width: 35%;
+  width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
 }
 .son-svg div {
   padding: 16px;
   flex: 1;
+  min-width: 25%;
+  max-width: 100%;
 }
 
 .graph-main-title {

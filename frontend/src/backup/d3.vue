@@ -52,7 +52,20 @@
           Relayout
         </el-button>
       </div>
-      <svg class="graph-svg"><g /></svg>
+      <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
+      <div v-else class="group-graphs">
+        <div class="sum-svg">
+          <div class="title">SuperGraph</div>
+          <svg>
+            <g />
+          </svg>
+        </div>
+        <div class="son-svg">
+          <div v-for="index in sonNum" :key="index">
+            <div :id="'paper' + index"></div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- 缓存一个路由组件 -->
   </div>
@@ -68,6 +81,9 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
+import { createChart } from "@/plugin/charts";
+import { drawSonCharts } from "@/plugin/sonGraph";
+import { countPos, countSonPos } from "@/plugin/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -89,9 +105,13 @@ export default {
   },
   data() {
     return {
+      ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
+      nowLine: ref(),
+      tooltip2: null,
+      sonNum: ref(1),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
@@ -100,6 +120,7 @@ export default {
         nodesList: [],
         linksList: [],
       }),
+      finalPos: ref([]),
     };
   },
   methods: {
@@ -122,28 +143,47 @@ export default {
       this.saveData();
       this.drawGraph();
     },
-    drawGraph() {
+    setGraph() {
       var data = this.multipleSearchValue;
+      var states = data.nodesList;
+      d3.select("svg").select("g").selectAll("*").remove();
       // {
-      var g = new dagreD3.graphlib.Graph().setGraph({
+      let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
-      // Test with our 3 graph graph(s)
-      var states = data.nodesList;
 
       // Automatically label each of the nodes
       states.forEach(function (state) {
-        g.setNode(state.id, {
-          label: state.id,
+        let node = {
+          label: "",
           type: state.type,
-        });
+        };
+        if (node.type === 0) node["index"] = state.index;
+        g.setNode(state.id, node);
       });
-
+      if (this.ifGroup) {
+        console.log("!");
+        g.setNode("group", {
+          label: "",
+          clusterLabelPos: "bottom",
+          style:
+            "stroke-width:5;stroke:red;fill: transparent;stroke-dasharray:4 4",
+        });
+        states.forEach(function (state) {
+          if (state.type === -1) {
+            g.setParent(state.id, "group");
+          }
+        });
+      }
       var edges = data.linksList;
       edges.forEach(function (edge) {
+        if (!edge.type) {
+          edge.type = 0;
+        }
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
-        var edgeColor = "stroke: " + cmap[0];
+        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        var edgeColor = "stroke: black";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -158,7 +198,7 @@ export default {
                 edgeColor +
                 ";" +
                 styleString +
-                ";fill: transparent;stroke-dasharray:4 1",
+                ";fill: transparent;stroke-dasharray:4 4",
               curve: d3.curveBasis,
               label: edge.value.toString(),
             });
@@ -175,31 +215,40 @@ export default {
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 5;
+        node.rx = node.ry = 20;
+        node.width = 20;
+        node.height = 20;
         if (node.type == 0) node.style = "fill: #f77;";
+        else if (node.type < 0) {
+          node.style = "fill:" + cmap[0];
+        }
+        //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
-      this.setNodes(g);
-
-   
+      if (this.ifGroup) {
+        this.finalPos = countPos(g);
+      }
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
         this.tipHidden();
       }
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
       this.tooltip = this.createTooltip();
-
+      this.tooltip2 = this.createTooltip();
       // Set up zoom support
       let that = this;
       var zoom = d3.zoom().on("zoom", function (event) {
         inner.attr("transform", event.transform);
         that.tipHidden();
+        that.tip2Hidden();
       });
       svg.call(zoom);
 
       // Create the renderer
       var render = new dagreD3.render();
-
       // Run the renderer. This is what draws the final graph.
       render(inner, g);
       //add hover effect & hover hint to nodes
@@ -223,6 +272,12 @@ export default {
               _this.tip2WatchBlur();
             }, 0);
           }
+        })
+        .attr("title", function (v) {
+          return v;
+        })
+        .each(function (v) {
+          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
         });
 
       // add hover effect & click hint to lines
@@ -232,99 +287,97 @@ export default {
       allpathes
         .on("mouseout", function (d, id) {
           allpathes.style("opacity", "1");
+          _this.tipHidden();
         })
         .on("mouseover", function (d, id) {
           if (_this.isVisible(id)) {
             allpathes.style("opacity", ".2"); // set all edges opacity 0.2
             d3.select(this).style("opacity", "1");
           }
+          _this.tipVisible(id.v + "-" + id.w, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
         })
         .on("click", function (d, id) {
           if (_this.isVisible(id)) {
+            _this.nowLine = id;
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
             <div class='operate-menu'>Delete edge<br/>(" +
               id.v +
               ", " +
               id.w +
-              ")</div>";
+              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
               _this.tipWatchBlur();
             }, 0);
           }
         });
-
       // Center the graph
-      var initialScale = 1;
+      var initialScale = 0.4;
+      let xOffset = (450 - g.graph().width * initialScale) / 2;
+      let yOffset = (450 - g.graph().height * initialScale) / 2;
       svg.call(
         zoom.transform,
-        d3.zoomIdentity.translate(300, 200).scale(initialScale)
+        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
       );
 
       svg.attr("height", g.graph().height * initialScale + 40);
-
+      if (this.ifGroup) {
+        this.drawSonGraphs();
+      }
     },
-    setNodes(g) {
-      //get Layout data(not used yet)
-      let layout = [];
-      let y = [];
-      g.nodes().forEach((v) => {
-        let pos = g.node(v);
-        console.log(pos.y);
-        if (!y.includes(pos.y)) {
-          let i = 0;
-          for (; i < y.length; i++) {
-            if (pos.y < y[i]) {
-              if (i === 0) {
-                y.unshift(pos.y);
-                layout.unshift([
-                  {
-                    id: pos.label,
-                    x: pos.x,
-                    y: pos.y,
-                    type: pos.type,
-                  },
-                ]);
-                break;
-              } else {
-                y.splice(i - 1, 0, pos.y);
-                layout.splice(i, 0, [
-                  {
-                    id: pos.label,
-                    x: pos.x,
-                    y: pos.y,
-                    type: pos.type,
-                  },
-                ]);
-                break;
-              }
-            }
-          }
-          if (i == y.length) {
-            y.push(pos.y);
-            layout.push([
-              {
-                id: pos.label,
-                x: pos.x,
-                y: pos.y,
-                type: pos.type,
-              },
-            ]);
-          }
-        } else {
-          let index = y.indexOf(pos.y);
-          layout[index].push({
-            id: pos.label,
-            x: pos.x,
-            y: pos.y,
-            type: pos.type,
-          });
-        }
+    drawGraph() {
+      this.ifGroup = false;
+      let that = this;
+      this.sonNum = 0;
+      this.multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === -1) that.ifGroup = true;
+        else if (state.type === 0) that.sonNum++;
       });
-      console.log(y);
-      console.log(layout);
+      console.log(this.ifGroup);
+      setTimeout(() => {
+        this.setGraph();
+      }, 0);
     },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
+
+    drawSonGraphs() {
+      let sonGraphs = [];
+      let gap = {
+        xGap: 100,
+        yGap: 100,
+      };
+      for (let i = 1; i <= this.sonNum; i++) {
+        let ans = countSonPos(this.finalPos[i], this.finalPos[0]);
+        sonGraphs.push(ans.sonPos);
+        if (ans.gap.xGap < gap.xGap) {
+          gap.xGap = ans.gap.xGap;
+        }
+        if (ans.gap.yGap < gap.yGap) {
+          gap.yGap = ans.gap.yGap;
+        }
+      }
+
+      for (let i = 1; i <= this.sonNum; i++) {
+        let dom = document.getElementById("paper" + i);
+        drawSonCharts(
+          dom,
+          sonGraphs[i - 1],
+          this.multipleSearchValue.linksList.filter((link) => {
+            return !link.hidden;
+          }),
+          gap,
+          "paper" + i
+        );
+      }
+    },
+
     showLoading() {
       const options = {
         target: document.getElementsByClassName("drawing-canvas")[0],
@@ -345,7 +398,7 @@ export default {
       let link = this.multipleSearchValue.linksList.filter(
         (item) => item.source === path.v && item.target === path.w
       );
-      if (link[0].hidden === true) return false;
+      if (link[0].hidden) return false;
       else return true;
     },
     saveData() {
@@ -359,13 +412,14 @@ export default {
       let newFac = [];
       let newOut = [];
       this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type === 1) newFac.push(row.id);
+        if (row.type !== 0) newFac.push(row.id);
       });
       this.multipleSearchValue.nodesList.map((row) => {
         if (row.type === 0) newOut.push(row.id);
       });
       this.countingGraph = true;
       this.showLoading();
+
       axios({
         //请求类型
         method: "GET",
@@ -392,15 +446,17 @@ export default {
           this.countingGraph = false;
         })
         .catch((error) => {
-          console.log("请求失败了", error.message);
+          console.log("请求失败了", error);
         });
     },
     //add document click listener
     tipWatchBlur() {
       document.addEventListener("click", this.listener);
+      console.log("listener");
     },
     tip2WatchBlur() {
       document.addEventListener("click", this.listener2);
+      console.log("listener");
     },
     handleCheckAllChange(val) {
       if (val === true) {
@@ -450,6 +506,7 @@ export default {
     listener(e) {
       let _this = this;
       let clickDOM = e.target.className;
+      _this.tip2Hidden();
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -457,16 +514,17 @@ export default {
         clickDOM !== "tooltip" &&
         clickDOM !== "operate-header"
       ) {
-        _this.tipHidden();
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
-        this.deleteEdge(text);
+        if (text.includes("Delete")) this.deleteEdge(text);
+        else this.reverseDirection();
       }
     },
     listener2(e) {
       let _this = this;
       let clickDOM = e.target.className;
+      _this.tip2Hidden();
       if (
         clickDOM !== "operate-menu" &&
         clickDOM !== "hint-menu" &&
@@ -474,8 +532,7 @@ export default {
         clickDOM !== "tooltip" &&
         clickDOM !== "operate-header"
       ) {
-        _this.tipHidden();
-        document.removeEventListener("click", _this.listener);
+        document.removeEventListener("click", _this.listener2);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         this.deleteNode(text);
@@ -506,6 +563,7 @@ export default {
       this.drawGraph();
       */
     },
+    reverseDirection() {},
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
@@ -523,7 +581,7 @@ export default {
         };
         this.saveData();
         this.hasNoHidden = false;
-        this.tipHidden();
+        this.tip2Hidden();
         this.drawGraph();
       }
     },
@@ -536,30 +594,45 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
-    // display node tooltip
+    // display hover-line tooltip
     tipVisible(textContent, event) {
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
-        .duration(10)
-        .style("opacity", 0.9)
+        .duration(0)
+        .style("opacity", 1)
         .style("display", "block");
       this.tooltip
-        .html(textContent)
+        .html(
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
+        )
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
     },
-    //display line tooltip
+    //display delete-menu tooltip
     tip2Visible(textContent, event) {
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
-      this.tooltip
+      this.tooltip2
         .transition()
-        .duration(10)
-        .style("opacity", 0.95)
+        .duration(0)
+        .style("opacity", 1)
         .style("display", "block");
-      this.tooltip
+      this.tooltip2
         .html(textContent)
         .style("left", `${event.pageX}px`)
         .style("top", `${event.pageY}px`);
@@ -567,6 +640,13 @@ export default {
     // tooltip隐藏
     tipHidden() {
       this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    tip2Hidden() {
+      this.tooltip2
         .transition()
         .duration(100)
         .style("opacity", 0)
@@ -673,6 +753,8 @@ hr {
   flex: 3;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 .graph-info-header {
   padding: 16px;
@@ -722,6 +804,9 @@ hr {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   flex: 1;
 }
 .drawing-buttons {
@@ -733,6 +818,41 @@ hr {
   display: flex;
   height: 90%;
 }
+.group-graphs {
+  width: 100%;
+  display: flex;
+  height: 90%;
+}
+.sum-svg {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  padding: 16px;
+  width: 458px;
+  height: 480px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.sum-svg .title {
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: bold;
+}
+.sum-svg svg {
+  height: 450px;
+  width: 458px;
+}
+.son-svg {
+  width: 35%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.son-svg div {
+  padding: 16px;
+  flex: 1;
+}
+
 .graph-main-title {
   font-size: 20px;
   margin-top: 20px;
@@ -750,5 +870,20 @@ hr {
   position: absolute !important;
   top: 0;
   height: 100%;
+}
+.chart-box {
+  display: flex;
+  padding: 8px;
+  flex-direction: column;
+  height: 180px;
+  justify-content: center;
+
+  width: 300px;
+  align-items: center;
+}
+.chart-hint {
+  display: flex;
+  height: 170px;
+  width: 284px;
 }
 </style>

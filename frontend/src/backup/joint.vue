@@ -152,24 +152,24 @@ export default {
       this.paperEvent();
     },
     createNode() {
+      this.tooltip = this.createTooltip();
       let nodes = this.multipleSearchValue.nodesList;
       let nodeList = [];
       nodes.forEach((ele) => {
         let node = new joint.shapes.standard.Rectangle({
           id: ele.id,
           size: {
-            width: 200,
-            height: 50,
+            width: 24,
+            height: 24,
           },
           attrs: {
             body: {
               fill: ele.type === 0 ? "#f77" : "#000000",
-              stroke: "none",
+              strokeWidth: 0,
+              rx: 24,
+              ry: 24,
             },
-            label: {
-              text: ele.id,
-              fill: "#fff",
-            },
+            title: ele.id,
           },
         });
         console.log(node);
@@ -191,18 +191,15 @@ export default {
           target: {
             id: ele.target,
           },
-          router: {
-            name: "metro",
-          },
           connector: {
-            name: 'rounded'
+            name: "rounded",
           },
           attrs: {
             line: {
               connection: true,
               stroke: "#1f77b4",
               strokeWidth: ele.value * 10,
-              strokeDasharray: ele.value > 0 ? "none" : "4 1",
+              strokeDasharray: ele.value > 0 ? "none" : "4 4",
             },
           },
         });
@@ -227,7 +224,7 @@ export default {
         dagre: dagre,
         graphlib: graphlib,
         /** 布局方向 TB | BT | LR | RL */
-        rankDir: "TB",
+        rankDir: "LR",
         align: "UL",
         /** 表示列之间间隔的像素数 */
         rankSep: 150,
@@ -286,21 +283,6 @@ export default {
       };
       this.loadingInstance = Loading.service(options);
     },
-    ifOutCome(node) {
-      let allOut = [];
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) allOut.push(row.id);
-      });
-      if (allOut.includes(node)) return true;
-      else return false;
-    },
-    isVisible(path) {
-      let link = this.multipleSearchValue.linksList.filter(
-        (item) => item.source === path.v && item.target === path.w
-      );
-      if (link[0].hidden === true) return false;
-      else return true;
-    },
     saveData() {
       localStorage.setItem(
         "GET_JSON_RESULT",
@@ -348,13 +330,6 @@ export default {
           console.log("请求失败了", error.message);
         });
     },
-    //add document click listener
-    tipWatchBlur() {
-      document.addEventListener("click", this.listener);
-    },
-    tip2WatchBlur() {
-      document.addEventListener("click", this.listener2);
-    },
     handleCheckAllChange(val) {
       if (val === true) {
         this.checkedVariables = VariablesOptions;
@@ -399,87 +374,6 @@ export default {
         this.multipleSearchValue.nodesList.splice(ifIndex, 1);
       }
     },
-    //document click listener => to close line tooltip
-    listener(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
-      ) {
-        _this.tipHidden();
-        document.removeEventListener("click", _this.listener);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        this.deleteEdge(text);
-      }
-    },
-    listener2(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
-      ) {
-        _this.tipHidden();
-        document.removeEventListener("click", _this.listener);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        this.deleteNode(text);
-      }
-    },
-    deleteNode(node) {
-      console.log("delete node");
-
-      let nodeName = node.split(" ")[2];
-      let nodeList = this.multipleSearchValue.nodesList.filter(
-        (node) => node.id !== nodeName
-      );
-      this.multipleSearchValue.nodesList = nodeList;
-      let index = this.checkedVariables.indexOf(nodeName);
-      this.checkedVariables.splice(index, 1);
-      this.tipHidden();
-      this.getLinks();
-      /*
-      let linkList = this.multipleSearchValue.linksList.filter(
-        (link) => link.source !== nodeName && link.target !== nodeName
-      );
-      this.multipleSearchValue = {
-        nodesList: nodeList,
-        linksList: linkList,
-        CovariantNum: this.multipleSearchValue.CovariantNum - 1,
-      };
-
-      this.drawGraph();
-      */
-    },
-    deleteEdge(edge) {
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1]) {
-          return true;
-        } else return false;
-      });
-      if (index > -1) {
-        this.multipleSearchValue.linksList[index] = {
-          source: this.multipleSearchValue.linksList[index].source,
-          target: this.multipleSearchValue.linksList[index].target,
-          value: this.multipleSearchValue.linksList[index].value,
-          hidden: true,
-        };
-        this.saveData();
-        this.hasNoHidden = false;
-        this.tipHidden();
-        this.initGraph();
-      }
-    },
     // create tooltip but not show it
     createTooltip() {
       return d3
@@ -487,36 +381,24 @@ export default {
         .append("div")
         .classed("tooltip", true)
         .style("opacity", 0)
-        .style("display", "none");
+        .style("display", "none")
+        .style("background", "rgba(0, 0, 0, 0.85)")
+        .style("color", "white")
+        .style("padding", "4px 16px 4px 16px");
     },
     // display node tooltip
     tipVisible(textContent, event) {
-      document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
-      this.tooltip
+      this.tooltip.value
         .transition()
-        .duration(200)
-        .style("opacity", 0.9)
+        .duration(0)
+        .style("opacity", 1)
         .style("display", "block");
-      this.tooltip
-        .html(textContent)
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY + 15}px`);
-    },
-    //display line tooltip
-    tip2Visible(textContent, event) {
-      document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
-      this.tooltip
-        .transition()
-        .duration(100)
-        .style("opacity", 0.95)
-        .style("display", "block");
-      this.tooltip
+      this.tooltip.value
         .html(textContent)
         .style("left", `${event.pageX}px`)
         .style("top", `${event.pageY}px`);
     },
+
     // tooltip隐藏
     tipHidden() {
       this.tooltip

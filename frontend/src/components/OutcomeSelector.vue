@@ -248,6 +248,9 @@ export default {
 
 <style>
 .variables {
+  max-height: 200px;
+  min-height: 148px;
+  overflow-y: auto;
   font-size: 0.1;
   color: red;
 }

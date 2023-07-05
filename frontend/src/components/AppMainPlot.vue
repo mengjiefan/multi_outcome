@@ -17,6 +17,7 @@ export default {
 <style scoped>
 .mainPlot {
   padding: 0;
+  min-height: 1200px;
   height: 100%;
   flex: 1;
   display: flex;

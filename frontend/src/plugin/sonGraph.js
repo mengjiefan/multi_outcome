@@ -17,15 +17,7 @@ const countYPos = (y) => {
     return start + y * yGap;
 };
 const tooltip = ref(null);
-const getAllLinks = (nodes, links) => {
-    let linksList = [];
-    links.forEach((link) => {
-        if (nodes.includes(link.source) && nodes.includes(link.target)) {
-            linksList.push(link);
-        }
-    });
-    return linksList;
-};
+
 const tipVisible = (textContent, event) => {
     tooltip.value
         .transition()
@@ -57,7 +49,7 @@ const createTooltip = () => {
 };
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
-    let svgZoom = svgPanZoom("#"+name+" svg", {
+    let svgZoom = svgPanZoom("#" + name + " svg", {
         /** 判断是否是节点的拖拽 */
         /** 是否可拖拽 */
         panEnabled: true,
@@ -78,7 +70,10 @@ const svgZoom = (name) => {
     svgZoom.setZoomScaleSensitivity(0.5);
 
 };
-export const drawSonCharts = (dom, nodesList, links, gap, name) => {
+export const extractSonCharts = () => {
+    
+}
+export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
     xGap = gap.xGap;
     yGap = gap.yGap;
     tooltip.value = createTooltip();
@@ -93,11 +88,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
             return null
         }
     });
-    let linksList = getAllLinks(
-        nodesList.map((item) => {
-            return item.id;
-        }), links
-    );
+
     let outRect = new joint.shapes.standard.Rectangle();
     outRect.position(
         countXPos(nodesList[0].x),
@@ -135,7 +126,8 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         nodesList[nodeI]["node"] = faRect;
     }
     linksList.forEach(link => {
-        var path = new joint.shapes.standard.Link();
+        var path = new joint.shapes.standard.Link({
+        });
         if (link.value < 0)
             path.attr({
                 line: {
@@ -153,7 +145,6 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
             if (item.id === link.source) return true;
             else return false;
         })
-        console.log(sindex)
         path.source(nodesList[sindex].node);
         let tindex = nodesList.findIndex(item => {
             if (item.id === link.target) return true;
@@ -165,10 +156,10 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
     paper.on('element:mouseover', function (elementView, evt) {
         tipHidden();
         var currentElement = elementView.model;
-        console.log(currentElement)
+   
         let name = currentElement.attributes.attrs.title;
         tipVisible(name, evt)
-        console.log(evt)
+
     });
     paper.on('element:mouseout', function (elementView, evt) {
         tipHidden();

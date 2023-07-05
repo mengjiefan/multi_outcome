@@ -206,10 +206,55 @@ export default {
           console.log("请求失败了", error.message);
         });
     },
+    removeDuplicate(selections) {
+      let finalSelections = [];
+      let outs = [];
+      selections.forEach((selection) => {
+        if (!outs.includes(selection.outcome)) outs.push(selection.outcome);
+      });
+      outs.forEach((outcome) => {
+        let selectionNow = {
+          linksList: [],
+          variable: [],
+          outcome: outcome,
+        };
+        selections.forEach((selection) => {
+          if (selection.outcome === outcome) {
+            selection.links.forEach((link) => {
+              let index = selectionNow.linksList.findIndex((item) => {
+                if (
+                  item.target === link.target &&
+                  item.source === link.source
+                ) {
+                  return true;
+                } else if (
+                  item.source === link.target &&
+                  item.target === link.source
+                ) {
+                  return true;
+                } else {
+                  return false;
+                }
+              });
+              if (index < 0 && !link.hidden) {
+                selectionNow.linksList.push(link);
+              }
+            });
+            selection.Variables.forEach((node) => {
+              if (selectionNow.variable.indexOf(node) < 0) {
+                selectionNow.variable.push(node);
+              }
+            });
+          }
+        });
+        finalSelections.push(selectionNow);
+      });
+      return finalSelections;
+    },
     // 通过公用数据库store进行数据管理
     btnSelect() {
       let selections = this.$refs.multipleTable.selection;
-      console.log("选中的比较结局数据为：", selections);
+      let allNumber = selections.length;
       if (this.selectType === "2") {
         let outcomes = [];
         let factors = [];
@@ -226,17 +271,14 @@ export default {
         let nodes = [];
         let nodesList = [];
         let linksList = [];
-        let outcomeIndex = 0;
         selections.forEach((selection) => {
           let flag = false;
           if (!nodes.includes(selection.outcome)) {
             flag = true;
-            outcomeIndex++;
             nodes.push(selection.outcome);
             nodesList.push({
               id: selection.outcome,
               type: 0,
-              index: outcomeIndex
             });
           }
           selection.Variables.forEach((node) => {
@@ -244,15 +286,14 @@ export default {
               nodes.push(node);
               nodesList.push({
                 id: node,
-                type: outcomeIndex,
+                type: 1,
               });
             } else if (flag) {
               let index = nodes.indexOf(node);
-              nodesList[index].type = -1;
+              nodesList[index].type++;
             }
           });
           selection.links.forEach((link) => {
-            link["type"] = outcomeIndex;
             let index = linksList.findIndex((item) => {
               if (item.target === link.target && item.source === link.source) {
                 return true;
@@ -266,80 +307,43 @@ export default {
               }
             });
             if (index < 0) {
-              link;
               linksList.push(link);
             } else if (linksList[index].hidden && !link.hidden) {
               linksList[index] = {
                 source: linksList[index].source,
                 target: linksList[index].target,
                 value: linksList[index].value,
-                type: outcomeIndex,
               };
             }
           });
         });
-        linksList.forEach((link) => {
-          if (outcomeIndex === 1) {
-            link.type = 0;
-          } else {
-            let stype = nodesList[nodes.indexOf(link.source)].type;
-            let ttype = nodesList[nodes.indexOf(link.target)].type;
-            if (stype < 0 && ttype < 0) link.type = 0;
-          }
+        nodesList = nodesList.map((node) => {
+          if (node.type === allNumber && allNumber > 1)
+            return {
+              id: node.id,
+              type: -1,
+            };
+          else if (node.type > 0)
+            return {
+              id: node.id,
+              type: 1,
+            };
+          else return node;
         });
-        localStorage.setItem(
-          "GET_JSON_RESULT",
-          JSON.stringify({
-            nodesList: nodesList,
-            linksList: linksList,
-          })
-        );
-        this.routeToGraph();
-      }
-      return;
-      /*
-      axios({
-        //请求类型
-        method: "POST",
-        //URL
-        url: "http://localhost:8000/api/linksnodes/",
-        //当数据量较大时，使用请求body的方式进行传参
-        data: {
-          selection: selection,
-          selection1: "test1",
-        },
-      }).then(
-        (response) => {
-          console.log("请求成功了", response.data);
-          this.selection_result = response.data;
-          this.nodesList = this.selection_result.nodesList;
-          this.linksList = this.selection_result.linksList;
-          console.log("selection_result:", this.selection_result);
+        const _this = this;
+        setTimeout(() => {
           localStorage.setItem(
             "GET_JSON_RESULT",
             JSON.stringify({
-              nodesList: response.data.nodesList.map((row) => {
-                if (this.OutcomeOptions.includes(row))
-                  return {
-                    type: 0,
-                    id: row,
-                  };
-                else
-                  return {
-                    type: 1,
-                    id: row,
-                  };
-              }),
-              linksList: response.data.linksList,
+              nodesList: nodesList,
+              linksList: linksList,
+              selections: this.removeDuplicate(selections),
             })
           );
-          this.routeToGraph();
-        },
-        (error) => {
-          console.log("请求失败了", error.message);
-        }
-      );
-      */
+          _this.routeToGraph();
+        }, 500);
+      }
+      return;
     },
     routeToGraph() {
       this.$router.push({
