@@ -47,34 +47,6 @@ export const countPos = (g, childNodes) => {
     })
     console.log(finalPos)
     return finalPos;
-    /*
-    let finalPos = [];
-    g.nodes().forEach((v) => {
-        let pos = g.node(v);
-        let newPos = {
-            id: v,
-            x: x.indexOf(pos.x),
-            y: y.indexOf(pos.y),
-            type: pos.type,
-        };
-        if (pos.type === 0) {
-            while (finalPos.length < pos.index + 1) {
-                finalPos.push([]);
-            }
-            finalPos[pos.index].unshift(newPos);
-        } else if (pos.type > 0) {
-            while (finalPos.length < pos.type + 1) {
-                finalPos.push([]);
-            }
-            finalPos[pos.type].push(newPos);
-        } else if (pos.type) {
-            finalPos[0].push(newPos);
-        }
-    });
-
-    console.log(finalPos, 'finalPos')
-    return finalPos;
-    */
 }
 const traversal = (list, value) => {
     if (list.includes(value)) return list;
