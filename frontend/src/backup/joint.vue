@@ -52,7 +52,20 @@
           Relayout
         </el-button>
       </div>
-      <div class="graph-svg" id="paper"></div>
+      <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
+      <div v-else class="group-graphs">
+        <div class="sum-svg">
+          <div class="title">SuperGraph</div>
+          <svg>
+            <g />
+          </svg>
+        </div>
+        <div class="son-svg">
+          <div v-for="index in sonNum" :key="index">
+            <div :id="'paper' + index"></div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- 缓存一个路由组件 -->
   </div>
@@ -67,12 +80,10 @@ import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
-
-import dagre from "dagre";
-import graphlib from "graphlib";
-import * as joint from "jointjs";
-import "/node_modules/jointjs/dist/joint.css";
-import svgPanZoom from "svg-pan-zoom";
+import dagre from "dagre-d3/lib/dagre";
+import { createChart } from "@/plugin/charts";
+import { drawSonCharts } from "@/plugin/sonGraph";
+import { countPos, countSonPos } from "@/plugin/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -94,9 +105,13 @@ export default {
   },
   data() {
     return {
+      ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
+      nowLine: ref(),
+      tooltip2: null,
+      sonNum: ref(1),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
@@ -105,8 +120,7 @@ export default {
         nodesList: [],
         linksList: [],
       }),
-      graph: null,
-      paper: null,
+      finalPos: ref([]),
     };
   },
   methods: {
@@ -127,154 +141,250 @@ export default {
       this.multipleSearchValue.linksList = linksList;
       this.hasNoHidden = true;
       this.saveData();
-      this.initGraph();
+      this.drawGraph();
     },
-    initGraph() {
-      let paper = document.getElementById("paper");
-      this.graph = new joint.dia.Graph();
-      this.paper = new joint.dia.Paper({
-        dagre: dagre,
-        graphlib: graphlib,
-        el: paper,
-        model: this.graph,
-        width: "100%",
-        height: "100%",
-        background: {},
-        /** 是否需要显示单元格以及单元格大小(px) */
-        // drawGrid: true,
-        // gridSize: 20,
+    setGraph() {
+      var data = this.multipleSearchValue;
+      var states = data.nodesList;
+      d3.select("svg").select("g").selectAll("*").remove();
+      // {
+      let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
+        ranker: "tight-tree",
       });
 
-      this.createNode();
-      this.createLink();
-      this.randomLayout();
-      this.svgPanZoom();
-      this.paperEvent();
-    },
-    createNode() {
+      // Automatically label each of the nodes
+      states.forEach(function (state) {
+        let node = {
+          label: "",
+          type: state.type,
+        };
+        if (node.type === 0) node["index"] = state.index;
+        g.setNode(state.id, node);
+      });
+      if (this.ifGroup) {
+        console.log("!");
+        g.setNode("group", {
+          label: "",
+          clusterLabelPos: "bottom",
+          style:
+            "stroke-width:5;stroke:red;fill: transparent;stroke-dasharray:4 4",
+        });
+        states.forEach(function (state) {
+          if (state.type === -1) {
+            g.setParent(state.id, "group");
+          }
+        });
+      }
+      var edges = data.linksList;
+      edges.forEach(function (edge) {
+        if (!edge.type) {
+          edge.type = 0;
+        }
+        var valString = (edge.value * 10).toString() + "px";
+        var styleString = "stroke-width: " + valString;
+        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        var edgeColor = "stroke: black";
+        if (edge.hidden) {
+          g.setEdge(edge.source, edge.target, {
+            style:
+              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
+            curve: d3.curveBasis,
+            label: edge.value.toString(),
+          });
+        } else {
+          if (edge.value < 0) {
+            g.setEdge(edge.source, edge.target, {
+              style:
+                edgeColor +
+                ";" +
+                styleString +
+                ";fill: transparent;stroke-dasharray:4 4",
+              curve: d3.curveBasis,
+              label: edge.value.toString(),
+            });
+          } else {
+            g.setEdge(edge.source, edge.target, {
+              style: edgeColor + ";" + styleString + ";fill: transparent",
+              curve: d3.curveBasis,
+              label: edge.value.toString(),
+            });
+          }
+        }
+      });
+      let that = this;
+      // Set some general styles
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        node.rx = node.ry = 20;
+        node.width = 20;
+        node.height = 20;
+        if (node.type == 0) node.style = "fill: #f77;";
+        else if (node.type < 0 || !that.ifGroup) {
+          node.style = "fill:" + cmap[0];
+        }
+        //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
+      });
+      dagre.layout(g);
+
+      if (this.ifGroup) {
+        this.finalPos = countPos(g, this.multipleSearchValue.selections);
+      }
+      var svg = d3.select("svg");
+      let inner = svg.select("g");
+      if (this.tooltip) {
+        this.tipHidden();
+      }
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
       this.tooltip = this.createTooltip();
-      let nodes = this.multipleSearchValue.nodesList;
-      let nodeList = [];
-      nodes.forEach((ele) => {
-        let node = new joint.shapes.standard.Rectangle({
-          id: ele.id,
-          size: {
-            width: 24,
-            height: 24,
-          },
-          attrs: {
-            body: {
-              fill: ele.type === 0 ? "#f77" : "#000000",
-              strokeWidth: 0,
-              rx: 24,
-              ry: 24,
-            },
-            title: ele.id,
-          },
-        });
-        console.log(node);
-        /** 创建的节点对象放入list */
-        nodeList.push(node);
-        node.addTo(this.graph);
+      this.tooltip2 = this.createTooltip();
+      // Set up zoom support
+   
+      var zoom = d3.zoom().on("zoom", function (event) {
+        inner.attr("transform", event.transform);
+        that.tipHidden();
+        that.tip2Hidden();
       });
-      /** 通过graph的addCell方法向画布批量添加一个list */
-      //this.graph.addCell(nodeList);
-    },
-    createLink() {
-      let links = this.multipleSearchValue.linksList;
-      let linkList = [];
-      links.forEach((ele) => {
-        let link = new joint.shapes.standard.Link({
-          source: {
-            id: ele.source,
-          },
-          target: {
-            id: ele.target,
-          },
-          connector: {
-            name: "rounded",
-          },
-          attrs: {
-            line: {
-              connection: true,
-              stroke: "#1f77b4",
-              strokeWidth: ele.value * 10,
-              strokeDasharray: ele.value > 0 ? "none" : "4 4",
-            },
-          },
+      svg.call(zoom);
+
+      // Create the renderer
+      var render = new dagreD3.render();
+      // Run the renderer. This is what draws the final graph.
+      render(inner, g);
+      //add hover effect & hover hint to nodes
+      inner
+        .selectAll("g.node")
+        .on("mouseover", (v) => {
+          v.fromElement.setAttribute("id", "hover-node");
+        })
+        .on("mouseout", (v) => {
+          v.fromElement.setAttribute("id", "");
+        })
+        .on("click", (d, id) => {
+          if (!this.ifOutCome(id)) {
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete node " +
+              id +
+              "</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              _this.tip2WatchBlur();
+            }, 0);
+          }
+        })
+        .attr("title", function (v) {
+          return v;
+        })
+        .each(function (v) {
+          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
         });
 
-        link.appendLabel({
-          attrs: {
-            text: {
-              text: ele.value,
-            },
-          },
+      // add hover effect & click hint to lines
+      var onmousepath = d3.selectAll(".edgePath");
+      var allpathes = onmousepath.select(".path");
+      const _this = this;
+      allpathes
+        .on("mouseout", function (d, id) {
+          allpathes.style("opacity", "1");
+          _this.tipHidden();
+        })
+        .on("mouseover", function (d, id) {
+          if (_this.isVisible(id)) {
+            allpathes.style("opacity", ".2"); // set all edges opacity 0.2
+            d3.select(this).style("opacity", "1");
+          }
+          _this.tipVisible(id.v + "-" + id.w, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
+        })
+        .on("click", function (d, id) {
+          if (_this.isVisible(id)) {
+            _this.nowLine = id;
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete edge<br/>(" +
+              id.v +
+              ", " +
+              id.w +
+              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              _this.tipWatchBlur();
+            }, 0);
+          }
         });
+      // Center the graph
+      var initialScale = 0.4;
+      let xOffset = (450 - g.graph().width * initialScale) / 2;
+      let yOffset = (450 - g.graph().height * initialScale) / 2;
+      svg.call(
+        zoom.transform,
+        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+      );
 
-        /** 创建好的连线push进数组 */
-        linkList.push(link);
-        link.addTo(this.graph);
-      });
-      /** 通过graph.addCell向画布批量添加连线 */
-      //this.graph.addCell(linkList);
-    },
-    randomLayout() {
-      joint.layout.DirectedGraph.layout(this.graph, {
-        dagre: dagre,
-        graphlib: graphlib,
-        /** 布局方向 TB | BT | LR | RL */
-        rankDir: "LR",
-        align: "UL",
-        /** 表示列之间间隔的像素数 */
-        rankSep: 150,
-        /** 相同列中相邻接点之间的间隔的像素数 */
-        nodeSep: 80,
-        /** 同一列中相临边之间间隔的像素数 */
-        edgeSep: 50,
-      });
-    },
-    /** svgpanzoom 画布拖拽、缩放 */
-    svgPanZoom() {
-      /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
-      if (this.multipleSearchValue.nodesList.length) {
-        let svgZoom = svgPanZoom("#paper svg", {
-          /** 判断是否是节点的拖拽 */
-          beforePan: (oldPan, newPan) => {
-            if (this.currCell) {
-              return false;
-            }
-          },
-          /** 是否可拖拽 */
-          panEnabled: true,
-          /** 是否可缩放 */
-          zoomEnabled: true,
-          /** 双击放大 */
-          dblClickZoomEnabled: false,
-          /** 可缩小至的最小倍数 */
-          minZoom: 0.3,
-          /** 可放大至的最大倍数 */
-          maxZoom: 5,
-          /** 是否自适应画布尺寸 */
-          fit: true,
-          /** 图是否居中 */
-          center: true,
-        });
-        /** 手动设置缩放敏感度 */
-        svgZoom.setZoomScaleSensitivity(0.5);
+      svg.attr("height", g.graph().height * initialScale + 40);
+
+      if (this.ifGroup) {
+        this.drawSonGraphs();
       }
     },
-    /** 给paper添加事件 */
-    paperEvent() {
-      /** 确认点击的是节点 */
-      this.paper.on("element:pointerdown", (cellView, evt, x, y) => {
-        this.currCell = cellView;
+    drawGraph() {
+      this.ifGroup = false;
+      let that = this;
+      this.sonNum = 0;
+      this.multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === -1) that.ifGroup = true;
+        else if (state.type === 0) that.sonNum++;
       });
-      /** 在鼠标抬起时恢复currCell为null */
-      this.paper.on("cell:pointerup blank:pointerup", (cellView, evt, x, y) => {
-        this.currCell = null;
-      });
+      console.log(this.ifGroup);
+      setTimeout(() => {
+        this.setGraph();
+      }, 0);
     },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
+
+    drawSonGraphs() {
+      let sonGraphs = [];
+      let gap = {
+        xGap: 100,
+        yGap: 100,
+      };
+      for (let i = 1; i <= this.sonNum; i++) {
+        let ans = countSonPos(
+          this.finalPos[i].nodesList,
+          this.finalPos[0].nodesList
+        );
+        sonGraphs.push(ans.sonPos);
+        if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
+        else ans.gap.xGap = ans.gap.xGap / this.sonNum;
+        if (ans.gap.xGap < gap.xGap) {
+          gap.xGap = ans.gap.xGap;
+        }
+        if (this.sonNum > 8) ans.gap.yGap = ans.gap.yGap / 3;
+        else if (this.sonNum > 4) ans.gap.yGap = ans.gap.yGap / 2;
+        if (ans.gap.yGap < gap.yGap) {
+          gap.yGap = ans.gap.yGap;
+        }
+      }
+
+      for (let i = 1; i <= this.sonNum; i++) {
+        let dom = document.getElementById("paper" + i);
+        drawSonCharts(
+          dom,
+          sonGraphs[i - 1],
+          this.finalPos[i].linksList,
+          gap,
+          "paper" + i
+        );
+      }
+    },
+
     showLoading() {
       const options = {
         target: document.getElementsByClassName("drawing-canvas")[0],
@@ -282,6 +392,21 @@ export default {
         customClass: "counting-anime",
       };
       this.loadingInstance = Loading.service(options);
+    },
+    ifOutCome(node) {
+      let allOut = [];
+      this.multipleSearchValue.nodesList.map((row) => {
+        if (row.type === 0) allOut.push(row.id);
+      });
+      if (allOut.includes(node)) return true;
+      else return false;
+    },
+    isVisible(path) {
+      let link = this.multipleSearchValue.linksList.filter(
+        (item) => item.source === path.v && item.target === path.w
+      );
+      if (link[0].hidden) return false;
+      else return true;
     },
     saveData() {
       localStorage.setItem(
@@ -294,13 +419,14 @@ export default {
       let newFac = [];
       let newOut = [];
       this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type === 1) newFac.push(row.id);
+        if (row.type !== 0) newFac.push(row.id);
       });
       this.multipleSearchValue.nodesList.map((row) => {
         if (row.type === 0) newOut.push(row.id);
       });
       this.countingGraph = true;
       this.showLoading();
+
       axios({
         //请求类型
         method: "GET",
@@ -323,12 +449,21 @@ export default {
           this.loadingInstance = null;
 
           this.saveData();
-          this.initGraph();
+          this.drawGraph();
           this.countingGraph = false;
         })
         .catch((error) => {
-          console.log("请求失败了", error.message);
+          console.log("请求失败了", error);
         });
+    },
+    //add document click listener
+    tipWatchBlur() {
+      document.addEventListener("click", this.listener);
+      console.log("listener");
+    },
+    tip2WatchBlur() {
+      document.addEventListener("click", this.listener2);
+      console.log("listener");
     },
     handleCheckAllChange(val) {
       if (val === true) {
@@ -374,6 +509,89 @@ export default {
         this.multipleSearchValue.nodesList.splice(ifIndex, 1);
       }
     },
+    //document click listener => to close line tooltip
+    listener(e) {
+      let _this = this;
+      let clickDOM = e.target.className;
+      _this.tip2Hidden();
+      if (
+        clickDOM !== "operate-menu" &&
+        clickDOM !== "hint-menu" &&
+        clickDOM !== "hint-list" &&
+        clickDOM !== "tooltip" &&
+        clickDOM !== "operate-header"
+      ) {
+        document.removeEventListener("click", _this.listener);
+      } else if (clickDOM === "operate-menu") {
+        let text = e.target.innerText;
+        if (text.includes("Delete")) this.deleteEdge(text);
+        else this.reverseDirection();
+      }
+    },
+    listener2(e) {
+      let _this = this;
+      let clickDOM = e.target.className;
+      _this.tip2Hidden();
+      if (
+        clickDOM !== "operate-menu" &&
+        clickDOM !== "hint-menu" &&
+        clickDOM !== "hint-list" &&
+        clickDOM !== "tooltip" &&
+        clickDOM !== "operate-header"
+      ) {
+        document.removeEventListener("click", _this.listener2);
+      } else if (clickDOM === "operate-menu") {
+        let text = e.target.innerText;
+        this.deleteNode(text);
+      }
+    },
+    deleteNode(node) {
+      console.log("delete node");
+
+      let nodeName = node.split(" ")[2];
+      let nodeList = this.multipleSearchValue.nodesList.filter(
+        (node) => node.id !== nodeName
+      );
+      this.multipleSearchValue.nodesList = nodeList;
+      let index = this.checkedVariables.indexOf(nodeName);
+      this.checkedVariables.splice(index, 1);
+      this.tipHidden();
+      this.getLinks();
+      /*
+      let linkList = this.multipleSearchValue.linksList.filter(
+        (link) => link.source !== nodeName && link.target !== nodeName
+      );
+      this.multipleSearchValue = {
+        nodesList: nodeList,
+        linksList: linkList,
+        CovariantNum: this.multipleSearchValue.CovariantNum - 1,
+      };
+
+      this.drawGraph();
+      */
+    },
+    reverseDirection() {},
+    deleteEdge(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === nodes[0] && row.target === nodes[1]) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        this.multipleSearchValue.linksList[index] = {
+          source: this.multipleSearchValue.linksList[index].source,
+          target: this.multipleSearchValue.linksList[index].target,
+          value: this.multipleSearchValue.linksList[index].value,
+          hidden: true,
+        };
+        this.saveData();
+        this.hasNoHidden = false;
+        this.tip2Hidden();
+        this.drawGraph();
+      }
+    },
     // create tooltip but not show it
     createTooltip() {
       return d3
@@ -381,27 +599,61 @@ export default {
         .append("div")
         .classed("tooltip", true)
         .style("opacity", 0)
-        .style("display", "none")
-        .style("background", "rgba(0, 0, 0, 0.85)")
-        .style("color", "white")
-        .style("padding", "4px 16px 4px 16px");
+        .style("display", "none");
     },
-    // display node tooltip
+    // display hover-line tooltip
     tipVisible(textContent, event) {
-      this.tooltip.value
+      document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
+      this.tooltip
         .transition()
         .duration(0)
         .style("opacity", 1)
         .style("display", "block");
-      this.tooltip.value
+      this.tooltip
+        .html(
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
+        )
+        .style("left", `${event.pageX + 15}px`)
+        .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
+    },
+    //display delete-menu tooltip
+    tip2Visible(textContent, event) {
+      document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
+      this.tooltip2
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip2
         .html(textContent)
         .style("left", `${event.pageX}px`)
         .style("top", `${event.pageY}px`);
     },
-
     // tooltip隐藏
     tipHidden() {
       this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    tip2Hidden() {
+      this.tooltip2
         .transition()
         .duration(100)
         .style("opacity", 0)
@@ -422,7 +674,7 @@ export default {
         (link) => link.hidden
       );
       if (hiddenNodes.length > 0) this.hasNoHidden = false;
-      this.initGraph();
+      this.drawGraph();
     }
   },
 };
@@ -454,7 +706,8 @@ export default {
   padding-right: 10px;
 }
 rect#hover-node {
-  stroke: rgb(169, 169, 169);
+  stroke: rgba(169, 169, 169, 0.562);
+  fill: #333;
   stroke-width: 1.5px;
   transition-duration: 0.2s;
 }
@@ -556,9 +809,9 @@ hr {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 .drawing-buttons {
   height: 10;
@@ -568,8 +821,44 @@ hr {
   width: 100%;
   display: flex;
   height: 90%;
-  overflow: auto;
 }
+.group-graphs {
+  width: 100%;
+  display: flex;
+  height: 90%;
+}
+.sum-svg {
+  position: absolute;
+  left: 16px;
+  top: calc(8vh + 650px);
+  padding: 16px;
+  width: 458px;
+  height: 480px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.sum-svg .title {
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: bold;
+}
+.sum-svg svg {
+  height: 450px;
+  width: 458px;
+}
+.son-svg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+.son-svg div {
+  padding: 16px;
+  flex: 1;
+  min-width: 25%;
+  max-width: 100%;
+}
+
 .graph-main-title {
   font-size: 20px;
   margin-top: 20px;
@@ -587,5 +876,20 @@ hr {
   position: absolute !important;
   top: 0;
   height: 100%;
+}
+.chart-box {
+  display: flex;
+  padding: 8px;
+  flex-direction: column;
+  height: 180px;
+  justify-content: center;
+
+  width: 300px;
+  align-items: center;
+}
+.chart-hint {
+  display: flex;
+  height: 170px;
+  width: 284px;
 }
 </style>

@@ -305,7 +305,7 @@ export default {
   font-size: 18px;
 }
 .loading-box {
-  height: auto;
+  height: 0;
 }
 .show-variable-button {
   margin-left: 50px;

@@ -1,6 +1,5 @@
 import * as echarts from "echarts";
 export const createChart = (dom, line) => {
-
     echarts.dispose(dom);
     var myChart = echarts.init(dom);
 

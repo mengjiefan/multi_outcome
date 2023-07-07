@@ -61,8 +61,11 @@
           </svg>
         </div>
         <div class="son-svg">
-          <div v-for="index in sonNum" :key="index">
-            <div :id="'paper' + index"></div>
+          <div v-for="index in sonNum" :key="index" :class="'paper' + index">
+            {{ multipleSearchValue.selections[index - 1].outcome }}
+            <svg>
+              <g />
+            </svg>
           </div>
         </div>
       </div>
@@ -82,8 +85,7 @@ import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import { drawSonCharts } from "@/plugin/sonGraph";
-import { countPos, countSonPos } from "@/plugin/CountPos";
+import { setSingleGraph } from "@/plugin/singleGraph";
 
 var cmap = [
   "#1f77b4",
@@ -116,11 +118,11 @@ export default {
       VariablesOptions,
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
+      tip2Show: ref(false),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
       }),
-      finalPos: ref([]),
     };
   },
   methods: {
@@ -177,9 +179,6 @@ export default {
       }
       var edges = data.linksList;
       edges.forEach(function (edge) {
-        if (!edge.type) {
-          edge.type = 0;
-        }
         var valString = (edge.value * 10).toString() + "px";
         var styleString = "stroke-width: " + valString;
         //var edgeColor = "stroke: " + cmap[edge.type % 10];
@@ -189,7 +188,6 @@ export default {
             style:
               "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
             curve: d3.curveBasis,
-            label: edge.value.toString(),
           });
         } else {
           if (edge.value < 0) {
@@ -226,9 +224,6 @@ export default {
       });
       dagre.layout(g);
 
-      if (this.ifGroup) {
-        this.finalPos = countPos(g, this.multipleSearchValue.selections);
-      }
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
@@ -240,7 +235,7 @@ export default {
       this.tooltip = this.createTooltip();
       this.tooltip2 = this.createTooltip();
       // Set up zoom support
-   
+
       var zoom = d3.zoom().on("zoom", function (event) {
         inner.attr("transform", event.transform);
         that.tipHidden();
@@ -282,40 +277,6 @@ export default {
         });
 
       // add hover effect & click hint to lines
-      var onmousepath = d3.selectAll(".edgePath");
-      var allpathes = onmousepath.select(".path");
-      const _this = this;
-      allpathes
-        .on("mouseout", function (d, id) {
-          allpathes.style("opacity", "1");
-          _this.tipHidden();
-        })
-        .on("mouseover", function (d, id) {
-          if (_this.isVisible(id)) {
-            allpathes.style("opacity", ".2"); // set all edges opacity 0.2
-            d3.select(this).style("opacity", "1");
-          }
-          _this.tipVisible(id.v + "-" + id.w, {
-            pageX: d.pageX,
-            pageY: d.pageY,
-          });
-        })
-        .on("click", function (d, id) {
-          if (_this.isVisible(id)) {
-            _this.nowLine = id;
-            let hintHtml =
-              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-            <div class='operate-menu'>Delete edge<br/>(" +
-              id.v +
-              ", " +
-              id.w +
-              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
-            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-            setTimeout(() => {
-              _this.tipWatchBlur();
-            }, 0);
-          }
-        });
       // Center the graph
       var initialScale = 0.4;
       let xOffset = (450 - g.graph().width * initialScale) / 2;
@@ -330,6 +291,42 @@ export default {
       if (this.ifGroup) {
         this.drawSonGraphs();
       }
+      var onmousepath = d3.selectAll(".edgePath");
+      var allpathes = onmousepath.select(".path");
+      const _this = this;
+      allpathes
+        .on("mouseout", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            d3.select(this).style("stroke", "black");
+          }
+          _this.tipHidden();
+        })
+        .on("mouseover", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            d3.select(this).style("stroke", "#1f77b4");
+            if (!_this.tip2Show)
+              _this.tipVisible(id.v + "-" + id.w, {
+                pageX: d.pageX,
+                pageY: d.pageY,
+              });
+          }
+        })
+        .on("click", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            _this.nowLine = id;
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete edge<br/>(" +
+              id.v +
+              ", " +
+              id.w +
+              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              _this.tipWatchBlur();
+            }, 0);
+          }
+        });
     },
     drawGraph() {
       this.ifGroup = false;
@@ -348,43 +345,39 @@ export default {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
-
     drawSonGraphs() {
-      let sonGraphs = [];
-      let gap = {
-        xGap: 100,
-        yGap: 100,
+      let height = 800;
+      if (this.sonNum > 8) {
+        height = height / 3;
+      } else if (this.sonNum > 4) {
+        height = height / 2;
+      }
+      let width = 1500;
+      if (this.sonNum > 3) {
+        width = width / 4;
+      } else if (this.sonNum > 0) {
+        width = width / this.sonNum;
+      }
+      let size = {
+        scale: this.sonNum > 0 ? 1.8 / this.sonNum : 1,
+        width: width,
+        height: height,
       };
       for (let i = 1; i <= this.sonNum; i++) {
-        let ans = countSonPos(
-          this.finalPos[i].nodesList,
-          this.finalPos[0].nodesList
-        );
-        sonGraphs.push(ans.sonPos);
-        if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
-        else ans.gap.xGap = ans.gap.xGap / this.sonNum;
-        if (ans.gap.xGap < gap.xGap) {
-          gap.xGap = ans.gap.xGap;
-        }
-        if (this.sonNum > 8) ans.gap.yGap = ans.gap.yGap / 3;
-        else if (this.sonNum > 4) ans.gap.yGap = ans.gap.yGap / 2;
-        if (ans.gap.yGap < gap.yGap) {
-          gap.yGap = ans.gap.yGap;
-        }
-      }
-
-      for (let i = 1; i <= this.sonNum; i++) {
-        let dom = document.getElementById("paper" + i);
-        drawSonCharts(
-          dom,
-          sonGraphs[i - 1],
-          this.finalPos[i].linksList,
-          gap,
-          "paper" + i
+        let selection = this.multipleSearchValue.selections[i - 1];
+        let svg = d3.select(".paper" + i).select("svg");
+        console.log(svg);
+        setSingleGraph(
+          svg,
+          {
+            linksList: this.multipleSearchValue.linksList,
+            nodesList: this.multipleSearchValue.nodesList,
+          },
+          selection,
+          size
         );
       }
     },
-
     showLoading() {
       const options = {
         target: document.getElementsByClassName("drawing-canvas")[0],
@@ -525,7 +518,10 @@ export default {
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         if (text.includes("Delete")) this.deleteEdge(text);
-        else this.reverseDirection();
+        else {
+          let text = e.srcElement.parentElement.children[2].innerText;
+          this.reverseDirection(text);
+        }
       }
     },
     listener2(e) {
@@ -570,7 +566,24 @@ export default {
       this.drawGraph();
       */
     },
-    reverseDirection() {},
+    reverseDirection(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        this.multipleSearchValue.linksList[index] = {
+          source: nodes[1],
+          target: nodes[0],
+          value: this.multipleSearchValue.linksList[index].value,
+        };
+        this.saveData();
+        this.tip2Hidden();
+        this.drawGraph();
+      }
+    },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
@@ -603,6 +616,7 @@ export default {
     },
     // display hover-line tooltip
     tipVisible(textContent, event) {
+      this.tip2Hidden();
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
       this.tooltip
@@ -632,8 +646,10 @@ export default {
     },
     //display delete-menu tooltip
     tip2Visible(textContent, event) {
+      this.tip2Hidden();
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
+      this.tip2Show = true;
       this.tooltip2
         .transition()
         .duration(0)
@@ -653,6 +669,7 @@ export default {
         .style("display", "none");
     },
     tip2Hidden() {
+      this.tip2Show = false;
       this.tooltip2
         .transition()
         .duration(100)
@@ -858,7 +875,10 @@ hr {
   min-width: 25%;
   max-width: 100%;
 }
-
+.son-svg div svg {
+  width: 100%;
+  height: 100%;
+}
 .graph-main-title {
   font-size: 20px;
   margin-top: 20px;
