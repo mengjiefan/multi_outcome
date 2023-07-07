@@ -227,8 +227,9 @@ export default {
         node.rx = node.ry = 20;
         node.width = 20;
         node.height = 20;
+        
         if (node.type == 0) node.style = "fill: #f77;";
-        else if (node.type < 0 || !that.sonNum < 2) {
+        else if (node.type < 0 || that.sonNum < 2) {
           node.style = "fill:" + cmap[0];
         }
         //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
