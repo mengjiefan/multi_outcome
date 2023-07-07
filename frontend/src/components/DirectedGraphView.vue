@@ -199,12 +199,14 @@ export default {
                 ";fill: transparent;stroke-dasharray:4 4",
               curve: d3.curveBasis,
               label: edge.value.toString(),
+              arrowhead: "vee",
             });
           } else {
             g.setEdge(edge.source, edge.target, {
               style: edgeColor + ";" + styleString + ";fill: transparent",
               curve: d3.curveBasis,
               label: edge.value.toString(),
+              arrowhead: "vee",
             });
           }
         }
@@ -911,5 +913,10 @@ hr {
   display: flex;
   height: 170px;
   width: 284px;
+}
+#triangle {
+  height: 5px;
+  width: 5px;
+  background-color: black;
 }
 </style>

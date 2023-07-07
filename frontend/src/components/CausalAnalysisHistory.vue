@@ -65,7 +65,7 @@
           </el-option>
         </el-select>
         <el-select v-model="selectType" placeholder="Please Choose the mode">
-          <el-option value="1" label="Compare Different Rows"></el-option>
+          <el-option value="1" label="Compare the Rows"></el-option>
           <el-option value="2" label="Merge All the Nodes"></el-option>
         </el-select>
       </div>

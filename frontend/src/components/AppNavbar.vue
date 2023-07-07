@@ -2,7 +2,7 @@
 <template>
   <div class="navbar">
     <div class="nav-title">Navigation View</div>
-    <br/>
+    <br />
     <el-tabs type="border-card" v-model="activeName">
       <el-tab-pane label="Single Outcome" name="single">
         <div class="CharacterSelector">
@@ -31,6 +31,17 @@ export default {
       activeName: ref("single"),
     };
   },
+  watch: {
+    $route: {
+      handler: function (route) {
+        console.log(route);
+        if (route.query.mode === "save") {
+          this.activeName = 'second';
+        }
+      },
+      immediate: true,
+    },
+  },
 };
 </script>
  
@@ -52,5 +63,4 @@ export default {
   font-weight: bold;
   text-align: center;
 }
-
 </style>

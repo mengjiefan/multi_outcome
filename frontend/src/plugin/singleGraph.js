@@ -65,12 +65,14 @@ export const setSingleGraph = (svg, multipleSearchValue, selection, size) => {
                         ";fill: transparent;stroke-dasharray:4 4",
                     curve: d3.curveBasis,
                     label: edge.value.toString(),
+                    arrowhead: 'vee'
                 });
             } else {
                 g.setEdge(edge.source, edge.target, {
                     style: edgeColor + ";" + styleString + ";fill: transparent",
                     curve: d3.curveBasis,
                     label: edge.value.toString(),
+                    arrowhead: 'vee'
                 });
             }
         }
