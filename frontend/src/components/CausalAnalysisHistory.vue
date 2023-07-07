@@ -273,7 +273,8 @@ export default {
         let linksList = [];
         selections = this.removeDuplicate(selections);
         let allNumber = selections.length;
-        selections.forEach((selection) => {
+        for (let sI = 0; sI < selections.length; sI++) {
+          let selection = selections[sI];
           let flag = false;
           if (!nodes.includes(selection.outcome)) {
             flag = true;
@@ -295,7 +296,8 @@ export default {
               nodesList[index].type++;
             }
           });
-          selection.linksList.forEach((link) => {
+          for (let i = 0; i < selection.linksList.length; i++) {
+            let link = selection.linksList[i];
             let index = linksList.findIndex((item) => {
               if (item.target === link.target && item.source === link.source) {
                 return true;
@@ -316,9 +318,13 @@ export default {
                 target: linksList[index].target,
                 value: linksList[index].value,
               };
+            } else if (!linksList[index].hidden && !link.hidden) {
+              link.source = linksList[index].source;
+              link.target = linksList[index].target;
+              //排除可能的同边不同向的情况
             }
-          });
-        });
+          }
+        }
         nodesList = nodesList.map((node) => {
           if (node.type === allNumber && allNumber > 1)
             return {

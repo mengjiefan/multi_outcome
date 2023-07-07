@@ -62,7 +62,19 @@
         </div>
         <div class="son-svg">
           <div v-for="index in sonNum" :key="index" :class="'paper' + index">
-            {{ multipleSearchValue.selections[index - 1].outcome }}
+            <div class="one-line-operator">
+              <div class="son-title">
+                · {{ multipleSearchValue.selections[index - 1].outcome }}
+              </div>
+              <div class="drawing-buttons">
+                <el-button
+                  @click="saveSingleToTable(index - 1)"
+                  type="warning"
+                  size="small"
+                  round
+                >Save</el-button>
+              </div>
+            </div>
             <svg>
               <g />
             </svg>
@@ -134,6 +146,20 @@ export default {
           mode: "save",
         },
       });
+    },
+    saveSingleToTable(index) {
+      /*
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify(this.multipleSearchValue)
+      );
+      this.$router.push({
+        path: this.$route.path,
+        query: {
+          mode: "save",
+        },
+      });
+      */
     },
     truelyDelete() {
       console.log("delete edge");
@@ -227,7 +253,7 @@ export default {
         node.rx = node.ry = 20;
         node.width = 20;
         node.height = 20;
-        
+
         if (node.type == 0) node.style = "fill: #f77;";
         else if (node.type < 0 || that.sonNum < 2) {
           node.style = "fill:" + cmap[0];
@@ -911,6 +937,19 @@ hr {
 .son-svg div svg {
   width: 100%;
   height: 100%;
+}
+.one-line-operator {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+.son-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+.one-line-operator .drawing-buttons {
+  display: flex;
+  justify-content: flex-end;
 }
 .graph-main-title {
   font-size: 20px;
