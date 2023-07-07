@@ -402,7 +402,9 @@ export default {
     },
     showLoading() {
       const options = {
-        target: document.getElementsByClassName("drawing-canvas")[0],
+        target: this.ifGroup
+          ? document.getElementsByClassName("son-svg")[0]
+          : document.getElementsByClassName("drawing-canvas")[0],
         background: "rgba(255, 255, 255, 0.5)",
         customClass: "counting-anime",
       };
