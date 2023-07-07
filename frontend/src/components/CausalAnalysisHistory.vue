@@ -254,7 +254,7 @@ export default {
     // 通过公用数据库store进行数据管理
     btnSelect() {
       let selections = this.$refs.multipleTable.selection;
-      let allNumber = selections.length;
+
       if (this.selectType === "2") {
         let outcomes = [];
         let factors = [];
@@ -271,6 +271,8 @@ export default {
         let nodes = [];
         let nodesList = [];
         let linksList = [];
+        selections = this.removeDuplicate(selections);
+        let allNumber = selections.length;
         selections.forEach((selection) => {
           let flag = false;
           if (!nodes.includes(selection.outcome)) {
@@ -281,7 +283,7 @@ export default {
               type: 0,
             });
           }
-          selection.Variables.forEach((node) => {
+          selection.variable.forEach((node) => {
             if (!nodes.includes(node)) {
               nodes.push(node);
               nodesList.push({
@@ -293,7 +295,7 @@ export default {
               nodesList[index].type++;
             }
           });
-          selection.links.forEach((link) => {
+          selection.linksList.forEach((link) => {
             let index = linksList.findIndex((item) => {
               if (item.target === link.target && item.source === link.source) {
                 return true;
@@ -337,7 +339,7 @@ export default {
             JSON.stringify({
               nodesList: nodesList,
               linksList: linksList,
-              selections: this.removeDuplicate(selections),
+              selections: selections,
             })
           );
           _this.routeToGraph();
