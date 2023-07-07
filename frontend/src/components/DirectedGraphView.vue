@@ -33,7 +33,7 @@
       </el-button>
       <div class="hint">
         <span>Note: </span>Modifying Nodes will affect previous changes to
-        edges; Re-layout is only possible after removing edges
+        edges; Re-layout is only possible after removing or reversing edges
       </div>
     </div>
     <hr />
@@ -85,7 +85,7 @@ import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import { setSingleGraph } from "@/plugin/singleGraph";
+import { setSingleGraph, addArrowType } from "@/plugin/singleGraph";
 
 var cmap = [
   "#1f77b4",
@@ -140,6 +140,15 @@ export default {
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
+      linksList = linksList.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+        else return link;
+      });
       this.multipleSearchValue.linksList = linksList;
       this.hasNoHidden = true;
       this.saveData();
@@ -180,9 +189,10 @@ export default {
       var edges = data.linksList;
       edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
-        var styleString = "stroke-width: " + valString;
-        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
+        let completeStyle =
+          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -190,23 +200,22 @@ export default {
             curve: d3.curveBasis,
           });
         } else {
+          if (edge.reverse)
+            completeStyle = completeStyle + "marker-start:url(#normals);";
+          else completeStyle = completeStyle + "marker-end:url(#normale);";
           if (edge.value < 0) {
             g.setEdge(edge.source, edge.target, {
-              style:
-                edgeColor +
-                ";" +
-                styleString +
-                ";fill: transparent;stroke-dasharray:4 4",
+              style: completeStyle + "stroke-dasharray:4 4",
               curve: d3.curveBasis,
               label: edge.value.toString(),
-              arrowhead: "vee",
+              arrowhead: "undirected",
             });
           } else {
             g.setEdge(edge.source, edge.target, {
-              style: edgeColor + ";" + styleString + ";fill: transparent",
+              style: completeStyle,
               curve: d3.curveBasis,
               label: edge.value.toString(),
-              arrowhead: "vee",
+              arrowhead: "undirected",
             });
           }
         }
@@ -296,15 +305,26 @@ export default {
       var onmousepath = d3.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;
+      addArrowType(svg);
       allpathes
         .on("mouseout", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
             d3.select(this).style("stroke", "black");
+            if (!_this.isReverse(id)) {
+              d3.select(this).style("marker-end", "url(#normale)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#normals)"); //Added
+            }
           }
           _this.tipHidden();
         })
         .on("mouseover", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
+            if (!_this.isReverse(id)) {
+              d3.select(this).style("marker-end", "url(#activeE)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#activeS)"); //Added
+            }
             d3.select(this).style("stroke", "#1f77b4");
             if (!_this.tip2Show)
               _this.tipVisible(id.v + "-" + id.w, {
@@ -568,6 +588,15 @@ export default {
       this.drawGraph();
       */
     },
+    isReverse(edge) {
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === edge.v && row.target === edge.w && !row.hidden) {
+          return true;
+        } else return false;
+      });
+      if (index < 0) return false;
+      return this.multipleSearchValue.linksList[index].reverse === true;
+    },
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -576,11 +605,10 @@ export default {
         } else return false;
       });
       if (index > -1) {
-        this.multipleSearchValue.linksList[index] = {
-          source: nodes[1],
-          target: nodes[0],
-          value: this.multipleSearchValue.linksList[index].value,
-        };
+        if (!this.multipleSearchValue.linksList[index].reverse) {
+          this.multipleSearchValue.linksList[index]["reverse"] = true;
+          this.hasNoHidden = false;
+        } else this.multipleSearchValue.linksList[index].reverse = false;
         this.saveData();
         this.tip2Hidden();
         this.drawGraph();
@@ -689,10 +717,10 @@ export default {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
         return node.id;
       });
-      let hiddenNodes = this.multipleSearchValue.linksList.filter(
-        (link) => link.hidden
+      let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
+        (link) => link.hidden || link.reverse
       );
-      if (hiddenNodes.length > 0) this.hasNoHidden = false;
+      if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
       this.drawGraph();
     }
   },

@@ -45,39 +45,37 @@ export const setSingleGraph = (svg, multipleSearchValue, selection, size) => {
     var edges = data.linksList;
     edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
-        var styleString = "stroke-width: " + valString;
-        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
+        let completeStyle =
+            edgeColor + ";" + widthStr + ";" + "fill: transparent;";
         if (edge.hidden || !exist(selection.linksList, edge)) {
             g.setEdge(edge.source, edge.target, {
                 style:
                     "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
                 curve: d3.curveBasis,
-                label: ''
             });
         } else {
+            if (edge.reverse)
+                completeStyle = completeStyle + "marker-start:url(#normals);";
+            else completeStyle = completeStyle + "marker-end:url(#normale);";
             if (edge.value < 0) {
                 g.setEdge(edge.source, edge.target, {
-                    style:
-                        edgeColor +
-                        ";" +
-                        styleString +
-                        ";fill: transparent;stroke-dasharray:4 4",
+                    style: completeStyle + "stroke-dasharray:4 4",
                     curve: d3.curveBasis,
                     label: edge.value.toString(),
-                    arrowhead: 'vee'
+                    arrowhead: "undirected",
                 });
             } else {
                 g.setEdge(edge.source, edge.target, {
-                    style: edgeColor + ";" + styleString + ";fill: transparent",
+                    style: completeStyle,
                     curve: d3.curveBasis,
                     label: edge.value.toString(),
-                    arrowhead: 'vee'
+                    arrowhead: "undirected",
                 });
             }
         }
     });
-    let that = this;
     // Set some general styles
     g.nodes().forEach(function (v) {
         var node = g.node(v);
@@ -112,7 +110,7 @@ export const setSingleGraph = (svg, multipleSearchValue, selection, size) => {
     var initialScale = size.scale;
     console.log(size)
     let xOffset = (size.width - g.graph().width * initialScale) / 2;
-    let yOffset =10;
+    let yOffset = 10;
     svg.call(
         zoom.transform,
         d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
@@ -126,4 +124,82 @@ const exist = (links, link) => {
         else if (path.source === link.target && path.target === link.source && !path.hidden) flag = true;
     })
     return flag;
+}
+export const addArrowType = (svg) => {
+    svg
+        .append("defs")
+        .selectAll("marker")
+        .data(["normals", "licensing", "resolved"])
+        .enter()
+        .append("marker")
+        .attr("id", function (d) {
+            return d;
+        })
+        .attr("viewBox", "-10 -5 10 10")
+        .attr("refX", -9)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("transform", "rotate(180)")
+        .attr("d", "M0,-5L10,0L0,5L10,0L0, -4")
+        .style("stroke", "black")
+        .style('fill', 'black')
+        .style("opacity", "1");
+
+    svg.append("defs").selectAll("marker")
+        .data(["normale", "licensing", "resolved"])
+        .enter().append("marker")
+        .attr("id", function (d) {
+            return d;
+        })
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 9)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+        .style("stroke", "black")
+        .style("opacity", "1");
+
+    svg.append("defs").selectAll("marker")
+        .data(["activeE", "licensing", "resolved"])
+        .enter().append("marker")
+        .attr("id", function (d) {
+            return d;
+        })
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 9)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+        .style("stroke", cmap[0])
+        .style("opacity", "1");
+
+    svg
+        .append("defs")
+        .selectAll("marker")
+        .data(["activeS", "licensing", "resolved"])
+        .enter()
+        .append("marker")
+        .attr("id", function (d) {
+            return d;
+        })
+        .attr("viewBox", "-10 -5 10 10")
+        .attr("refX", -9)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("transform", "rotate(180)")
+        .attr("d", "M0,-5L10,0L0,5L10,0L0, -4")
+        .style("stroke", cmap[0])
+        .style("opacity", "1");
 }
