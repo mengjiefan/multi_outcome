@@ -52,7 +52,7 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
+      <svg v-if="!sonNum > 0" class="graph-svg"><g /></svg>
       <div v-else class="group-graphs">
         <div class="sum-svg">
           <div class="title">SuperGraph</div>
@@ -113,7 +113,7 @@ export default {
       tooltip: null,
       nowLine: ref(),
       tooltip2: null,
-      sonNum: ref(1),
+      sonNum: ref(0),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
@@ -228,7 +228,7 @@ export default {
         node.width = 20;
         node.height = 20;
         if (node.type == 0) node.style = "fill: #f77;";
-        else if (node.type < 0 || !that.ifGroup) {
+        else if (node.type < 0 || !that.sonNum < 2) {
           node.style = "fill:" + cmap[0];
         }
         //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
@@ -299,7 +299,7 @@ export default {
 
       svg.attr("height", g.graph().height * initialScale + 40);
 
-      if (this.ifGroup) {
+      if (this.sonNum > 1) {
         this.drawSonGraphs();
       }
       var onmousepath = d3.selectAll(".edgePath");
@@ -368,15 +368,15 @@ export default {
       createChart(dom, line);
     },
     drawSonGraphs() {
-      let height = 800;
-      if (this.sonNum > 8) {
+      let height = 810;
+      if (this.sonNum > 6) {
         height = height / 3;
-      } else if (this.sonNum > 4) {
+      } else if (this.sonNum > 3) {
         height = height / 2;
       }
       let width = 1500;
       if (this.sonNum > 3) {
-        width = width / 4;
+        width = width / 3;
       } else if (this.sonNum > 0) {
         width = width / this.sonNum;
       }
