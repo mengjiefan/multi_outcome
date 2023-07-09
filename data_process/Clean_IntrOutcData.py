@@ -19,50 +19,10 @@ import pandas as pd
         
 上述（1）和 （2） 已经通过 'IntrOutcData_varName.csv' 文件手动完成
 
-（3） 值域映射：
-Sleeplessness / insomnia : Never/rarely-0, Prefer not to answer-0, Sometimes-1, Usually-2, 
-Salt added to food : Never/rarely-0, Prefer not to answer-0, Sometimes-1, Usually-2, Always-3
-
-Smoke : No-0, Only occasionally-1, Prefer not to answer-0, Yes, on most or all days-1, 
-
-Drink : Never-0, Prefer not to answer-0, Current-1, Previous-1
-
-Sex : Male-1  Female-2
-
-Oily fish intake : Never-0, Do not know-0, Less than once a week-1, Once a week-2, Once or more daily-3, 2-4 times a week-4, 5-6 times a week-5, Prefer not to answer-0
-Processed meat intake : Never-0, Do not know-0, Less than once a week-1, Once a week-2, Once or more daily-3, 2-4 times a week-4, 5-6 times a week-5, Prefer not to answer-0
-Cheese intake: Never-0, Do not know-0, Less than once a week-1, Once a week-2, Once or more daily-3, 2-4 times a week-4, 5-6 times a week-5, Prefer not to answer-0
-
-Illnesses of father: 
-Illnesses of mother: Alzheimer's disease/dementia-1, Bowel cancer-2, Chronic bronchitis/emphysema-3, Diabetes-4, High blood pressure-5, Heart disease-6, Lung cancer-7, Parkinson's disease-8,
-                        Prostate cancer-9, Stroke-10, Severe depression-11, Breast cancer-12, Prefer not to answer (group 1)-0,  Do not know (group 1)-0, None of the above (group 1)-0, 
-Illnesses of siblings: 疾病列空值应该用0来填充
-
-
-（4） 补全空值：
-在数据分析中，根据不同的变量类型和数据特征，可以选择不同的方法来补全空值。
-  1、数值型变量：
-    1.1 均值/中位数/众数填充：对于连续型数值变量，可以使用均值、中位数或众数等统计量来填充空值。
-    1.2 固定值填充：对于某些特定的数值型变量，可以使用固定的值来填充空值，例如填充为0或-1。
-    1.3 插值方法：对于时间序列或具有趋势性的数值型变量，可以使用插值方法（如线性插值、样条插值等）来估计缺失值。
-  2、类别型变量：
-    2.1 众数填充：对于类别型变量，可以使用众数（出现频率最高的值）来填充空值。
-    2.2 固定值填充：对于某些特定的类别型变量，可以使用固定的值（如'Unknown'）来填充空值。 
-  3、文本型变量：
-    3.1 固定值填充：对于文本型变量，可以使用固定的值（如'Unknown'）来填充空值。
-    3.2 自然语言处理方法：对于一些特定的文本型变量，可以使用自然语言处理技术（如文本分类、文本生成）来推测缺失值。
-  4、时间型变量：
-    4.1 前向填充/后向填充：对于时间序列数据，可以使用前一个非空值或后一个非空值来填充空值。
-    4.2 插值方法：对于具有趋势性的时间序列数据，可以使用插值方法（如线性插值、样条插值等）来估计缺失值。
-
-我们的变量基本上就是数值型或者是类别型变量，故我们统一选择用【众数】来填充
-疾病列空值应该用0来填充 
-Oestradiol 雌二醇（12399）-- 【40岁以下女性：正常范围为 15-350 pg/mL。 40岁以上女性：正常范围为 10-60 pg/mL。】
-Microalbumin in urine （35401）
 """
 
 # 经过（1）和 （2） 对 IntrOutcData_varName.csv 进行手动处理过后得到 'IntrOutcData_varName_mannual.csv'（数据量为 98530 * 76） 文件：
-# selected_variants = pd.read_csv('IntrOutcData_varName_mannual.csv')  # 98530 * 76
+
 # （3） 值域映射：
 # 读取原始CSV文件
 df = pd.read_csv('IntrOutcData_varName_mannual.csv')
@@ -163,4 +123,40 @@ mapping_dict6 = {
 df["Sex"] = df["Sex"].map(mapping_dict6)
 
 # 将结果保存到新的CSV文件
-df.to_csv("mapped_data.csv", index=False)  # 98530 * 76
+# df.to_csv("mapped_data.csv", index=False)  # 98530 * 76
+
+"""
+（4） 补全空值：
+在数据分析中，根据不同的变量类型和数据特征，可以选择不同的方法来补全空值。
+  1、数值型变量：
+    1.1 均值/中位数/众数填充：对于连续型数值变量，可以使用均值、中位数或众数等统计量来填充空值。
+    1.2 固定值填充：对于某些特定的数值型变量，可以使用固定的值来填充空值，例如填充为0或-1。
+    1.3 插值方法：对于时间序列或具有趋势性的数值型变量，可以使用插值方法（如线性插值、样条插值等）来估计缺失值。
+  2、类别型变量：
+    2.1 众数填充：对于类别型变量，可以使用众数（出现频率最高的值）来填充空值。
+    2.2 固定值填充：对于某些特定的类别型变量，可以使用固定的值（如'Unknown'）来填充空值。 
+
+我们的变量基本上就是数值型或者是类别型变量，故我们统一选择用【众数】来填充
+Oestradiol 雌二醇（12399）-- 【40岁以下女性：正常范围为 15-350 pg/mL。 40岁以上女性：正常范围为 10-60 pg/mL。】
+Microalbumin in urine （35401）
+Body mass index (BMI) --保留两位小数
+疾病列空值应该用0来填充 
+"""
+# 疾病列空值用0来填充
+df["Illnesses of father"].fillna(0, inplace=True)
+df["Illnesses of mother"].fillna(0, inplace=True)
+df["Illnesses of siblings"].fillna(0, inplace=True)
+# 其他变量的空值均用众数来填充
+# 获取除了"Illnesses of father"、"Illnesses of mother"和"Illnesses of siblings"之外的列名
+other_columns = df.columns.difference(["Illnesses of father", "Illnesses of mother", "Illnesses of siblings"])
+
+# 使用各自变量的众数填补空值
+for column in other_columns:
+    mode = df[column].mode()[0]
+    df[column].fillna(mode, inplace=True)
+
+# 保留"Body mass index (BMI)"列的值两位小数
+df["Body mass index (BMI)"] = df["Body mass index (BMI)"].round(2)
+# 存储为新的CSV文件
+df.to_csv("ukb_8outcomes_data.csv", index=False)  # # 98530 * 76; 在上述"mapped_data.csv"的基础上填补了空值
+
