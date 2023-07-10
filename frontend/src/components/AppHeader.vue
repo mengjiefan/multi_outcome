@@ -1,5 +1,8 @@
 <template>
-  <div class="header" align = "center">MultiOutcome Causality Explore</div>
+  <div></div>
+  <!--
+    <div class="header" align = "center">MultiOutcome Causality Explore</div>
+  -->
   <!-- <h2 align = "center">MultiOutcome Causality Explore</h2> -->
 </template>
  

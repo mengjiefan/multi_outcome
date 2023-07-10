@@ -1,7 +1,6 @@
 
 <template>
   <div class="navbar">
-    <div class="nav-title">Navigation View</div>
     <br />
     <el-tabs type="border-card" v-model="activeName">
       <el-tab-pane label="Single Outcome" name="single">
