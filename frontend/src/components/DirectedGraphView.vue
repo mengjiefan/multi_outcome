@@ -180,6 +180,9 @@ export default {
       this.saveData();
       this.drawGraph();
     },
+    setSonGraph(){
+
+    },
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
