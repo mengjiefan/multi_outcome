@@ -44,8 +44,25 @@ export default new VueRouter({
 					component: MultiOutcomes,
 				},
 				{
+					name: 'DirectedGraphView',
 					path: '/AppMainPlot/DirectedGraphView',
 					component: DirectedGraph,
+					children: [
+						{
+							name: 'SimpleDirectedGraph',
+							path: '/AppMainPlot/DirectedGraphView/simple',
+							component: () => import(
+								"../views/SimpleDirectedGraph.vue"
+							),
+						},
+						{
+							name: 'MultipleDirectedGraph',
+							path: '/AppMainPlot/DirectedGraphView/multiple',
+							component: () => import(
+								"../views/MultipleDirectedGraph.vue"
+							),
+						},
+					]
 				}
 			]
 		}
