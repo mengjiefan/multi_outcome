@@ -236,8 +236,23 @@ export default {
                   return false;
                 }
               });
-              if (index < 0 && !link.hidden) {
+              if (index < 0) {
                 selectionNow.linksList.push(link);
+              } else if (selectionNow.linksList[index].hidden && !link.hidden) {
+                //未隐藏覆盖隐藏
+                selectionNow.linksList[index] = {
+                  source: linksList[index].source,
+                  target: linksList[index].target,
+                  value: linksList[index].value,
+                };
+              } else if (link.reverse) {
+                //翻转中覆盖无翻转
+                selectionNow.linksList[index] = {
+                  source: linksList[index].source,
+                  target: linksList[index].target,
+                  value: linksList[index].value,
+                  reverse: true,
+                };
               }
             });
             selection.Variables.forEach((node) => {
@@ -313,15 +328,22 @@ export default {
             if (index < 0) {
               linksList.push(link);
             } else if (linksList[index].hidden && !link.hidden) {
+              //不隐藏覆盖隐藏
               linksList[index] = {
                 source: linksList[index].source,
                 target: linksList[index].target,
                 value: linksList[index].value,
               };
             } else if (!linksList[index].hidden && !link.hidden) {
+              //需要都转为同向，否则布局不同；对于带reverse的特别处理
+              if(link.reverse) {
+                if(link.source === linksList[index].target
+                 &&link.target === linksList[index]) {
+                link.reverse = false;
+                }
+              }
               link.source = linksList[index].source;
               link.target = linksList[index].target;
-              //排除可能的同边不同向的情况
             }
           }
         }

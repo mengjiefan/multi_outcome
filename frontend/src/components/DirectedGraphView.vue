@@ -1,7 +1,7 @@
 <template>
   <div id="DirectedGraph">
-    <div class="graph-info-header">
-      <div class="graph-title">DirectedGraph View</div>
+    <div class="graph-title">DirectedGraph View</div>
+    <div class="graph-info-header" v-if="sonNum < 2">
       <!--
         Todo:To achieve real-time rendering
       -->
@@ -52,7 +52,7 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="!sonNum > 0" class="graph-svg"><g /></svg>
+      <svg v-if="sonNum < 2" class="graph-svg"><g /></svg>
       <div v-else class="group-graphs">
         <div class="sum-svg">
           <div class="title">SuperGraph</div>
@@ -61,7 +61,12 @@
           </svg>
         </div>
         <div class="son-svg">
-          <div v-for="index in sonNum" :key="index" :class="'paper' + index" class="paper-svg">
+          <div
+            v-for="index in sonNum"
+            :key="index"
+            :class="'paper' + index"
+            class="paper-svg"
+          >
             <div class="one-line-operator">
               <div class="son-title">
                 · {{ multipleSearchValue.selections[index - 1].outcome }}
@@ -72,7 +77,9 @@
                   type="warning"
                   size="small"
                   round
-                >Save</el-button>
+                  :disabled="!singleChanged[index - 1]"
+                  >Save</el-button
+                >
               </div>
             </div>
             <svg>
@@ -97,7 +104,7 @@ import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import { setSingleGraph, addArrowType } from "@/plugin/singleGraph";
+import singleGraph from "@/plugin/singleGraph";
 
 var cmap = [
   "#1f77b4",
@@ -123,14 +130,15 @@ export default {
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
-      nowLine: ref(),
       tooltip2: null,
+      menuShow: ref(false),
       sonNum: ref(0),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
+      singleChanged: ref([]),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -180,8 +188,36 @@ export default {
       this.saveData();
       this.drawGraph();
     },
-    setSonGraph(){
-
+    setSonGraph() {
+      for (let i = 0; i < this.sonNum; i++) {
+        this.singleChanged.push(false);
+        let selection = this.multipleSearchValue.selections[i];
+        let svg = d3.select(".paper" + (i + 1)).select("svg");
+        svg
+          .select("g")
+          .selectAll("g.node")
+          .on("mouseover", (v) => {
+            v.fromElement.setAttribute("id", "hover-node");
+          })
+          .on("mouseout", (v) => {
+            v.fromElement.setAttribute("id", "");
+          })
+          .on("click", (d, id) => {
+            if (!this.ifOutCome(id)) {
+              let hintHtml =
+                "<div class='son-header'>" +
+                selection.outcome +
+                "</div><div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+            <div class='operate-menu'>Delete node " +
+                id +
+                "</div>";
+              _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+              setTimeout(() => {
+                _this.tip3WatchBlur();
+              }, 0);
+            }
+          });
+      }
     },
     setGraph() {
       var data = this.multipleSearchValue;
@@ -332,10 +368,10 @@ export default {
       if (this.sonNum > 1) {
         this.drawSonGraphs();
       }
-      var onmousepath = d3.selectAll(".edgePath");
+      var onmousepath = svg.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;
-      addArrowType(svg);
+      singleGraph.addArrowType(svg);
       allpathes
         .on("mouseout", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
@@ -365,7 +401,6 @@ export default {
         })
         .on("click", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
-            _this.nowLine = id;
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
             <div class='operate-menu'>Delete edge<br/>(" +
@@ -388,6 +423,7 @@ export default {
         if (state.type === -1) that.ifGroup = true;
         else if (state.type === 0) that.sonNum++;
       });
+      console.log(this.sonNum);
       console.log(this.ifGroup);
       setTimeout(() => {
         this.setGraph();
@@ -398,7 +434,7 @@ export default {
       createChart(dom, line);
     },
     drawSonGraphs() {
-      let height = 800;
+      let height = 1200;
       if (this.sonNum > 6) {
         height = height / 3;
       } else if (this.sonNum > 3) {
@@ -415,11 +451,13 @@ export default {
         width: width,
         height: height,
       };
+      this.singleChanged = [];
       for (let i = 1; i <= this.sonNum; i++) {
+        this.singleChanged.push(false);
         let selection = this.multipleSearchValue.selections[i - 1];
         let svg = d3.select(".paper" + i).select("svg");
         console.log(svg);
-        setSingleGraph(
+        singleGraph.setSingleGraph(
           svg,
           {
             linksList: this.multipleSearchValue.linksList,
@@ -428,6 +466,9 @@ export default {
           selection,
           size
         );
+        this.multipleSearchValue.linksList.forEach((link) => {
+          if (link.hidden || link.reverse) this.singleChanged[i - 1] = true;
+        });
       }
     },
     showLoading() {
@@ -566,7 +607,8 @@ export default {
         clickDOM !== "hint-menu" &&
         clickDOM !== "hint-list" &&
         clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
       ) {
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
@@ -587,13 +629,17 @@ export default {
         clickDOM !== "hint-menu" &&
         clickDOM !== "hint-list" &&
         clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
       ) {
         document.removeEventListener("click", _this.listener2);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         this.deleteNode(text);
       }
+    },
+    deleteSonEdge(text) {
+      console.log(text);
     },
     deleteNode(node) {
       console.log("delete node");
@@ -607,18 +653,6 @@ export default {
       this.checkedVariables.splice(index, 1);
       this.tipHidden();
       this.getLinks();
-      /*
-      let linkList = this.multipleSearchValue.linksList.filter(
-        (link) => link.source !== nodeName && link.target !== nodeName
-      );
-      this.multipleSearchValue = {
-        nodesList: nodeList,
-        linksList: linkList,
-        CovariantNum: this.multipleSearchValue.CovariantNum - 1,
-      };
-
-      this.drawGraph();
-      */
     },
     isReverse(edge) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -629,6 +663,7 @@ export default {
       if (index < 0) return false;
       return this.multipleSearchValue.linksList[index].reverse === true;
     },
+
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -845,6 +880,7 @@ hr {
   height: auto;
 }
 .graph-title {
+  padding: 16px;
   font-size: 36px;
 }
 .draw-directed-button {
@@ -941,7 +977,7 @@ hr {
 }
 .son-svg div svg {
   width: 100%;
-  height:90%;
+  height: 90%;
 }
 .one-line-operator {
   height: 10%;
@@ -995,5 +1031,9 @@ hr {
   height: 5px;
   width: 5px;
   background-color: black;
+}
+.son-header {
+  display: flex;
+  align-items: center;
 }
 </style>
