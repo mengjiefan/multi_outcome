@@ -391,7 +391,7 @@ export default {
     },
     saveToTable() {
       console.log("saveMode");
-      const newRow = JSON.parse(localStorage.getItem("GET_JSON_RESULT"));
+      const newRow = JSON.parse(localStorage.getItem("GET_SAVE_DATA"));
       this.getDifferentRows(newRow.nodesList, newRow.linksList);
       this.$router.push({
         path: this.$route.path,

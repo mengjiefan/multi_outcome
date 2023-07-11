@@ -104,7 +104,10 @@ export default {
   },
   methods: {
     saveToTable() {
-      this.saveData();
+      localStorage.setItem(
+        "GET_SAVE_DATA",
+        JSON.stringify(this.multipleSearchValue)
+      );
       this.$router.push({
         path: this.$route.path,
         query: {
@@ -113,18 +116,39 @@ export default {
       });
     },
     saveSingleToTable(index) {
-      /*
-        localStorage.setItem(
-          "GET_JSON_RESULT",
-          JSON.stringify(this.multipleSearchValue)
-        );
-        this.$router.push({
-          path: this.$route.path,
-          query: {
-            mode: "save",
-          },
-        });
-        */
+      let selection = this.multipleSearchValue.selections[index];
+      let variables = [
+        {
+          type: 0,
+          id: selection.outcome,
+        },
+      ];
+      console.log(variables.concat(
+          selection.variable.map((v) => {
+            return {
+              id: v,
+              type: 1,
+            };
+          })
+        ),)
+      let finalData = {
+        nodesList: variables.concat(
+          selection.variable.map((v) => {
+            return {
+              id: v,
+              type: 1,
+            };
+          })
+        ),
+        linksList: selection.linksList,
+      };
+      localStorage.setItem("GET_SAVE_DATA", JSON.stringify(finalData));
+      this.$router.push({
+        path: this.$route.path,
+        query: {
+          mode: "save",
+        },
+      });
     },
     truelyDelete() {
       console.log("delete edge");
@@ -628,15 +652,15 @@ export default {
       });
       if (index > -1) {
         selection.linksList[index] = {
-          source: selection.source,
+          source: selection.linksList[index].source,
           target: selection.linksList[index].target,
           value: selection.linksList[index].value,
           hidden: true,
         };
-        this.singleChanged[index] = true;
+        this.singleChanged[i] = true;
         this.tip2Hidden();
         this.saveData();
-        this.drawSonGraph(index);
+        this.drawSonGraph(i);
       }
     },
     deleteNode(node) {
