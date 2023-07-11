@@ -95,7 +95,7 @@ export default {
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
-      singleChanged: ref([]),
+      singleChanged: ref({}),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -123,14 +123,16 @@ export default {
           id: selection.outcome,
         },
       ];
-      console.log(variables.concat(
+      console.log(
+        variables.concat(
           selection.variable.map((v) => {
             return {
               id: v,
               type: 1,
             };
           })
-        ),)
+        )
+      );
       let finalData = {
         nodesList: variables.concat(
           selection.variable.map((v) => {
@@ -444,11 +446,13 @@ export default {
     drawSonGraphs() {
       this.singleChanged = [];
       for (let i = 0; i < this.sonNum; i++) {
-        this.singleChanged.push(false);
+        let flag = false;
         this.drawSonGraph(i);
         this.multipleSearchValue.selections[i].linksList.forEach((link) => {
-          if (link.hidden || link.reverse) this.singleChanged[i] = true;
+          if (link.hidden || link.reverse) flag = true;
         });
+
+        this.singleChanged.push(flag);
       }
     },
     showLoading() {
@@ -657,7 +661,8 @@ export default {
           value: selection.linksList[index].value,
           hidden: true,
         };
-        this.singleChanged[i] = true;
+        this.singleChanged.splice(i,1,true)
+        console.log(this.singleChanged);
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);
