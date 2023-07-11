@@ -50,7 +50,7 @@ body {
 .content {
   width: 100vw;
   display: flex;
-  height: 92vh;
+  height: 100vh;
 }
 
 .main-part {

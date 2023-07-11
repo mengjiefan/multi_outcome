@@ -61,7 +61,7 @@
           </svg>
         </div>
         <div class="son-svg">
-          <div v-for="index in sonNum" :key="index" :class="'paper' + index">
+          <div v-for="index in sonNum" :key="index" :class="'paper' + index" class="paper-svg">
             <div class="one-line-operator">
               <div class="son-title">
                 · {{ multipleSearchValue.selections[index - 1].outcome }}
@@ -398,7 +398,7 @@ export default {
       createChart(dom, line);
     },
     drawSonGraphs() {
-      let height = 810;
+      let height = 800;
       if (this.sonNum > 6) {
         height = height / 3;
       } else if (this.sonNum > 3) {
@@ -930,20 +930,24 @@ hr {
   height: 100%;
   display: flex;
   flex-wrap: wrap;
+  gap: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
-.son-svg div {
-  padding: 16px;
+.paper-svg {
   flex: 1;
   min-width: 25%;
   max-width: 100%;
 }
 .son-svg div svg {
   width: 100%;
-  height: 100%;
+  height:90%;
 }
 .one-line-operator {
+  height: 10%;
   width: 100%;
   display: flex;
+  align-items: center;
   justify-content: space-between;
 }
 .son-title {

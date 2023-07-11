@@ -52,7 +52,7 @@ export default {
   position: relative;
   padding-left: 10px;
   padding-right: 10px;
-  height: 92vh;
+  height: 100vh;
   overflow-y: auto; /* 当内容过多时y轴出现滚动条 */
   background-color: #e0eeee55;
 }

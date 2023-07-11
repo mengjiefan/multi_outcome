@@ -19,9 +19,10 @@ export default {
  
 <style scoped>
 .mainCharacter {
+  padding: 16px;
   font-size: 20px;
   background-color: rgb(231, 235, 213);
-  flex: 1;
+  flex: 0.8;
   max-width:500px;
 }
 </style>
