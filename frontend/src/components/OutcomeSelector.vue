@@ -232,6 +232,7 @@ export default {
           nodesList: nodesList,
           linksList: this.Variables_result.links,
           CovariantNum: this.Variables_result.CovariantNum,
+          history: []
         })
       );
       this.routeToGraph();

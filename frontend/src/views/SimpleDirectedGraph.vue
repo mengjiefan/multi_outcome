@@ -69,6 +69,7 @@ import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
+import historyManage from "@/plugin/history";
 
 var cmap = [
   "#1f77b4",
@@ -109,7 +110,10 @@ export default {
   },
   methods: {
     saveToTable() {
-      this.saveData();
+      localStorage.setItem(
+        "GET_SAVE_DATA",
+        JSON.stringify(this.multipleSearchValue)
+      );
       this.$router.push({
         path: this.$route.path,
         query: {
@@ -160,6 +164,9 @@ export default {
       var edges = data.linksList;
       edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
+        if (edge.value < 0) {
+          valString = (-edge.value * 10).toString() + "px";
+        }
         var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
         let completeStyle =
@@ -178,14 +185,12 @@ export default {
             g.setEdge(edge.source, edge.target, {
               style: completeStyle + "stroke-dasharray:4 4",
               curve: d3.curveBasis,
-              label: edge.value.toString(),
               arrowhead: "undirected",
             });
           } else {
             g.setEdge(edge.source, edge.target, {
               style: completeStyle,
               curve: d3.curveBasis,
-              label: edge.value.toString(),
               arrowhead: "undirected",
             });
           }
@@ -298,11 +303,16 @@ export default {
               d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
+            let width = d3.select(this).style("stroke-width");
+            width.slice(width.length - 2, width.length);
             if (!_this.tip2Show)
-              _this.tipVisible(id.v + "-" + id.w, {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
+              _this.tipVisible(
+                id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
           }
         })
         .on("click", function (d, id) {
@@ -389,8 +399,9 @@ export default {
           this.multipleSearchValue = {
             linksList: response.data.links,
             nodesList: response.data.nodes,
+            history: this.multipleSearchValue.history,
           };
-
+          historyManage.reDoHistory(this.multipleSearchValue);
           this.loadingInstance.close();
           this.loadingInstance = null;
 
@@ -540,8 +551,20 @@ export default {
       if (index > -1) {
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
+          historyManage.reverseEdge(this.multipleSearchValue.history, {
+            source: nodes[0],
+            target: nodes[1],
+          });
           this.hasNoHidden = false;
-        } else this.multipleSearchValue.linksList[index].reverse = false;
+        } else {
+          this.multipleSearchValue.linksList[index].reverse = false;
+          history.source = nodes[1];
+          history.target = nodes[0];
+          historyManage.reverseEdge(this.multipleSearchValue.history, {
+            source: nodes[1],
+            target: nodes[0],
+          });
+        }
         this.saveData();
         this.tip2Hidden();
         this.drawGraph();
@@ -562,6 +585,13 @@ export default {
           value: this.multipleSearchValue.linksList[index].value,
           hidden: true,
         };
+        this.multipleSearchValue.history = historyManage.deleteEdge(
+          this.multipleSearchValue.history,
+          {
+            source: this.multipleSearchValue.linksList[index].source,
+            target: this.multipleSearchValue.linksList[index].target,
+          }
+        );
         this.saveData();
         this.hasNoHidden = false;
         this.tip2Hidden();
