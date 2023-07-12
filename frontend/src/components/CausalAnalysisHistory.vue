@@ -78,6 +78,7 @@ import axios from "axios";
 import { ref } from "vue";
 import bus from "../componentsInteraction/bus.js";
 import { node } from "dagre-d3/lib/intersect/index.js";
+import historyManage from "@/plugin/history";
 export default {
   name: "CausalAnalysisHistory",
   data() {
@@ -123,7 +124,6 @@ export default {
   watch: {
     $route: {
       handler: function (route) {
-        console.log(route);
         if (route.query.mode === "save") {
           this.saveToTable();
         }
@@ -166,9 +166,6 @@ export default {
     handleSelectionChange(val) {
       this.multipleSelection = val;
     },
-    handleSelectionChange(selection) {
-      console.log(selection);
-    },
     getLinks(outcomes, factors) {
       this.loading = true;
       axios({
@@ -209,8 +206,11 @@ export default {
           linksList: [],
           variable: [],
           outcome: outcome,
+          history: [],
         };
+        let records = [];
         selections.forEach((selection) => {
+          records.push(selection.history);
           if (selection.outcome === outcome) {
             selection.links.forEach((link) => {
               let index = selectionNow.linksList.findIndex((item) => {
@@ -254,6 +254,7 @@ export default {
             });
           }
         });
+        selectionNow.history = historyManage.combineHistory(records);
         finalSelections.push(selectionNow);
       });
       return finalSelections;
@@ -279,6 +280,11 @@ export default {
         let nodesList = [];
         let linksList = [];
         selections = this.removeDuplicate(selections);
+        let history = historyManage.combineHistory(
+          selections.map((selection) => {
+            return selection.history;
+          })
+        );
         let allNumber = selections.length;
         for (let sI = 0; sI < selections.length; sI++) {
           let selection = selections[sI];
@@ -290,7 +296,6 @@ export default {
               id: selection.outcome,
               type: 0,
             });
-            b;
           }
           selection.variable.forEach((node) => {
             if (!nodes.includes(node)) {
@@ -388,13 +393,14 @@ export default {
     saveToTable() {
       console.log("saveMode");
       const newRow = JSON.parse(localStorage.getItem("GET_SAVE_DATA"));
-      this.getDifferentRows(newRow.nodesList, newRow.linksList);
+      this.getDifferentRows(newRow);
       this.$router.push({
         path: this.$route.path,
       });
     },
-    getDifferentRows(nodesList, linksList) {
-      console.log("split", nodesList, linksList);
+    getDifferentRows(newRow) {
+      let nodesList = newRow.nodesList;
+      let linksList = newRow.linksList;
       let outcomes = nodesList.filter((node) => node.type === 0);
       outcomes = outcomes.map((outcome) => {
         return outcome.id;
@@ -443,6 +449,7 @@ export default {
           CovariantNum: nextNodes.length,
           outcome: outcome,
           Variables: nextNodes,
+          history: newRow.history,
           links: rowLinks,
         });
         localStorage.setItem("tableData", JSON.stringify(this.tableData));
@@ -453,7 +460,6 @@ export default {
   mounted() {
     this.tableData = JSON.parse(localStorage.getItem("tableData"));
     if (!this.tableData) this.tableData = [];
-    console.log(this.tableData);
   },
 };
 </script>

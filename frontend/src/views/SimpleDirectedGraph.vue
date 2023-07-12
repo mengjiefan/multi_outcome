@@ -304,7 +304,12 @@ export default {
             }
             d3.select(this).style("stroke", "#1f77b4");
             let width = d3.select(this).style("stroke-width");
+            let dash = d3.select(this).style("stroke-dasharray");
+            console.log(dash);
             width.slice(width.length - 2, width.length);
+            if (dash.includes('4')) {
+              width = "-" + width;
+            }
             if (!_this.tip2Show)
               _this.tipVisible(
                 id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),

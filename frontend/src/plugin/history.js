@@ -60,15 +60,34 @@ export default {
         records.forEach(record => {
             resrecord = resrecord.concat(record);
         })
-        for (let i = 0; i < resrecord.length; i++) {
-            const record = resrecord[i];
-            if (record.hidden) {
-                resrecord = resrecord.filter(histroy => {
-                    if (histroy.source === record.source && histroy.target === record.target) return false;
-                    else if (histroy.target === record.source && histroy.source === record.target) return false;
-                    else return true;
-                })
-            } else if (record.reverse) {
+        console.log(resrecord);
+        let flag = true;
+
+        while (flag) {
+            flag = false;
+            let index = resrecord.findIndex(record => {
+                if (record.hidden) return true;
+                else return false;
+            })
+            if (index > -1) {
+                flag = true;
+                let record = resrecord[index];
+                resrecord = resrecord.filter(histroy =>
+                    !(histroy.source === record.source && histroy.target === record.target)
+                    && !(histroy.target === record.source && histroy.source === record.target))
+            }
+        }
+        flag = true;
+        let newRecord = [];
+        while (flag) {
+            flag = false;
+            let index = resrecord.findIndex(record => {
+                if (record.reverse) return true;
+                else return false;
+            })
+            if (index > -1) {
+                flag = true;
+                let record = resrecord[index];
                 let rnum = 0;
                 let lnum = 0;
                 resrecord.forEach(history => {
@@ -78,14 +97,13 @@ export default {
                         lnum++;
                 })
                 resrecord = resrecord.filter(histroy => {
-                    if (histroy.source === record.source && histroy.target === record.target && history.reverse) return false;
-                    else if (histroy.target === record.source && histroy.source === record.target && history.reverse) return false;
-                    else return true;
+                    !(histroy.source === record.source && histroy.target === record.target)
+                        && !(histroy.target === record.source && histroy.source === record.target)
                 })
                 if (rnum > 0) {
-                    resrecord.push(record);
+                    newRecord.push(record);
                 } else {
-                    resrecord.push({
+                    newRecord.push({
                         source: record.target,
                         target: record.source,
                         reverse: true
@@ -93,6 +111,7 @@ export default {
                 }
             }
         }
+        resrecord = resrecord.concat(newRecord);
         return resrecord;
     },
 }
