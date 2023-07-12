@@ -1,6 +1,5 @@
 <template>
   <div id="DirectedGraph">
-    <div class="graph-title">DirectedGraph View</div>
     <div class="graph-info-header">
       <!--
         Todo:To achieve real-time rendering
@@ -101,6 +100,7 @@ export default {
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
+      transform: ref(),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -150,7 +150,7 @@ export default {
       // Automatically label each of the nodes
       states.forEach(function (state) {
         let node = {
-          label: "",
+          label: state.id,
           type: state.type,
         };
         if (node.type === 0) node["index"] = state.index;
@@ -195,9 +195,7 @@ export default {
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 20;
-        node.width = 20;
-        node.height = 20;
+        node.rx = node.ry = 5;
 
         if (node.type == 0) node.style = "fill: #f77;";
         else {
@@ -219,6 +217,8 @@ export default {
       // Set up zoom support
 
       var zoom = d3.zoom().on("zoom", function (event) {
+        console.log(event.transform);
+        that.transform = event.transform;
         inner.attr("transform", event.transform);
         that.tipHidden();
         that.tip2Hidden();
@@ -260,16 +260,20 @@ export default {
 
       // add hover effect & click hint to lines
       // Center the graph
-      var initialScale = 0.4;
-      let xOffset = (450 - g.graph().width * initialScale) / 2;
-      let yOffset = (450 - g.graph().height * initialScale) / 2;
-      svg.call(
-        zoom.transform,
-        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
-      );
 
-      svg.attr("height", g.graph().height * initialScale + 40);
+      if (that.transform) {
+        inner.attr("transform", that.transform);
+      } else {
+        var initialScale = 1;
+        let xOffset = (1200 - g.graph().width * initialScale) / 2;
+        let yOffset = (450 - g.graph().height * initialScale) / 2;
+        svg.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+        );
 
+        svg.attr("height", g.graph().height * initialScale + 40);
+      }
       var onmousepath = svg.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;

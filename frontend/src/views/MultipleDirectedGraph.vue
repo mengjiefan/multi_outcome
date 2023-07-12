@@ -635,6 +635,7 @@ export default {
         this.deleteSonEdge(outcome, stext);
       }
     },
+    //delete edge from son graph
     deleteSonEdge(outcome, edge) {
       for (let i = outcome.length - 1; i >= 0; i--) {
         if (!outcome[i]) {
@@ -661,13 +662,13 @@ export default {
           value: selection.linksList[index].value,
           hidden: true,
         };
-        this.singleChanged.splice(i,1,true)
-        console.log(this.singleChanged);
+        this.singleChanged.splice(i, 1, true);
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);
       }
     },
+    reverseSonEdge() {},
     deleteNode(node) {
       let nodeName = node.split(" ")[2];
       let nodeList = this.multipleSearchValue.nodesList.filter(
