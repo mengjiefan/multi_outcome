@@ -15,6 +15,7 @@ export default {
         }
         else
             record.splice(index, 1);
+        console.log(record)
     },
     deleteEdge(record, operation) {
         let newRecord = record.filter(history => {
@@ -72,9 +73,9 @@ export default {
             if (index > -1) {
                 flag = true;
                 let record = resrecord[index];
-                resrecord = resrecord.filter(histroy =>
-                    !(histroy.source === record.source && histroy.target === record.target)
-                    && !(histroy.target === record.source && histroy.source === record.target))
+                resrecord = resrecord.filter(historyy =>
+                    !(historyy.source === record.source && historyy.target === record.target)
+                    && !(historyy.target === record.source && historyy.source === record.target))
             }
         }
         flag = true;
@@ -96,9 +97,9 @@ export default {
                     else if (history.target === record.source && history.source === record.target && history.reverse)
                         lnum++;
                 })
-                resrecord = resrecord.filter(histroy => {
-                    !(histroy.source === record.source && histroy.target === record.target)
-                        && !(histroy.target === record.source && histroy.source === record.target)
+                resrecord = resrecord.filter(historyy => {
+                    !(historyy.source === record.source && historyy.target === record.target)
+                        && !(historyy.target === record.source && historyy.source === record.target)
                 })
                 if (rnum > 0) {
                     newRecord.push(record);

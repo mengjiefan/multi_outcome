@@ -230,21 +230,6 @@ export default {
               });
               if (index < 0) {
                 selectionNow.linksList.push(link);
-              } else if (selectionNow.linksList[index].hidden && !link.hidden) {
-                //未隐藏覆盖隐藏
-                selectionNow.linksList[index] = {
-                  source: linksList[index].source,
-                  target: linksList[index].target,
-                  value: linksList[index].value,
-                };
-              } else if (link.reverse) {
-                //翻转中覆盖无翻转
-                selectionNow.linksList[index] = {
-                  source: linksList[index].source,
-                  target: linksList[index].target,
-                  value: linksList[index].value,
-                  reverse: true,
-                };
               }
             });
             selection.Variables.forEach((node) => {
@@ -254,7 +239,8 @@ export default {
             });
           }
         });
-        selectionNow.history = historyManage.combineHistory(records);
+        selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
+        historyManage.reDoHistory(selectionNow);
         finalSelections.push(selectionNow);
       });
       return finalSelections;
@@ -275,16 +261,11 @@ export default {
           });
         });
         this.getLinks(outcomes, factors);
-      } else {
+      } else if (selections.length > 1) {
         let nodes = [];
         let nodesList = [];
         let linksList = [];
         selections = this.removeDuplicate(selections);
-        let history = historyManage.combineHistory(
-          selections.map((selection) => {
-            return selection.history;
-          })
-        );
         let allNumber = selections.length;
         for (let sI = 0; sI < selections.length; sI++) {
           let selection = selections[sI];
@@ -334,16 +315,11 @@ export default {
               };
             } else if (!linksList[index].hidden && !link.hidden) {
               //需要都转为同向，否则布局不同；对于带reverse的特别处理
-              if (link.reverse) {
-                if (
-                  link.source === linksList[index].target &&
-                  link.target === linksList[index]
-                ) {
-                  link.reverse = false;
-                }
+              if (link.source !== linksList[index].source) {
+                historyManage.reverseEdge(selection.history, link);
+                link.source = linksList[index].source;
+                link.target = linksList[index].target;
               }
-              link.source = linksList[index].source;
-              link.target = linksList[index].target;
             }
           }
         }
@@ -368,11 +344,33 @@ export default {
               nodesList: nodesList,
               linksList: linksList,
               selections: selections,
-              history: history,
             })
           );
           _this.routeToGraph();
         }, 500);
+      } else {
+        let nodes = [
+          {
+            id: selections[0].outcome,
+            type: 0,
+          },
+        ].concat(
+          selections[0].Variables.map((node) => {
+            return {
+              id: node,
+              type: 1,
+            };
+          })
+        );
+        localStorage.setItem(
+          "GET_JSON_RESULT",
+          JSON.stringify({
+            nodesList: nodes,
+            linksList: selections[0].links,
+            history: selections[0].history,
+          })
+        );
+        this.routeToGraph();
       }
       return;
     },
@@ -399,6 +397,7 @@ export default {
       });
     },
     getDifferentRows(newRow) {
+      let history = newRow.history;
       let nodesList = newRow.nodesList;
       let linksList = newRow.linksList;
       let outcomes = nodesList.filter((node) => node.type === 0);
@@ -449,9 +448,11 @@ export default {
           CovariantNum: nextNodes.length,
           outcome: outcome,
           Variables: nextNodes,
-          history: newRow.history,
+          history: history,
           links: rowLinks,
         });
+
+        console.log(history);
         localStorage.setItem("tableData", JSON.stringify(this.tableData));
       });
     },
@@ -459,6 +460,7 @@ export default {
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
     this.tableData = JSON.parse(localStorage.getItem("tableData"));
+    console.log(this.tableData);
     if (!this.tableData) this.tableData = [];
   },
 };
