@@ -1,35 +1,27 @@
 <template>
-  <div>
-    <h5>History of variables and the outcome</h5>
-    <div>
+  <div class="history-panel">
+    <div class="history-main-title">· History</div>
+    <div class="table">
       <el-table
         ref="multipleTable"
         :data="tableData"
-        height="300"
         tooltip-effect="dark"
-        style="width: 100%"
         :default-sort="{ prop: 'Outcome', order: 'descending' }"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="55"> </el-table-column>
+        <el-table-column type="selection" width="45"> </el-table-column>
         <el-table-column
           fixed
           prop="outcome"
           label="Outcome"
           sortable
-          width="100"
+          width="120"
         />
 
-        <el-table-column
-          prop="CovariantNum"
-          label="CovariantNum"
-          sortable
-          width="80"
-        />
+        <el-table-column prop="CovariantNum" label="Num" width="75" />
         <el-table-column
           prop="Variables"
           label="Variables"
-          sortable
           show-overflow-tooltip
           :formatter="formatter"
         >
@@ -37,7 +29,7 @@
             scope.row.Variables.join()
           }}</template>
         </el-table-column>
-        <el-table-column fixed="right" label="Operation" width="120">
+        <el-table-column fixed="right" label="Operation" width="100">
           <template slot-scope="scope">
             <el-button
               @click.native.prevent="deleteRow(scope.$index, tableData)"
@@ -64,18 +56,18 @@
           >
           </el-option>
         </el-select>
-        <el-select v-model="selectType" placeholder="Please Choose the mode">
-          <el-option value="1" label="Compare the Rows"></el-option>
-          <el-option value="2" label="Merge All the Nodes"></el-option>
-        </el-select>
+        <el-button
+          type="primary"
+          size="small"
+          :loading="loading"
+          @click="btnSelect()"
+          >Plot the rows
+        </el-button>
+        <!--<el-select v-model="selectType" placeholder="Please Choose the mode">
+         <el-option value="1" label="Compare the Rows"></el-option>
+           <el-option value="2" label="Merge All the Nodes"></el-option>
+        </el-select>-->
       </div>
-      <el-button
-        type="primary"
-        size="small"
-        :loading="loading"
-        @click="btnSelect()"
-        >Plot the rows
-      </el-button>
     </div>
   </div>
 </template>
@@ -298,6 +290,7 @@ export default {
               id: selection.outcome,
               type: 0,
             });
+            b;
           }
           selection.variable.forEach((node) => {
             if (!nodes.includes(node)) {
@@ -336,10 +329,12 @@ export default {
               };
             } else if (!linksList[index].hidden && !link.hidden) {
               //需要都转为同向，否则布局不同；对于带reverse的特别处理
-              if(link.reverse) {
-                if(link.source === linksList[index].target
-                 &&link.target === linksList[index]) {
-                link.reverse = false;
+              if (link.reverse) {
+                if (
+                  link.source === linksList[index].target &&
+                  link.target === linksList[index]
+                ) {
+                  link.reverse = false;
                 }
               }
               link.source = linksList[index].source;
@@ -368,6 +363,7 @@ export default {
               nodesList: nodesList,
               linksList: linksList,
               selections: selections,
+              history: history,
             })
           );
           _this.routeToGraph();
@@ -463,6 +459,19 @@ export default {
 </script>
 
 <style scoped>
+.history-panel {
+  height: auto;
+  padding: 10px;
+}
+.history-main-title {
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 36px;
+}
+.table {
+  height: 600px;
+  overflow: auto;
+}
 .list-group-item {
   cursor: pointer;
 }
@@ -475,7 +484,8 @@ export default {
   justify-content: flex-end;
 }
 .selections {
+  width: 100%;
   display: flex;
-  gap: 16px;
+  justify-content: space-between;
 }
 </style>

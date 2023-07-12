@@ -54,5 +54,45 @@ export default {
                 }
             }
         })
-    }
+    },
+    combineHistory(records) {
+        let resrecord = [];
+        records.forEach(record => {
+            resrecord = resrecord.concat(record);
+        })
+        for (let i = 0; i < resrecord.length; i++) {
+            const record = resrecord[i];
+            if (record.hidden) {
+                resrecord = resrecord.filter(histroy => {
+                    if (histroy.source === record.source && histroy.target === record.target) return false;
+                    else if (histroy.target === record.source && histroy.source === record.target) return false;
+                    else return true;
+                })
+            } else if (record.reverse) {
+                let rnum = 0;
+                let lnum = 0;
+                resrecord.forEach(history => {
+                    if (history.source === record.source && history.target === record.target && history.reverse)
+                        rnum++;
+                    else if (history.target === record.source && history.source === record.target && history.reverse)
+                        lnum++;
+                })
+                resrecord = resrecord.filter(histroy => {
+                    if (histroy.source === record.source && histroy.target === record.target && history.reverse) return false;
+                    else if (histroy.target === record.source && histroy.source === record.target && history.reverse) return false;
+                    else return true;
+                })
+                if (rnum > 0) {
+                    resrecord.push(record);
+                } else {
+                    resrecord.push({
+                        source: record.target,
+                        target: record.source,
+                        reverse: true
+                    })
+                }
+            }
+        }
+        return resrecord;
+    },
 }

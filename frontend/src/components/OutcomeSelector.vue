@@ -249,7 +249,7 @@ export default {
 
 <style>
 .variables {
-  max-height: 200px;
+  max-height: 500px;
   min-height: 148px;
   overflow-y: auto;
   font-size: 0.1;
@@ -277,6 +277,7 @@ export default {
 .OutcomeSelector {
   padding: 10px;
   height: auto;
+  max-height: 800px;
 }
 .outcome-main-title {
   font-size: 20px;
