@@ -526,8 +526,27 @@ export default {
         };
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];
-          historyManage.deleteEdge(selection.history, history);
-          historyManage.reDoHistory(selection);
+          selection.history = historyManage.deleteEdge(
+            selection.history,
+            history
+          );
+          let index = selection.linksList.findIndex((link) => {
+            if (
+              link.source === history.source &&
+              link.target === history.target &&
+              !link.hidden
+            )
+              return true;
+            else if (
+              link.source === history.target &&
+              link.target === history.source &&
+              !link.hidden
+            )
+              return true;
+          });
+          if (index < 0) continue;
+          let link = selection.linksList[index];
+          link["hidden"] = true;
         }
         this.saveData();
         this.hasNoHidden = false;
