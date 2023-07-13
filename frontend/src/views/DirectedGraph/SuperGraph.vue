@@ -478,7 +478,27 @@ export default {
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];
           historyManage.reverseEdge(selection.history, history);
-          historyManage.reDoHistory(selection);
+          let index = selection.linksList.findIndex((link) => {
+            if (
+              link.source === history.source &&
+              link.target === history.target &&
+              !link.hidden
+            )
+              return true;
+            else if (
+              link.source === history.target &&
+              link.target === history.source &&
+              !link.hidden
+            )
+              return true;
+          });
+          if (index < 0) continue;
+          let link = selection.linksList[index];
+          if (link.source === history.source && !link.reverse) {
+            link["reverse"] = true;
+          } else if (link.source === history.target && link.reverse) {
+            link.reverse = false;
+          }
         }
         this.saveData();
         this.tip2Hidden();
@@ -494,12 +514,21 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        let history = {
+          source: this.multipleSearchValue.linksList[index].source,
+          target: this.multipleSearchValue.linksList[index].target,
+        };
         this.multipleSearchValue.linksList[index] = {
           source: this.multipleSearchValue.linksList[index].source,
           target: this.multipleSearchValue.linksList[index].target,
           value: this.multipleSearchValue.linksList[index].value,
           hidden: true,
         };
+        for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+          let selection = this.multipleSearchValue.selections[i];
+          historyManage.deleteEdge(selection.history, history);
+          historyManage.reDoHistory(selection);
+        }
         this.saveData();
         this.hasNoHidden = false;
         this.tip2Hidden();

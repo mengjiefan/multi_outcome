@@ -11,7 +11,7 @@ export default {
                 return true;
             } else return false;
         })
-
+        console.log(index)
         if (index < 0) {
             record.push({
                 source: operation.source,
