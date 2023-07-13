@@ -28,6 +28,7 @@ const sonGraph = ref(null);
 export default {
     linksList: [],
     setSingleGraph(svg, multipleSearchValue, selection, size) {
+        this.addArrowType(svg)
         sonGraph.value = this;
         var data = multipleSearchValue;
         var states = data.nodesList;
@@ -70,6 +71,7 @@ export default {
                     style:
                         "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
                     curve: d3.curveBasis,
+                    arrowhead: "undirected",
                 });
             } else {
                 edge = selection.linksList[index];
@@ -80,14 +82,12 @@ export default {
                     g.setEdge(edge.source, edge.target, {
                         style: completeStyle + "stroke-dasharray:4 4",
                         curve: d3.curveBasis,
-                        label: edge.value.toString(),
                         arrowhead: "undirected",
                     });
                 } else {
                     g.setEdge(edge.source, edge.target, {
                         style: completeStyle,
                         curve: d3.curveBasis,
-                        label: edge.value.toString(),
                         arrowhead: "undirected",
                     });
                 }

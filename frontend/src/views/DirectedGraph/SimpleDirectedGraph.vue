@@ -1,9 +1,6 @@
 <template>
   <div id="DirectedGraph">
     <div class="graph-info-header">
-      <!--
-        Todo:To achieve real-time rendering
-      -->
       <div class="graph-main-title">· VariablesCheckbox</div>
 
       <!--
@@ -707,7 +704,6 @@ export default {
   height: auto;
 }
 .graph-title {
-  padding: 16px;
   font-size: 36px;
 }
 .draw-directed-button {
@@ -823,7 +819,6 @@ export default {
 }
 .graph-main-title {
   font-size: 20px;
-  margin-top: 20px;
   font-weight: bold;
   line-height: 36px;
 }

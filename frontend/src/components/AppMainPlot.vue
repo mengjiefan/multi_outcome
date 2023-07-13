@@ -1,7 +1,7 @@
 <template>
   <div class="mainPlot">
       <router-view></router-view>
-    <app-main-character></app-main-character>
+    <!--<app-main-character></app-main-character>-->
   </div>
 </template>
  

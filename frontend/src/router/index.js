@@ -52,15 +52,31 @@ export default new VueRouter({
 							name: 'SimpleDirectedGraph',
 							path: '/AppMainPlot/DirectedGraphView/simple',
 							component: () => import(
-								"../views/SimpleDirectedGraph.vue"
+								"../views/DirectedGraph/SimpleDirectedGraph.vue"
 							),
 						},
 						{
 							name: 'MultipleDirectedGraph',
 							path: '/AppMainPlot/DirectedGraphView/multiple',
 							component: () => import(
-								"../views/MultipleDirectedGraph.vue"
+								"../views/DirectedGraph/MultipleDirectedGraph.vue"
 							),
+							children: [
+								{
+									name: 'DirectedSuperGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/super-graph',
+									component: () => import(
+										"../views/DirectedGraph/SuperGraph.vue"
+									),
+								},
+								{
+									name: 'ExtractedSubGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/extracted-sub-graph',
+									component: () => import(
+										"../views/DirectedGraph/ExtractedSubGraph.vue"
+									),
+								}
+							]
 						},
 					]
 				}

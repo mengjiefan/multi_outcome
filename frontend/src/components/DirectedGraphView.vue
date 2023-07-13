@@ -1,7 +1,6 @@
 <template>
   <div id="DirectedGraph">
     <div class="graph-title">DirectedGraph View</div>
-    <hr/>
     <router-view></router-view>
   </div>
 </template>
@@ -30,7 +29,7 @@ export default {
     if (this.$route.name === "DirectedGraphView") {
       if (this.sonNum > 1) {
         this.$router.push({
-          name: "MultipleDirectedGraph",
+          name: "ExtractedSubGraph",
         });
       } else {
         this.$router.push({
@@ -132,7 +131,10 @@ hr {
   height: auto;
 }
 .graph-title {
+  background-color: rgb(55, 162, 228);
+  color: white;
   padding: 16px;
+  text-align: center;
   font-size: 36px;
 }
 .draw-directed-button {
