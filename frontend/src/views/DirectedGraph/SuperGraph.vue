@@ -32,6 +32,7 @@ import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
+import historyManage from "@/plugin/history";
 
 var cmap = [
   "#1f77b4",
@@ -155,14 +156,12 @@ export default {
             g.setEdge(edge.source, edge.target, {
               style: completeStyle + "stroke-dasharray:4 4",
               curve: d3.curveBasis,
-              label: edge.value.toString(),
               arrowhead: "undirected",
             });
           } else {
             g.setEdge(edge.source, edge.target, {
               style: completeStyle,
               curve: d3.curveBasis,
-              label: edge.value.toString(),
               arrowhead: "undirected",
             });
           }
@@ -270,11 +269,22 @@ export default {
               d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
+
+            let width = d3.select(this).style("stroke-width");
+            let dash = d3.select(this).style("stroke-dasharray");
+            console.log(dash);
+            width.slice(width.length - 2, width.length);
+            if (dash.includes("4")) {
+              width = "-" + width;
+            }
             if (!_this.tip2Show)
-              _this.tipVisible(id.v + "-" + id.w, {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
+              _this.tipVisible(
+                id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
           }
         })
         .on("click", function (d, id) {
@@ -449,10 +459,27 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        let history = {};
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
+          history = {
+            source: this.multipleSearchValue.linksList[index].source,
+            target: this.multipleSearchValue.linksList[index].target,
+          };
           this.hasNoHidden = false;
-        } else this.multipleSearchValue.linksList[index].reverse = false;
+        } else {
+          this.multipleSearchValue.linksList[index].reverse = false;
+          history = {
+            source: this.multipleSearchValue.linksList[index].target,
+            target: this.multipleSearchValue.linksList[index].source,
+          };
+        }
+        //所有子图都改变，都要增加操作历史
+        for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+          let selection = this.multipleSearchValue.selections[i];
+          historyManage.reverseEdge(selection.history, history);
+          historyManage.reDoHistory(selection);
+        }
         this.saveData();
         this.tip2Hidden();
         this.drawGraph();

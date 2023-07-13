@@ -1,6 +1,12 @@
 export default {
     reverseEdge(record, operation) {
         let index = record.findIndex(history => {
+            if (history.source === operation.source && history.target === operation.target && history.reverse) {
+                return true;
+            } else return false;
+        })
+        if (index > -1) return;//不要重复reverse记录
+        index = record.findIndex(history => {
             if (history.source === operation.target && history.target === operation.source && history.reverse) {
                 return true;
             } else return false;

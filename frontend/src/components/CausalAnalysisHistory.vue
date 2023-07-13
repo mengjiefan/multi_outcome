@@ -316,9 +316,11 @@ export default {
             } else if (!linksList[index].hidden && !link.hidden) {
               //需要都转为同向，否则布局不同；对于带reverse的特别处理
               if (link.source !== linksList[index].source) {
-                historyManage.reverseEdge(selection.history, link);
                 link.source = linksList[index].source;
                 link.target = linksList[index].target;
+                if (!link.reverse) {
+                  link["reverse"] = true;
+                }
               }
             }
           }
