@@ -228,7 +228,6 @@ export default {
       // Set up zoom support
 
       var zoom = d3.zoom().on("zoom", function (event) {
-        console.log(event.transform);
         that.transform = event.transform;
         inner.attr("transform", event.transform);
         that.tipHidden();
@@ -311,7 +310,7 @@ export default {
             d3.select(this).style("stroke", "#1f77b4");
             let width = d3.select(this).style("stroke-width");
             let dash = d3.select(this).style("stroke-dasharray");
-            console.log(dash);
+   
             width.slice(width.length - 2, width.length);
             if (dash.includes("4")) {
               width = "-" + width;
@@ -510,27 +509,8 @@ export default {
         this.deleteNode(text);
       }
     },
-    listener3(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header" &&
-        clickDOM !== "son-header"
-      ) {
-        document.removeEventListener("click", _this.listener3);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        this.deleteSonEdge(text);
-      }
-    },
-    deleteSonEdge(text) {
-      console.log(text);
-    },
+
+
     deleteNode(node) {
       let nodeName = node.split(" ")[2];
       let nodeList = this.multipleSearchValue.nodesList.filter(
@@ -792,24 +772,7 @@ export default {
   height: 450px;
   width: 458px;
 }
-.son-svg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-.paper-svg {
-  flex: 1;
-  min-width: 25%;
-  max-width: 100%;
-}
-.son-svg div svg {
-  width: 100%;
-  height: 90%;
-}
+
 .one-line-operator {
   height: 10%;
   width: 100%;
@@ -817,10 +780,7 @@ export default {
   align-items: center;
   justify-content: space-between;
 }
-.son-title {
-  font-size: 16px;
-  font-weight: bold;
-}
+
 .one-line-operator .drawing-buttons {
   display: flex;
   justify-content: flex-end;

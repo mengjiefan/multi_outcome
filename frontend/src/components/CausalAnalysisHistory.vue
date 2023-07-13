@@ -201,7 +201,8 @@ export default {
       selections.forEach((selection) => {
         if (!outs.includes(selection.outcome)) outs.push(selection.outcome);
       });
-      outs.forEach((outcome) => {
+      for (let i = 0; i < outs.length; i++) {
+        let outcome = outs[i];
         let selectionNow = {
           linksList: [],
           variable: [],
@@ -209,40 +210,40 @@ export default {
           history: [],
         };
         let records = [];
-        selections.forEach((selection) => {
-          records.push(selection.history);
-          if (selection.outcome === outcome) {
-            selection.links.forEach((link) => {
-              let index = selectionNow.linksList.findIndex((item) => {
-                if (
-                  item.target === link.target &&
-                  item.source === link.source
-                ) {
-                  return true;
-                } else if (
-                  item.source === link.target &&
-                  item.target === link.source
-                ) {
-                  return true;
-                } else {
-                  return false;
-                }
-              });
-              if (index < 0) {
-                selectionNow.linksList.push(link);
+        let sameSelection = selections.filter(
+          (selection) => selection.outcome === outcome
+        );
+        for (let j = 0; j < sameSelection.length; j++) {
+          let selection = sameSelection[j];
+          records.push(selection.history); //相同outcome合并历史
+          selection.links.forEach((link) => {
+            let index = selectionNow.linksList.findIndex((item) => {
+              if (item.target === link.target && item.source === link.source) {
+                return true;
+              } else if (
+                item.source === link.target &&
+                item.target === link.source
+              ) {
+                return true;
+              } else {
+                return false;
               }
             });
-            selection.Variables.forEach((node) => {
-              if (selectionNow.variable.indexOf(node) < 0) {
-                selectionNow.variable.push(node);
-              }
-            });
-          }
-        });
+            if (index < 0) {
+              selectionNow.linksList.push(link);
+            }
+          });
+          selection.Variables.forEach((node) => {
+            if (selectionNow.variable.indexOf(node) < 0) {
+              selectionNow.variable.push(node);
+            }
+          });
+        }
         selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
+        console.log(outcome, selectionNow.history);
         historyManage.reDoHistory(selectionNow);
         finalSelections.push(selectionNow);
-      });
+      }
       return finalSelections;
     },
     // 通过公用数据库store进行数据管理
@@ -318,6 +319,7 @@ export default {
               if (link.source !== linksList[index].source) {
                 link.source = linksList[index].source;
                 link.target = linksList[index].target;
+                console.log("differ", link);
                 if (!link.reverse) {
                   link["reverse"] = true;
                 }
@@ -454,7 +456,6 @@ export default {
           links: rowLinks,
         });
 
-        console.log(history);
         localStorage.setItem("tableData", JSON.stringify(this.tableData));
       });
     },
@@ -462,7 +463,6 @@ export default {
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
     this.tableData = JSON.parse(localStorage.getItem("tableData"));
-    console.log(this.tableData);
     if (!this.tableData) this.tableData = [];
   },
 };

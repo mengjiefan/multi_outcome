@@ -158,8 +158,10 @@ export default {
         inner
           .selectAll("g.node")
           .on("mouseover", (v, id) => {
-            if ((selection.variable.includes(id) ||
-              selection.outcome === id )&& v.fromElement.__data__ !== "group")
+            if (
+              (selection.variable.includes(id) || selection.outcome === id) &&
+              v.fromElement.__data__ !== "group"
+            )
               v.fromElement.setAttribute("id", "hover-node");
           })
           .on("mouseout", (v) => {
@@ -168,8 +170,43 @@ export default {
         svg
           .selectAll(".edgePath")
           .select(".path")
-          .on("mouseover", (v) => {})
-          .on("mouseout", (v) => {})
+          .on("mouseover", function (d, id) {
+            if (d3.select(this).style("stroke") !== "transparent") {
+              if (!_this.isSonReverse(i,id)) {
+                d3.select(this).style("marker-end", "url(#activeE)"); //Added
+              } else {
+                d3.select(this).style("marker-start", "url(#activeS)"); //Added
+              }
+              d3.select(this).style("stroke", "#1f77b4");
+
+              let width = d3.select(this).style("stroke-width");
+              let dash = d3.select(this).style("stroke-dasharray");
+              console.log(dash);
+              width.slice(width.length - 2, width.length);
+              if (dash.includes("4")) {
+                width = "-" + width;
+              }
+              if (!_this.tip2Show)
+                _this.tipVisible(
+                  id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                  {
+                    pageX: d.pageX,
+                    pageY: d.pageY,
+                  }
+                );
+            }
+          })
+          .on("mouseout", function (d, id) {
+            if (d3.select(this).style("stroke") !== "transparent") {
+              d3.select(this).style("stroke", "black");
+              if (!_this.isSonReverse(i,id)) {
+                d3.select(this).style("marker-end", "url(#normale)"); //Added
+              } else {
+                d3.select(this).style("marker-start", "url(#normals)"); //Added
+              }
+            }
+            _this.tipHidden();
+          })
           .on("click", function (d, id) {
             if (d3.select(this).style("stroke") !== "transparent") {
               let hintHtml =
@@ -415,14 +452,14 @@ export default {
       }
     },
     reverseSonEdge() {},
-    isReverse(edge) {
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+    isSonReverse(i,edge) {
+      let index = this.multipleSearchValue.selections[i].linksList.findIndex(function (row) {
         if (row.source === edge.v && row.target === edge.w && !row.hidden) {
           return true;
         } else return false;
       });
       if (index < 0) return false;
-      return this.multipleSearchValue.linksList[index].reverse === true;
+      return this.multipleSearchValue.selections[i].linksList[index].reverse === true;
     },
 
     reverseDirection(edge) {

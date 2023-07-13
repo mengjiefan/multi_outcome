@@ -67,7 +67,6 @@ export default {
         records.forEach(record => {
             resrecord = resrecord.concat(record);
         })
-        console.log(resrecord);
         let flag = true;
 
         while (flag) {
