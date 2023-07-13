@@ -107,7 +107,7 @@ export default {
   },
   methods: {
     saveToTable() {
-      console.log(this.multipleSearchValue.history)
+      console.log(this.multipleSearchValue.history);
       localStorage.setItem(
         "GET_SAVE_DATA",
         JSON.stringify(this.multipleSearchValue)
@@ -125,6 +125,13 @@ export default {
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
+      let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
+        let index = linksList.findIndex((link) => {
+          if (link.source === node.id || link.target === node.id) return true;
+          else return false;
+        });
+        return index > -1;
+      });
       linksList = linksList.map((link) => {
         if (link.reverse)
           return {
@@ -135,6 +142,7 @@ export default {
         else return link;
       });
       this.multipleSearchValue.linksList = linksList;
+      this.multipleSearchValue.nodesList = nodesList;
       this.hasNoHidden = true;
       this.saveData();
       this.drawGraph();
@@ -305,7 +313,7 @@ export default {
             let dash = d3.select(this).style("stroke-dasharray");
             console.log(dash);
             width.slice(width.length - 2, width.length);
-            if (dash.includes('4')) {
+            if (dash.includes("4")) {
               width = "-" + width;
             }
             if (!_this.tip2Show)

@@ -705,12 +705,7 @@ export default {
   padding-left: 10px;
   padding-right: 10px;
 }
-rect#hover-node {
-  stroke: rgba(169, 169, 169, 0.562);
-  fill: #333;
-  stroke-width: 1.5px;
-  transition-duration: 0.2s;
-}
+
 .node {
   cursor: pointer;
   transition-duration: 0.2s;

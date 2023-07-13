@@ -18,7 +18,6 @@
                 type="warning"
                 size="small"
                 round
-                :disabled="!singleChanged[index - 1]"
                 >Save</el-button
               >
             </div>
@@ -75,7 +74,6 @@ export default {
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
-      singleChanged: ref({}),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -156,6 +154,17 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         let selection = this.multipleSearchValue.selections[i];
         let svg = d3.select(".paper" + (i + 1)).select("svg");
+        let inner = svg.select("g");
+        inner
+          .selectAll("g.node")
+          .on("mouseover", (v, id) => {
+            if ((selection.variable.includes(id) ||
+              selection.outcome === id )&& v.fromElement.__data__ !== "group")
+              v.fromElement.setAttribute("id", "hover-node");
+          })
+          .on("mouseout", (v) => {
+            v.fromElement.setAttribute("id", "");
+          });
         svg
           .selectAll(".edgePath")
           .select(".path")
@@ -253,15 +262,8 @@ export default {
       svg.call(zoom);
     },
     drawSonGraphs() {
-      this.singleChanged = [];
       for (let i = 0; i < this.sonNum; i++) {
-        let flag = false;
         this.drawSonGraph(i);
-        this.multipleSearchValue.selections[i].linksList.forEach((link) => {
-          if (link.hidden || link.reverse) flag = true;
-        });
-
-        this.singleChanged.push(flag);
       }
     },
     showLoading() {
@@ -407,24 +409,12 @@ export default {
           value: selection.linksList[index].value,
           hidden: true,
         };
-        this.singleChanged.splice(i, 1, true);
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);
       }
     },
     reverseSonEdge() {},
-    deleteNode(node) {
-      let nodeName = node.split(" ")[2];
-      let nodeList = this.multipleSearchValue.nodesList.filter(
-        (node) => node.id !== nodeName
-      );
-      this.multipleSearchValue.nodesList = nodeList;
-      let index = this.checkedVariables.indexOf(nodeName);
-      this.checkedVariables.splice(index, 1);
-      this.tipHidden();
-      this.getLinks();
-    },
     isReverse(edge) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (row.source === edge.v && row.target === edge.w && !row.hidden) {

@@ -5,7 +5,7 @@
         >Save to Table</el-button
       >
       <el-button
-        @click="truelyDelete()"
+        @click="trulyDelete()"
         type="success"
         round
         size="small"
@@ -28,7 +28,6 @@ import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
@@ -59,11 +58,7 @@ export default {
       countingGraph: ref(false),
       tooltip: null,
       tooltip2: null,
-      menuShow: ref(false),
       sonNum: ref(0),
-      checkAll: ref(false),
-      VariablesOptions,
-      checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
       multipleSearchValue: ref({
@@ -85,7 +80,7 @@ export default {
         },
       });
     },
-    truelyDelete() {
+    trulyDelete() {
       console.log("delete edge");
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
@@ -100,9 +95,41 @@ export default {
         else return link;
       });
       this.multipleSearchValue.linksList = linksList;
+      this.multipleSearchValue.selections =
+        this.multipleSearchValue.selections.map(selection => {
+            return this.trulyDeleteSon(selection)
+        });
       this.hasNoHidden = true;
       this.saveData();
       this.drawGraph();
+    },
+    trulyDeleteSon(son) {
+      let all = this.multipleSearchValue.linksList;
+      son.linksList = son.linksList.filter((link) => !link.hidden);
+      let linksList = [];
+      for (let i = 0; i < son.linksList.length; i++) {
+        let link = son.linksList[i];
+        let index = all.findIndex((item) => {
+          if (link.source === item.source && link.target === item.target)
+            return true;
+          else if (link.source === item.target && link.target === item.source)
+            return true;
+          else return false;
+        });
+        if (index > -1) {
+          linksList.push(all[index]);
+        }
+        if (link.source === all[index].source && link.reverse) {
+          historyManage.reverseEdge(son.history, {
+            source: link.target,
+            target: link.source,
+          });
+        } else if (link.source !== all[index].source && !link.reverse) {
+          historyManage.reverseEdge(son.history, link);
+        }
+      }
+      son.linksList = linksList;
+      return son;
     },
     setGraph() {
       var data = this.multipleSearchValue;
@@ -212,25 +239,6 @@ export default {
         })
         .on("mouseout", (v) => {
           v.fromElement.setAttribute("id", "");
-        })
-        .on("click", (d, id) => {
-          if (!this.ifOutCome(id)) {
-            let hintHtml =
-              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete node " +
-              id +
-              "</div>";
-            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-            setTimeout(() => {
-              document.addEventListener("click", _this.listener2);
-            }, 0);
-          }
-        })
-        .attr("title", function (v) {
-          return v;
-        })
-        .each(function (v) {
-          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
         });
 
       // add hover effect & click hint to lines
@@ -413,34 +421,7 @@ export default {
         }
       }
     },
-    listener2(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
-      ) {
-        document.removeEventListener("click", _this.listener2);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        this.deleteNode(text);
-      }
-    },
-    deleteNode(node) {
-      let nodeName = node.split(" ")[2];
-      let nodeList = this.multipleSearchValue.nodesList.filter(
-        (node) => node.id !== nodeName
-      );
-      this.multipleSearchValue.nodesList = nodeList;
-      let index = this.checkedVariables.indexOf(nodeName);
-      this.checkedVariables.splice(index, 1);
-      this.tipHidden();
-      this.getLinks();
-    },
+
     isReverse(edge) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (row.source === edge.v && row.target === edge.w && !row.hidden) {
@@ -567,7 +548,6 @@ export default {
     tipVisible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
         .duration(0)
@@ -597,7 +577,6 @@ export default {
     tip2Visible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tip2Show = true;
       this.tooltip2
         .transition()
@@ -633,9 +612,6 @@ export default {
     );
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
-      this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
-        return node.id;
-      });
       let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
         (link) => link.hidden || link.reverse
       );

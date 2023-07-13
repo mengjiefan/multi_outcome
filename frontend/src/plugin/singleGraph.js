@@ -51,7 +51,7 @@ export default {
             label: "",
             clusterLabelPos: "bottom",
             style:
-                "stroke-width:0;stroke:transparent;fill: transparent;",
+                "stroke-width:0;stroke:transparent;fill: transparent;opacity: 0;",
         });
         states.forEach(function (state) {
             if (state.type === -1) {
