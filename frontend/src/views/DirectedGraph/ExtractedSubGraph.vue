@@ -13,6 +13,9 @@
               · {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
             <div class="drawing-buttons">
+              <!--Apply Changes to Super Graph-->
+              <el-button type="warning" size="small" round>Apply</el-button>
+              <!--Save Sub Graph to Table-->
               <el-button
                 @click="saveSingleToTable(index - 1)"
                 type="warning"
@@ -40,6 +43,7 @@ import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
+import historyManage from "@/plugin/history";
 import singleGraph from "@/plugin/singleGraph";
 
 var cmap = [
@@ -172,7 +176,7 @@ export default {
           .select(".path")
           .on("mouseover", function (d, id) {
             if (d3.select(this).style("stroke") !== "transparent") {
-              if (!_this.isSonReverse(i,id)) {
+              if (!_this.isSonReverse(i, id)) {
                 d3.select(this).style("marker-end", "url(#activeE)"); //Added
               } else {
                 d3.select(this).style("marker-start", "url(#activeS)"); //Added
@@ -199,7 +203,7 @@ export default {
           .on("mouseout", function (d, id) {
             if (d3.select(this).style("stroke") !== "transparent") {
               d3.select(this).style("stroke", "black");
-              if (!_this.isSonReverse(i,id)) {
+              if (!_this.isSonReverse(i, id)) {
                 d3.select(this).style("marker-end", "url(#normale)"); //Added
               } else {
                 d3.select(this).style("marker-start", "url(#normals)"); //Added
@@ -440,26 +444,35 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        let history = historyManage.deleteEdge(selection.history, {
+          source: selection.linksList[index].source,
+          target: selection.linksList[index].target,
+        });
         selection.linksList[index] = {
           source: selection.linksList[index].source,
           target: selection.linksList[index].target,
           value: selection.linksList[index].value,
           hidden: true,
         };
+        selection.history = history;
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);
       }
     },
     reverseSonEdge() {},
-    isSonReverse(i,edge) {
-      let index = this.multipleSearchValue.selections[i].linksList.findIndex(function (row) {
-        if (row.source === edge.v && row.target === edge.w && !row.hidden) {
-          return true;
-        } else return false;
-      });
+    isSonReverse(i, edge) {
+      let index = this.multipleSearchValue.selections[i].linksList.findIndex(
+        function (row) {
+          if (row.source === edge.v && row.target === edge.w && !row.hidden) {
+            return true;
+          } else return false;
+        }
+      );
       if (index < 0) return false;
-      return this.multipleSearchValue.selections[i].linksList[index].reverse === true;
+      return (
+        this.multipleSearchValue.selections[i].linksList[index].reverse === true
+      );
     },
 
     reverseDirection(edge) {
