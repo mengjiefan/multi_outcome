@@ -59,6 +59,7 @@ export default {
       tooltip: null,
       tooltip2: null,
       sonNum: ref(0),
+      transform: ref(),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
       multipleSearchValue: ref({
@@ -221,6 +222,7 @@ export default {
       // Set up zoom support
 
       var zoom = d3.zoom().on("zoom", function (event) {
+        that.transform = event.transform;
         inner.attr("transform", event.transform);
         that.tipHidden();
         that.tip2Hidden();
@@ -243,15 +245,19 @@ export default {
 
       // add hover effect & click hint to lines
       // Center the graph
-      var initialScale = 0.8;
-      let xOffset = (1500 - g.graph().width * initialScale) / 2;
-      let yOffset = (1000 - g.graph().height * initialScale) / 2;
-      svg.call(
-        zoom.transform,
-        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
-      );
+      if (that.transform) {
+        inner.attr("transform", that.transform);
+      } else {
+        var initialScale = 1;
+        let xOffset = (1200 - g.graph().width * initialScale) / 2;
+        let yOffset = (850 - g.graph().height * initialScale) / 2;
+        svg.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+        );
 
-      svg.attr("height", g.graph().height * initialScale + 40);
+        svg.attr("height", g.graph().height * initialScale + 40);
+      }
 
       var onmousepath = svg.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");

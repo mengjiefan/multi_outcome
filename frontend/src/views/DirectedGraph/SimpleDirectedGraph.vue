@@ -125,6 +125,8 @@ export default {
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
+      //去除孤点
+      //remove unrelated nodes
       let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
         let index = linksList.findIndex((link) => {
           if (link.source === node.id || link.target === node.id) return true;

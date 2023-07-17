@@ -27,7 +27,7 @@ const exist = (links, link) => {
 const sonGraph = ref(null);
 export default {
     linksList: [],
-    setSingleGraph(svg, multipleSearchValue, selection, size) {
+    setSingleGraph(svg, multipleSearchValue, selection, size, transform) {
         this.addArrowType(svg)
         sonGraph.value = this;
         var data = multipleSearchValue;
@@ -121,15 +121,20 @@ export default {
         render(inner, g);
 
         // Center the graph
-        var initialScale = size.scale;
-        console.log(size)
-        let xOffset = (size.width - g.graph().width * initialScale) / 2;
-        let yOffset = 10;
-        svg.call(
-            zoom.transform,
-            d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
-        );
-        svg.attr("height", g.graph().height * initialScale + 40);
+        if (transform) {
+            inner.attr("transform", transform);
+        } else {
+            var initialScale = size.scale;
+            console.log(size)
+            let xOffset = (size.width - g.graph().width * initialScale) / 2;
+            let yOffset = 10;
+            svg.call(
+                zoom.transform,
+                d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+            );
+            svg.attr("height", g.graph().height * initialScale + 40);
+        }
+
         this.linksList = selection.linksList;
         this.outcome = selection.outcome;
         this.variables = selection.variable;

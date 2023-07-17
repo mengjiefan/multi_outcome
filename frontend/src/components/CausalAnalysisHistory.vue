@@ -18,7 +18,8 @@
           width="120"
         />
 
-        <el-table-column prop="CovariantNum" label="Num" width="75" />
+        <el-table-column prop="CovariantNum" 
+       label="Num" width="75" />
         <el-table-column
           prop="Variables"
           label="Variables"

@@ -84,6 +84,7 @@ export default {
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
+      transform: ref([]),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -320,13 +321,15 @@ export default {
           nodesList: this.multipleSearchValue.nodesList,
         },
         selection,
-        size
+        size,
+        this.transform[i]
       );
 
       //Set up zoom support
       let that = this;
       let inner = svg.select("g");
       var zoom = d3.zoom().on("zoom", function (event) {
+        that.transform[i] = event.transform;
         inner.attr("transform", event.transform);
         that.tipHidden();
         that.tip2Hidden();
@@ -336,7 +339,9 @@ export default {
       this.setSonGraph(i);
     },
     drawSonGraphs() {
+      this.transform = [];
       for (let i = 0; i < this.sonNum; i++) {
+        this.transform.push(null);
         this.drawSonGraph(i);
       }
     },
