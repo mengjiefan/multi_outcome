@@ -14,7 +14,13 @@
             </div>
             <div class="drawing-buttons">
               <!--Apply Changes to Super Graph-->
-              <el-button type="warning" size="small" round>Apply</el-button>
+              <el-button
+                @click="applySubGraph(index - 1)"
+                type="warning"
+                size="small"
+                round
+                >Apply</el-button
+              >
               <!--Save Sub Graph to Table-->
               <el-button
                 @click="saveSingleToTable(index - 1)"
@@ -97,6 +103,51 @@ export default {
         },
       });
     },
+    applySubGraph(index) {
+      let selection = this.multipleSearchValue.selections[index];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        if (i == selection) continue;
+        let item = this.multipleSearchValue.selections[i];
+        this.applyToSingle(selection.linksList, item);
+      }
+      for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
+        let link = this.multipleSearchValue.linksList[i];
+        let mapLink = link;
+        let index = selection.linksList.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) mapLink = selection.linksList[index];
+        this.multipleSearchValue.linksList[i] = mapLink;
+      }
+      this.saveData();
+      this.drawGraph();
+    },
+    applyToSingle(answer, item) {
+      for (let i = 0; i < item.linksList.length; i++) {
+        let link = item.linksList[i];
+        let mapLink = link;
+        let index = answer.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) {
+          mapLink = answer[index];
+          if (link.hidden) {
+            mapLink = link;
+          } else if (mapLink.hidden) {
+            historyManage.deleteEdge(item.history, link);
+          } else if (mapLink.reverse && !link.reverse) {
+            historyManage.reverseEdge(item.history, link);
+          } else if (link.reverse && !mapLink.reverse) {
+            historyManage.reverseEdge(item.history, mapLink);
+          }
+        }
+        item.linksList[i] = mapLink;
+      }
+    },
     saveSingleToTable(index) {
       let selection = this.multipleSearchValue.selections[index];
       let variables = [
@@ -125,6 +176,7 @@ export default {
           })
         ),
         linksList: selection.linksList,
+        history: selection.history,
       };
       localStorage.setItem("GET_SAVE_DATA", JSON.stringify(finalData));
       this.$router.push({
