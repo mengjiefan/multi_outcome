@@ -5,8 +5,10 @@ export const countPos = (g, childNodes) => {
     let finalPos = [];
     g.nodes().forEach((v) => {
         let pos = g.node(v);
-        traversal(y, pos.y)
-        traversal(x, pos.x);
+        if (v !== 'group') {
+            traversal(y, pos.y)
+            traversal(x, pos.x);
+        }
         if (pos.type === -1) commonNode.push(v);
     });
     let cnodesList = [];
@@ -25,6 +27,7 @@ export const countPos = (g, childNodes) => {
     childNodes.forEach(child => {
         let nodesList = [];
         let pos = g.node(child.outcome);
+
         nodesList.push({
             id: child.outcome,
             type: 0,
@@ -42,12 +45,12 @@ export const countPos = (g, childNodes) => {
         })
         finalPos.push({
             nodesList,
-            linksList:child.linksList
+            linksList: child.linksList
         })
     })
-    console.log(finalPos)
     return finalPos;
 }
+
 const traversal = (list, value) => {
     if (list.includes(value)) return list;
     let i;
@@ -137,10 +140,10 @@ export const countSonPos = (sonPos, commonPos) => {
 
     }
     if (maxPosX + rX.length > 0) {
-        gap.xGap = 1000 / (maxPosX + rX.length);
+        gap.xGap = 1500 / (maxPosX + rX.length);
     }
     if (maxPosY + rY.length > 0) {
-        gap.yGap = 720 / (maxPosY + rX.length);
+        gap.yGap = 920 / (maxPosY + rX.length);
     }
     console.log(sonPos.concat(commonPos))
     return {

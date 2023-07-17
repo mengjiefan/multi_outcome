@@ -3,8 +3,9 @@ import { ref } from "vue";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
+import { g } from "jointjs";
 
-let xGap = 40;
+let xGap = 50;
 let yGap = 45;
 
 const countXPos = (x) => {
@@ -71,7 +72,7 @@ const svgZoom = (name) => {
 
 };
 export const extractSonCharts = () => {
-    
+
 }
 export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
     xGap = gap.xGap;
@@ -88,19 +89,22 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
             return null
         }
     });
-
     let outRect = new joint.shapes.standard.Rectangle();
     outRect.position(
         countXPos(nodesList[0].x),
         countYPos(nodesList[0].y)
     );
-    outRect.resize(24, 24);
+    outRect.resize(nodesList[0].id.length * 10, 28);
     outRect.attr({
         body: {
             fill: "#f77",
             strokeWidth: 0,
-            rx: 24,
-            ry: 24,
+            rx: 5,
+            ry: 5,
+        },
+        label: {
+            text: nodesList[0].id,
+            fill: "white",
         },
         title: nodesList[0].id
     });
@@ -112,13 +116,17 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
             countXPos(nodesList[nodeI].x),
             countYPos(nodesList[nodeI].y)
         );
-        faRect.resize(24, 24);
+        faRect.resize(nodesList[nodeI].id.length * 10, 28);
         faRect.attr({
             body: {
                 fill: nodesList[nodeI].type === -1 ? "#1f77b4" : "black",
                 strokeWidth: 0,
-                rx: 24,
-                ry: 24,
+                rx: 5,
+                ry: 5,
+            },
+            label: {
+                text: nodesList[nodeI].id,
+                fill: "white",
             },
             title: nodesList[nodeI].id
         });
@@ -131,16 +139,17 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         if (link.value < 0)
             path.attr({
                 line: {
+                    strokeWidth: (-link.value * 10) + '',
                     strokeDasharray: "4 4",
                 }
             })
-        path.appendLabel({
-            attrs: {
-                text: {
-                    text: link.value
-                },
-            }
-        });
+        else {
+            path.attr({
+                line: {
+                    strokeWidth: (link.value * 10) + '',
+                }
+            })
+        }
         let sindex = nodesList.findIndex(item => {
             if (item.id === link.source) return true;
             else return false;
@@ -152,11 +161,16 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         })
         path.target(nodesList[tindex].node);
         path.addTo(graph);
+        path.connector("curve");
+
+        //path.router('manhattan')
+        //path.connector("rounded");
+
     })
     paper.on('element:mouseover', function (elementView, evt) {
         tipHidden();
         var currentElement = elementView.model;
-   
+
         let name = currentElement.attributes.attrs.title;
         tipVisible(name, evt)
 
