@@ -29,7 +29,7 @@ export default {
     if (this.$route.name === "DirectedGraphView") {
       if (this.sonNum > 1) {
         this.$router.push({
-          name: "ExtractedSubGraph",
+          name: "DirectedSuperGraph",
         });
       } else {
         this.$router.push({

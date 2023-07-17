@@ -75,6 +75,13 @@ export default new VueRouter({
 									component: () => import(
 										"../views/DirectedGraph/ExtractedSubGraph.vue"
 									),
+								},
+								{
+									name: 'TightenedSubGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/tightened-sub-graph',
+									component: () => import(
+										"../views/DirectedGraph/TightenedSubGraph.vue"
+									),
 								}
 							]
 						},

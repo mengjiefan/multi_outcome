@@ -1,6 +1,5 @@
 <template>
   <div class="mainCharacter">
-    <h4>variablesCharacter</h4>
     <!-- <button>
 			<router-link class="list-group-item" active-class="active" to="/AppMainPlot/CausalGraphView">Get CausalGraph</router-link>
 		</button>
@@ -21,7 +20,6 @@ export default {
 .mainCharacter {
   padding: 16px;
   font-size: 20px;
-  background-color: rgb(231, 235, 213);
   max-width:500px;
   height: 100%;
 }

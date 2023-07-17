@@ -46,7 +46,6 @@ import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import historyManage from "@/plugin/history";
@@ -73,16 +72,10 @@ export default {
   data() {
     return {
       ifGroup: ref(false),
-      loadingInstance: ref(null),
-      countingGraph: ref(false),
       tooltip: null,
       tooltip2: null,
       menuShow: ref(false),
       sonNum: ref(0),
-      checkAll: ref(false),
-      VariablesOptions,
-      checkedVariables: ref([]),
-      hasNoHidden: ref(true),
       tip2Show: ref(false),
       transform: ref([]),
       multipleSearchValue: ref({
@@ -335,16 +328,7 @@ export default {
         this.drawSonGraph(i);
       }
     },
-    showLoading() {
-      const options = {
-        target: this.ifGroup
-          ? document.getElementsByClassName("son-svg")[0]
-          : document.getElementsByClassName("drawing-canvas")[0],
-        background: "rgba(255, 255, 255, 0.5)",
-        customClass: "counting-anime",
-      };
-      this.loadingInstance = Loading.service(options);
-    },
+
     ifOutCome(node) {
       let allOut = [];
       this.multipleSearchValue.nodesList.map((row) => {
@@ -554,13 +538,6 @@ export default {
     );
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
-      this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
-        return node.id;
-      });
-      let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
-        (link) => link.hidden || link.reverse
-      );
-      if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
       this.drawGraph();
     }
   },

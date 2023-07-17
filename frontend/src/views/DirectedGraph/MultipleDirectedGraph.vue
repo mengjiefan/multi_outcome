@@ -11,8 +11,12 @@
         :class="name === 'ExtractedSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('ExtractedSubGraph')"
       >
-        Sub Graph
+        Extracted Subgraphs
       </div>
+      <div
+        :class="name === 'TightenedSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('TightenedSubGraph')"
+      >Tightened Subgraphs</div>
     </div>
     <router-view></router-view>
   </div>
@@ -30,6 +34,9 @@ export default {
     next((vm) => {
       vm.getTag();
     });
+  },
+  mounted(){
+    this.getTag();
   },
   methods: {
     getTag() {

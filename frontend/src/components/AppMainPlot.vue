@@ -4,7 +4,13 @@
     <div class="open-button" @click="drawer = true">
       <i class="el-icon-caret-left"></i>
     </div>
-    <el-drawer :size="500" :modal="false" title="我是标题" :visible.sync="drawer" :with-header="false">
+    <el-drawer
+      custom-class="right-side"
+      :size="500"
+      :modal="false"
+      title="variablesCharacter"
+      :visible.sync="drawer"
+    >
       <app-main-character></app-main-character>
     </el-drawer>
   </div>
@@ -47,7 +53,14 @@ export default {
   align-items: center;
   box-shadow: rgb(174, 174, 174) 0px 0px 10px;
 }
+
+</style>
+<style>
 .right-side {
-  width: auto;
+  /*background-color: rgb(231, 235, 213);*/
+}
+#el-drawer__title {
+  color: black ;
+  font-weight: bold;
 }
 </style>

@@ -32,6 +32,7 @@ import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
+import { countPos } from "@/plugin/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -97,8 +98,8 @@ export default {
       });
       this.multipleSearchValue.linksList = linksList;
       this.multipleSearchValue.selections =
-        this.multipleSearchValue.selections.map(selection => {
-            return this.trulyDeleteSon(selection)
+        this.multipleSearchValue.selections.map((selection) => {
+          return this.trulyDeleteSon(selection);
         });
       this.hasNoHidden = true;
       this.saveData();
@@ -208,6 +209,9 @@ export default {
         //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
+
+      let finalPos = countPos(g, this.multipleSearchValue.selections);
+      localStorage.setItem("SON_POS", JSON.stringify(finalPos));
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
