@@ -24,6 +24,7 @@ export default {
         console.log(record)
     },
     deleteEdge(record, operation) {
+        console.log(record)
         let newRecord = record.filter(history => {
             let flag = false;
             if (history.source === operation.source && history.target === operation.target) flag = true;

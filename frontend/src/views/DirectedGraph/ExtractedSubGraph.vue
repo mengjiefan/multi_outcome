@@ -106,9 +106,10 @@ export default {
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        if (i == selection) continue;
+        if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+        this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
         let link = this.multipleSearchValue.linksList[i];
@@ -122,7 +123,6 @@ export default {
         this.multipleSearchValue.linksList[i] = mapLink;
       }
       this.saveData();
-      this.drawGraph();
     },
     applyToSingle(answer, item) {
       for (let i = 0; i < item.linksList.length; i++) {
@@ -186,101 +186,81 @@ export default {
         },
       });
     },
-    truelyDelete() {
-      console.log("delete edge");
-      let linksList = this.multipleSearchValue.linksList.filter(
-        (link) => !link.hidden
-      );
-      linksList = linksList.map((link) => {
-        if (link.reverse)
-          return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-          };
-        else return link;
-      });
-      this.multipleSearchValue.linksList = linksList;
-      this.hasNoHidden = true;
-      this.saveData();
-      this.drawGraph();
-    },
-    setSonGraph() {
-      const _this = this;
-      for (let i = 0; i < this.sonNum; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        let svg = d3.select(".paper" + (i + 1)).select("svg");
-        let inner = svg.select("g");
-        inner
-          .selectAll("g.node")
-          .on("mouseover", (v, id) => {
-            if (
-              (selection.variable.includes(id) || selection.outcome === id) &&
-              v.fromElement.__data__ !== "group"
-            )
-              v.fromElement.setAttribute("id", "hover-node");
-          })
-          .on("mouseout", (v) => {
-            v.fromElement.setAttribute("id", "");
-          });
-        svg
-          .selectAll(".edgePath")
-          .select(".path")
-          .on("mouseover", function (d, id) {
-            if (d3.select(this).style("stroke") !== "transparent") {
-              if (!_this.isSonReverse(i, id)) {
-                d3.select(this).style("marker-end", "url(#activeE)"); //Added
-              } else {
-                d3.select(this).style("marker-start", "url(#activeS)"); //Added
-              }
-              d3.select(this).style("stroke", "#1f77b4");
 
-              let width = d3.select(this).style("stroke-width");
-              let dash = d3.select(this).style("stroke-dasharray");
-              console.log(dash);
-              width.slice(width.length - 2, width.length);
-              if (dash.includes("4")) {
-                width = "-" + width;
-              }
-              if (!_this.tip2Show)
-                _this.tipVisible(
-                  id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
-                  {
-                    pageX: d.pageX,
-                    pageY: d.pageY,
-                  }
-                );
+    setSonGraph(i) {
+      const _this = this;
+      let selection = this.multipleSearchValue.selections[i];
+      let svg = d3.select(".paper" + (i + 1)).select("svg");
+      let inner = svg.select("g");
+      inner
+        .selectAll("g.node")
+        .on("mouseover", (v, id) => {
+          if (
+            (selection.variable.includes(id) || selection.outcome === id) &&
+            v.fromElement.__data__ !== "group"
+          )
+            v.fromElement.setAttribute("id", "hover-node");
+        })
+        .on("mouseout", (v) => {
+          v.fromElement.setAttribute("id", "");
+        });
+      svg
+        .selectAll(".edgePath")
+        .select(".path")
+        .on("mouseover", function (d, id) {
+          console.log("hover");
+          if (d3.select(this).style("stroke") !== "transparent") {
+            if (!_this.isSonReverse(i, id)) {
+              d3.select(this).style("marker-end", "url(#activeE)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
-          })
-          .on("mouseout", function (d, id) {
-            if (d3.select(this).style("stroke") !== "transparent") {
-              d3.select(this).style("stroke", "black");
-              if (!_this.isSonReverse(i, id)) {
-                d3.select(this).style("marker-end", "url(#normale)"); //Added
-              } else {
-                d3.select(this).style("marker-start", "url(#normals)"); //Added
-              }
+            d3.select(this).style("stroke", "#1f77b4");
+
+            let width = d3.select(this).style("stroke-width");
+            let dash = d3.select(this).style("stroke-dasharray");
+            width.slice(width.length - 2, width.length);
+            if (dash.includes("4")) {
+              width = "-" + width;
             }
-            _this.tipHidden();
-          })
-          .on("click", function (d, id) {
-            if (d3.select(this).style("stroke") !== "transparent") {
-              let hintHtml =
-                "<div class='operate-header'><div class='hint-list'>" +
-                selection.outcome +
-                "</div><div class='close-button'>x</div></div><hr/>\
+            if (!_this.tip2Show)
+              _this.tipVisible(
+                id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
+          }
+        })
+        .on("mouseout", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            d3.select(this).style("stroke", "black");
+            if (!_this.isSonReverse(i, id)) {
+              d3.select(this).style("marker-end", "url(#normale)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#normals)"); //Added
+            }
+          }
+          _this.tipHidden();
+        })
+        .on("click", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>" +
+              selection.outcome +
+              "</div><div class='close-button'>x</div></div><hr/>\
               <div class='operate-menu'>Delete edge<br/>(" +
-                id.v +
-                ", " +
-                id.w +
-                ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
-              _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-              setTimeout(() => {
-                document.addEventListener("click", _this.listener3);
-              }, 0);
-            }
-          });
-      }
+              id.v +
+              ", " +
+              id.w +
+              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              document.addEventListener("click", _this.listener3);
+            }, 0);
+          }
+        });
     },
     setGraph() {
       if (this.tooltip) {
@@ -294,7 +274,6 @@ export default {
 
       if (this.sonNum > 1) {
         this.drawSonGraphs();
-        this.setSonGraph();
       }
     },
     drawGraph() {
@@ -353,6 +332,8 @@ export default {
         that.tip2Hidden();
       });
       svg.call(zoom);
+
+      this.setSonGraph(i);
     },
     drawSonGraphs() {
       for (let i = 0; i < this.sonNum; i++) {
@@ -390,70 +371,6 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
-    getLinks() {
-      this.hasNoHidden = true;
-      let newFac = [];
-      let newOut = [];
-      this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type !== 0) newFac.push(row.id);
-      });
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) newOut.push(row.id);
-      });
-      this.countingGraph = true;
-      this.showLoading();
-
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/getLink",
-        //参数
-        params: {
-          outcomes: newOut.join(),
-          factors: newFac.join(),
-        },
-      })
-        .then((response) => {
-          console.log("new links", response.data);
-          this.multipleSearchValue = {
-            linksList: response.data.links,
-            nodesList: response.data.nodes,
-          };
-
-          this.loadingInstance.close();
-          this.loadingInstance = null;
-
-          this.saveData();
-          this.drawGraph();
-          this.countingGraph = false;
-        })
-        .catch((error) => {
-          console.log("请求失败了", error);
-        });
-    },
-    //document click listener => to close line tooltip
-    listener(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
-      ) {
-        document.removeEventListener("click", _this.listener);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        if (text.includes("Delete")) this.deleteEdge(text);
-        else {
-          let text = e.srcElement.parentElement.children[2].innerText;
-          this.reverseDirection(text);
-        }
-      }
-    },
     listener3(e) {
       let _this = this;
       let clickDOM = e.target.className;
@@ -469,10 +386,15 @@ export default {
         document.removeEventListener("click", _this.listener3);
       } else if (clickDOM === "operate-menu") {
         let stext = e.target.innerText;
-
+        console.log(stext);
         let title = e.srcElement.parentElement.children[0].innerText;
         let outcome = title.substr(0, title.length - 2);
-        this.deleteSonEdge(outcome, stext);
+        if (stext.includes("Delete")) {
+          this.deleteSonEdge(outcome, stext);
+        } else {
+          let text = e.srcElement.parentElement.children[2].innerText;
+          this.reverseSonEdge(outcome, text);
+        }
       }
     },
     //delete edge from son graph
@@ -512,7 +434,42 @@ export default {
         this.drawSonGraph(i);
       }
     },
-    reverseSonEdge() {},
+    reverseSonEdge(outcome, edge) {
+      for (let i = outcome.length - 1; i >= 0; i--) {
+        if (!outcome[i]) {
+          outcome = outcome.substr(0, i - 1);
+        }
+      }
+      let i = this.multipleSearchValue.selections.findIndex((selection) => {
+        if (selection.outcome === outcome) return true;
+        else return false;
+      });
+      console.log(i);
+
+      let selection = this.multipleSearchValue.selections[i];
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+
+      let index = selection.linksList.findIndex(function (row) {
+        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        let history = historyManage.reverseEdge(selection.history, {
+          source: selection.linksList[index].source,
+          target: selection.linksList[index].target,
+        });
+        if (!selection.linksList[index].reverse) {
+          selection.linksList[index]["reverse"] = true;
+        } else {
+          selection.linksList[index].reverse = false;
+        }
+        selection.history = history;
+        this.tip2Hidden();
+        this.saveData();
+        this.drawSonGraph(i);
+      }
+    },
     isSonReverse(i, edge) {
       let index = this.multipleSearchValue.selections[i].linksList.findIndex(
         function (row) {
@@ -527,44 +484,6 @@ export default {
       );
     },
 
-    reverseDirection(edge) {
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
-          return true;
-        } else return false;
-      });
-      if (index > -1) {
-        if (!this.multipleSearchValue.linksList[index].reverse) {
-          this.multipleSearchValue.linksList[index]["reverse"] = true;
-          this.hasNoHidden = false;
-        } else this.multipleSearchValue.linksList[index].reverse = false;
-        this.saveData();
-        this.tip2Hidden();
-        this.drawGraph();
-      }
-    },
-    deleteEdge(edge) {
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1]) {
-          return true;
-        } else return false;
-      });
-      if (index > -1) {
-        this.multipleSearchValue.linksList[index] = {
-          source: this.multipleSearchValue.linksList[index].source,
-          target: this.multipleSearchValue.linksList[index].target,
-          value: this.multipleSearchValue.linksList[index].value,
-          hidden: true,
-        };
-        this.saveData();
-        this.hasNoHidden = false;
-        this.tip2Hidden();
-        this.drawGraph();
-      }
-    },
     // create tooltip but not show it
     createTooltip() {
       return d3
