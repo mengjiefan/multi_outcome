@@ -22,7 +22,7 @@ export default {
   padding: 16px;
   font-size: 20px;
   background-color: rgb(231, 235, 213);
-  flex: 0.8;
   max-width:500px;
+  height: 100%;
 }
 </style>

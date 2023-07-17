@@ -157,16 +157,7 @@ export default {
           id: selection.outcome,
         },
       ];
-      console.log(
-        variables.concat(
-          selection.variable.map((v) => {
-            return {
-              id: v,
-              type: 1,
-            };
-          })
-        )
-      );
+
       let finalData = {
         nodesList: variables.concat(
           selection.variable.map((v) => {
@@ -209,7 +200,6 @@ export default {
         .selectAll(".edgePath")
         .select(".path")
         .on("mouseover", function (d, id) {
-          console.log("hover");
           if (d3.select(this).style("stroke") !== "transparent") {
             if (!_this.isSonReverse(i, id)) {
               d3.select(this).style("marker-end", "url(#activeE)"); //Added
@@ -391,7 +381,6 @@ export default {
         document.removeEventListener("click", _this.listener3);
       } else if (clickDOM === "operate-menu") {
         let stext = e.target.innerText;
-        console.log(stext);
         let title = e.srcElement.parentElement.children[0].innerText;
         let outcome = title.substr(0, title.length - 2);
         if (stext.includes("Delete")) {
@@ -413,8 +402,8 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-      console.log(i);
       let selection = this.multipleSearchValue.selections[i];
+
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
@@ -449,7 +438,6 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-      console.log(i);
 
       let selection = this.multipleSearchValue.selections[i];
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
