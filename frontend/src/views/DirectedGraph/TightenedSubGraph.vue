@@ -39,14 +39,12 @@
 </template>
 <script>
 import * as d3 from "d3";
-import * as dagreD3 from "dagre-d3";
-import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSonCharts } from "@/plugin/sonGraph";
-import { countSonPos } from "@/plugin/CountPos";
+import { countSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
   data() {

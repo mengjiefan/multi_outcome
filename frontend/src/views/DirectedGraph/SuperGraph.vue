@@ -32,7 +32,7 @@ import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
-import { countPos } from "@/plugin/CountPos";
+import { countPos } from "@/plugin/tightened/CountPos";
 
 var cmap = [
   "#1f77b4",

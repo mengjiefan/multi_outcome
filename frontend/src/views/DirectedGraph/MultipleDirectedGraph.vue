@@ -17,6 +17,10 @@
         :class="name === 'TightenedSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('TightenedSubGraph')"
       >Tightened Subgraphs</div>
+      <div
+        :class="name === 'OptimalSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('OptimalSubGraph')"
+      >Optimal Subgraphs</div>
     </div>
     <router-view></router-view>
   </div>

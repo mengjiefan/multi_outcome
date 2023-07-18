@@ -161,9 +161,9 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         })
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        path.connector("curve");
+        //path.connector("curve");
 
-        //path.router('manhattan')
+        //path.router('metro')
         //path.connector("rounded");
 
     })

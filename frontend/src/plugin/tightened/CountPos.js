@@ -99,8 +99,10 @@ export const countSonPos = (sonPos, commonPos) => {
             traversal(rY, pos.y);
         }
     });
-    maxPosX = maxPosX - minPosX + lX.length;
-    maxPosY = maxPosY - minPosY + lY.length;
+    //maxPosX = maxPosX - minPosX + lX.length;
+    //maxPosY = maxPosY - minPosY + lY.length;
+    let minX = minPosX - lX.length;
+    let minY = minPosY - lY.length;
     sonPos = sonPos.map((pos) => {
         let newPos = {
             x: pos.x,
@@ -109,30 +111,18 @@ export const countSonPos = (sonPos, commonPos) => {
             id: pos.id
         }
         if (lX.includes(pos.x)) {
-            newPos.x = lX.indexOf(newPos.x);
+            newPos.x = minX + lX.indexOf(newPos.x);
         } else if (rX.includes(pos.x)) {
             newPos.x = rX.indexOf(newPos.x) + maxPosX + 1;
-        } else {
-            newPos.x = (newPos.x - minPosX) + lX.length;
         }
         if (lY.includes(pos.y)) {
-            newPos.y = lY.indexOf(newPos.y);
+            newPos.y = minY + lY.indexOf(newPos.y);
         } else if (rY.includes(pos.y)) {
             newPos.y = rY.indexOf(newPos.y) + maxPosY + 1;
-        } else {
-            newPos.y = (newPos.y - minPosY) + lY.length;
-        }
+        } 
         return newPos;
     });
-    commonPos = commonPos.map((pos) => {
-        let newPos = {
-            type: pos.type,
-            id: pos.id,
-            x: (pos.x - minPosX) + lX.length,
-            y: (pos.y - minPosY) + lY.length,
-        }
-        return newPos;
-    })
+
     console.log(commonPos)
     let gap = {
         xGap: 50,

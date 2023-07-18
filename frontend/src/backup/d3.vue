@@ -83,7 +83,7 @@ import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSonCharts } from "@/plugin/sonGraph";
-import { countPos, countSonPos } from "@/plugin/CountPos";
+import { countPos, countSonPos } from "@/plugin/tightened/CountPos";
 
 var cmap = [
   "#1f77b4",

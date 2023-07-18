@@ -67,7 +67,9 @@ var cmap = [
 export default {
   name: "DirectedGraph",
   setup() {
-    return {};
+    return {
+      transform: ref([]),
+    };
   },
   data() {
     return {
@@ -77,7 +79,6 @@ export default {
       menuShow: ref(false),
       sonNum: ref(0),
       tip2Show: ref(false),
-      transform: ref([]),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
