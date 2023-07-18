@@ -450,30 +450,22 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) ||
-          (row.source === nodes[1] &&
-            row.target === nodes[0] &&
-            row.reverse &&
-            !row.hidden)
+          (row.source === nodes[0] && row.target === nodes[1] && !row.hidden && !row.reverse) ||
+          (row.target === nodes[0] && row.source === nodes[1] && !row.hidden && row.reverse)
         ) {
           return true;
         } else return false;
       });
       if (index > -1) {
-        let history = {};
+        let history = {
+          source: nodes[0],
+          target: nodes[1],
+        }
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
-          history = {
-            source: this.multipleSearchValue.linksList[index].source,
-            target: this.multipleSearchValue.linksList[index].target,
-          };
           this.hasNoHidden = false;
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
-          history = {
-            source: this.multipleSearchValue.linksList[index].target,
-            target: this.multipleSearchValue.linksList[index].source,
-          };
         }
         //所有子图都改变，都要增加操作历史
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -519,8 +511,8 @@ export default {
       });
       if (index > -1) {
         let history = {
-          source: this.multipleSearchValue.linksList[index].source,
-          target: this.multipleSearchValue.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1]
         };
         this.multipleSearchValue.linksList[index] = {
           source: this.multipleSearchValue.linksList[index].source,

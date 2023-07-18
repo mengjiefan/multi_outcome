@@ -541,8 +541,8 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) ||
-          (row.target === nodes[0] && row.source === nodes[1] && row.reverse)
+          (row.source === nodes[0] && row.target === nodes[1] && !row.reverse && !row.hidden) ||
+          (row.target === nodes[0] && row.source === nodes[1] && row.reverse && !row.hidden)
         ) {
           return true;
         } else return false;
