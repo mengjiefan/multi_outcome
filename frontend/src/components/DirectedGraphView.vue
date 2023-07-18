@@ -122,6 +122,7 @@ hr {
 </style>
 <style scoped>
 #DirectedGraph {
+  height: 100vh;
   flex: 3;
   display: flex;
   flex-direction: column;

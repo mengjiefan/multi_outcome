@@ -303,23 +303,26 @@ export default {
           _this.tipHidden();
         })
         .on("mouseover", function (d, id) {
+          let router = "";
           if (d3.select(this).style("stroke") !== "transparent") {
             if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
               d3.select(this).style("marker-end", "url(#activeE)"); //Added
             } else {
+              router = "(" + id.w + ", " + id.v + ")";
               d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
             let width = d3.select(this).style("stroke-width");
             let dash = d3.select(this).style("stroke-dasharray");
-   
+
             width.slice(width.length - 2, width.length);
             if (dash.includes("4")) {
               width = "-" + width;
             }
             if (!_this.tip2Show)
               _this.tipVisible(
-                id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                router + ": " + parseFloat(width).toFixed(2),
                 {
                   pageX: d.pageX,
                   pageY: d.pageY,
@@ -511,7 +514,6 @@ export default {
         this.deleteNode(text);
       }
     },
-
 
     deleteNode(node) {
       let nodeName = node.split(" ")[2];

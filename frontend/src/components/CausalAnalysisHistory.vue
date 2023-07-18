@@ -472,6 +472,9 @@ export default {
 <style scoped>
 .history-panel {
   height: auto;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
   padding: 10px;
 }
 .history-main-title {
@@ -480,7 +483,7 @@ export default {
   line-height: 36px;
 }
 .table {
-  height: 600px;
+  height: auto;
   overflow: auto;
 }
 .list-group-item {

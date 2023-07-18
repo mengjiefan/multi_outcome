@@ -748,7 +748,7 @@ hr {
   flex: 3;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
 }
 .graph-info-header {
@@ -823,8 +823,8 @@ hr {
   left: 16px;
   bottom: 16px;
   padding: 16px;
-  width: 458px;
-  height: 480px;
+  width: 100%;
+  height: auto;
   background-color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -834,7 +834,7 @@ hr {
   font-weight: bold;
 }
 .sum-svg svg {
-  height: 450px;
+  height:100%;
   width: 458px;
 }
 .son-svg {

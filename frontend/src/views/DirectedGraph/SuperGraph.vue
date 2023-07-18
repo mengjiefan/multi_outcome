@@ -281,9 +281,12 @@ export default {
         })
         .on("mouseover", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
+            let router = "";
             if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
               d3.select(this).style("marker-end", "url(#activeE)"); //Added
             } else {
+              router = "(" + id.w + ", " + id.v + ")";
               d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
@@ -297,7 +300,7 @@ export default {
             }
             if (!_this.tip2Show)
               _this.tipVisible(
-                id.v + "-" + id.w + ": " + parseFloat(width).toFixed(2),
+                router + ": " + parseFloat(width).toFixed(2),
                 {
                   pageX: d.pageX,
                   pageY: d.pageY,
