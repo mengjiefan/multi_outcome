@@ -50,6 +50,7 @@ def test11(request):
     return HttpResponse("test...")  # 测试成功
 
 #根据outcome和factor获取所有节点和边
+# 实际中，不需要再次计算此步，直接拿第一步中的经过交互完成之后的经专家确认的多个子图中的节点和边（去重后），交给dagre绘制即可
 def get_causal_edges(request):
     filename = "./myApp/MissingValue_fill_data_all.xlsx"
 
@@ -70,6 +71,8 @@ def get_causal_edges(request):
     nodes_list = list(outcomes)
 
     nodes_list_all = top_factors_list + nodes_list
+
+    df = df[nodes_list_all]  # 保证后续使用PC算法时，nodes_pc[i]和GraphNode(nodes_list_all[i]))是匹配的
 
     data = df.to_numpy()
 
@@ -192,9 +195,11 @@ def select_factor(request):
     print("初始节点为:{}".format(nodes_list))
     nodes_list_all = top_factors_list + nodes_list
     print("最终节点为:{}".format(nodes_list_all))
-    # print("当前为{}的结果".format(outcome))
-    df.drop(columns=list(top_factors)[int(CovariantNum):], inplace=True)
-    # df.to_csv(outcome + '.csv')
+    # # print("当前为{}的结果".format(outcome))
+    # df.drop(columns=list(top_factors)[int(CovariantNum):], inplace=True)
+    # # df.to_csv(outcome + '.csv')
+    df = df[nodes_list_all]
+    # print(df)
     data = df.to_numpy()
 
     # PC算法
