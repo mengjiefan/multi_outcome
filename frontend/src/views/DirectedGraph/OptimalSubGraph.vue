@@ -44,6 +44,7 @@ import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import { drawSonCharts } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
+import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/optimal/CountPos";
 
 export default {
@@ -209,9 +210,7 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-      console.log(outcome, i);
       let selection = this.multipleSearchValue.selections[i];
-
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
@@ -222,10 +221,11 @@ export default {
           return true;
         } else return false;
       });
+      console.log(index);
       if (index > -1) {
         let history = historyManage.deleteEdge(selection.history, {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1],
         });
         selection.linksList[index] = {
           source: selection.linksList[index].source,
@@ -254,21 +254,29 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+        if (
+          (row.source === nodes[0] &&
+            row.target === nodes[1] &&
+            !row.hidden &&
+            !row.reverse) ||
+          (row.source === nodes[1] &&
+            row.target === nodes[0] &&
+            !row.hidden &&
+            row.reverse)
+        ) {
           return true;
         } else return false;
       });
       if (index > -1) {
-        let history = historyManage.reverseEdge(selection.history, {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
+        historyManage.reverseEdge(selection.history, {
+          source: nodes[0],
+          target: nodes[1],
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
         } else {
           selection.linksList[index].reverse = false;
         }
-        selection.history = history;
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);

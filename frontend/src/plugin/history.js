@@ -1,5 +1,6 @@
 export default {
     reverseEdge(record, operation) {
+        console.log(record)
         let index = record.findIndex(history => {
             if (history.source === operation.source && history.target === operation.target && history.reverse) {
                 return true;

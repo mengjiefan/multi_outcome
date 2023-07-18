@@ -132,7 +132,7 @@ export default {
           if (link.hidden) {
             mapLink = link;
           } else if (mapLink.hidden) {
-            historyManage.deleteEdge(item.history, link);
+            item.history = historyManage.deleteEdge(item.history, link);
           } else if (mapLink.reverse && !link.reverse) {
             historyManage.reverseEdge(item.history, link);
           } else if (link.reverse && !mapLink.reverse) {
@@ -432,7 +432,7 @@ export default {
         } else return false;
       });
       if (index > -1) {
-        let history = historyManage.reverseEdge(selection.history, {
+        historyManage.reverseEdge(selection.history, {
           source: selection.linksList[index].source,
           target: selection.linksList[index].target,
         });
@@ -441,7 +441,6 @@ export default {
         } else {
           selection.linksList[index].reverse = false;
         }
-        selection.history = history;
         this.tip2Hidden();
         this.saveData();
         this.drawSonGraph(i);

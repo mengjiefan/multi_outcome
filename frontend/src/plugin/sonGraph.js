@@ -147,7 +147,7 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         });
         if (link.value < 0)
             path.attr({
-                id: '(' + link.source + ' , ' + link.target + ')',
+                id: '(' + link.source + ', ' + link.target + ')',
                 line: {
                     strokeWidth: (-link.value * 10) + '',
                     strokeDasharray: "4 4",
@@ -155,7 +155,7 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
             })
         else {
             path.attr({
-                id: '(' + link.source + ' , ' + link.target + ')',
+                id: '(' + link.source + ', ' + link.target + ')',
                 line: {
                     strokeWidth: (link.value * 10) + '',
                 }

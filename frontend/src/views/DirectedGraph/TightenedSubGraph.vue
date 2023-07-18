@@ -44,6 +44,7 @@ import { Loading } from "element-ui";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSonCharts } from "@/plugin/sonGraph";
+import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
