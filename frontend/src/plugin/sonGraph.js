@@ -75,6 +75,15 @@ export const extractSonCharts = () => {
 
 }
 export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
+    linksList = linksList.filter(link => !link.hidden);
+    linksList = linksList.map(link => {
+        if (link.reverse) return {
+            source: link.target,
+            target: link.source,
+            value: link.value
+        };
+        else return link;
+    })
     xGap = gap.xGap;
     yGap = gap.yGap;
     tooltip.value = createTooltip();
@@ -138,6 +147,7 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         });
         if (link.value < 0)
             path.attr({
+                id: '(' + link.source + ' , ' + link.target + ')',
                 line: {
                     strokeWidth: (-link.value * 10) + '',
                     strokeDasharray: "4 4",
@@ -145,6 +155,7 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
             })
         else {
             path.attr({
+                id: '(' + link.source + ' , ' + link.target + ')',
                 line: {
                     strokeWidth: (link.value * 10) + '',
                 }
@@ -177,52 +188,13 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         linkView.addTools(toolsView);
     });
     */
-    var infoButton = new joint.linkTools.Button({
-        markup: [{
-            tagName: 'circle',
-            selector: 'button',
-            attributes: {
-                'r': 7,
-                'fill': '#001DFF',
-                'cursor': 'pointer'
-            }
-        }, {
-            tagName: 'path',
-            selector: 'icon',
-            attributes: {
-                'd': 'M -2 4 2 4 M 0 3 0 0 M -2 -1 1 -1 M -1 -4 1 -4',
-                'fill': 'none',
-                'stroke': '#FFFFFF',
-                'stroke-width': 2,
-                'pointer-events': 'none'
-            }
-        }],
-        distance: 60,
-        offset: 0,
-        action: function (evt) {
-            console.log(evt)
-            tipVisible(
-                this.id,
-                {
-                    pageX: evt.pageX,
-                    pageY: evt.pageY,
-                }
-            );
-        }
-    });
-    var toolsView = new joint.dia.ToolsView({
-        tools: [infoButton]
-    });
-    paper.on('link:mouseenter', function (linkView) {
-        console.log(toolsView)
-        linkView.addTools(toolsView);
-    });
     paper.on('link:mouseleave', function (linkView) {
         linkView.removeTools();
     });
     paper.on('element:mouseover', function (elementView, evt) {
         //tipHidden();
         joint.highlighters.mask.add(elementView, { selector: 'root' }, 'my-element-highlight', {
+            padding: 0,
             deep: true,
             attrs: {
                 'stroke': '#FF4365',
@@ -232,7 +204,6 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
         //var currentElement = elementView.model;
         //let name = currentElement.attributes.attrs.title;
         //tipVisible(name, evt)
-
     });
     paper.on('element:mouseout', function (elementView, evt) {
         const highlighter = joint.dia.HighlighterView.get(elementView, 'my-element-highlight');
@@ -242,4 +213,5 @@ export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
     if (nodesList) {
         svgZoom(name);
     }
+    return paper;
 };

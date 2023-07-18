@@ -76,9 +76,8 @@ export default {
       ifGroup: ref(false),
       tooltip: null,
       tooltip2: null,
-      menuShow: ref(false),
-      sonNum: ref(0),
       tip2Show: ref(false),
+      sonNum: ref(0),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -195,7 +194,7 @@ export default {
         .select(".path")
         .on("mouseover", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
-            let router = '';
+            let router = "";
             if (!_this.isSonReverse(i, id)) {
               router = "(" + id.v + ", " + id.w + ")";
               d3.select(this).style("marker-end", "url(#activeE)"); //Added
@@ -212,13 +211,10 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(
-                router + ": " + parseFloat(width).toFixed(2),
-                {
-                  pageX: d.pageX,
-                  pageY: d.pageY,
-                }
-              );
+              _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
+                pageX: d.pageX,
+                pageY: d.pageY,
+              });
           }
         })
         .on("mouseout", function (d, id) {

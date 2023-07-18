@@ -1,10 +1,6 @@
 <template>
   <div id="DirectedGraph">
     <div class="graph-info-header">
-      <div class="graph-title">DirectedGraph View</div>
-      <!--
-        Todo:To achieve real-time rendering
-      -->
       <div class="graph-main-title">· VariablesCheckbox</div>
 
       <!--
@@ -33,7 +29,7 @@
       </el-button>
       <div class="hint">
         <span>Note: </span>Modifying Nodes will affect previous changes to
-        edges; Re-layout is only possible after removing edges
+        edges; Re-layout is only possible after removing or reversing edges
       </div>
     </div>
     <hr />
@@ -52,21 +48,16 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="!ifGroup" class="graph-svg"><g /></svg>
-      <div v-else class="group-graphs">
-        <div class="sum-svg">
-          <div class="title">SuperGraph</div>
-          <svg>
-            <g />
-          </svg>
-        </div>
-        <div class="son-svg">
-          <div v-for="index in sonNum" :key="index">
-            <div :id="'paper' + index"></div>
-          </div>
-        </div>
-      </div>
+      <svg class="graph-svg"><g /></svg>
     </div>
+
+    <transition name="fade">
+      <div class="chart-content" v-if="chartVisible">
+        <div class="line-title">· Line Detail</div>
+        <div class="one-line-name"></div>
+        <div class="line-chart"></div>
+      </div>
+    </transition>
     <!-- 缓存一个路由组件 -->
   </div>
 </template>
@@ -82,8 +73,8 @@ import { Loading } from "element-ui";
 import VariablesOptions from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import { drawSonCharts } from "@/plugin/sonGraph";
-import { countPos, countSonPos } from "@/plugin/tightened/CountPos";
+import singleGraph from "@/plugin/singleGraph";
+import historyManage from "@/plugin/history";
 
 var cmap = [
   "#1f77b4",
@@ -105,27 +96,32 @@ export default {
   },
   data() {
     return {
-      ifGroup: ref(false),
+      chartVisible: ref(false),
+      chartNow: ref(),
       loadingInstance: ref(null),
       countingGraph: ref(false),
       tooltip: null,
-      nowLine: ref(),
       tooltip2: null,
-      sonNum: ref(1),
+      menuShow: ref(false),
       checkAll: ref(false),
       VariablesOptions,
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
+      tip2Show: ref(false),
+      transform: ref(),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
       }),
-      finalPos: ref([]),
     };
   },
   methods: {
     saveToTable() {
-      this.saveData();
+      console.log(this.multipleSearchValue.history);
+      localStorage.setItem(
+        "GET_SAVE_DATA",
+        JSON.stringify(this.multipleSearchValue)
+      );
       this.$router.push({
         path: this.$route.path,
         query: {
@@ -133,16 +129,37 @@ export default {
         },
       });
     },
+
     truelyDelete() {
       console.log("delete edge");
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
+      //去除孤点
+      //remove unrelated nodes
+      let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
+        let index = linksList.findIndex((link) => {
+          if (link.source === node.id || link.target === node.id) return true;
+          else return false;
+        });
+        return index > -1;
+      });
+      linksList = linksList.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+        else return link;
+      });
       this.multipleSearchValue.linksList = linksList;
+      this.multipleSearchValue.nodesList = nodesList;
       this.hasNoHidden = true;
       this.saveData();
       this.drawGraph();
     },
+
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
@@ -155,79 +172,61 @@ export default {
       // Automatically label each of the nodes
       states.forEach(function (state) {
         let node = {
-          label: "",
+          label: state.id,
           type: state.type,
         };
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
       });
-      if (this.ifGroup) {
-        console.log("!");
-        g.setNode("group", {
-          label: "",
-          clusterLabelPos: "bottom",
-          style:
-            "stroke-width:5;stroke:red;fill: transparent;stroke-dasharray:4 4",
-        });
-        states.forEach(function (state) {
-          if (state.type === -1) {
-            g.setParent(state.id, "group");
-          }
-        });
-      }
+
       var edges = data.linksList;
       edges.forEach(function (edge) {
-        if (!edge.type) {
-          edge.type = 0;
-        }
         var valString = (edge.value * 10).toString() + "px";
-        var styleString = "stroke-width: " + valString;
-        //var edgeColor = "stroke: " + cmap[edge.type % 10];
+        if (edge.value < 0) {
+          valString = (-edge.value * 10).toString() + "px";
+        }
+        var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
+        let completeStyle =
+          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
               "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
             curve: d3.curveBasis,
-            label: edge.value.toString(),
           });
         } else {
+          if (edge.reverse)
+            completeStyle = completeStyle + "marker-start:url(#normals);";
+          else completeStyle = completeStyle + "marker-end:url(#normale);";
           if (edge.value < 0) {
             g.setEdge(edge.source, edge.target, {
-              style:
-                edgeColor +
-                ";" +
-                styleString +
-                ";fill: transparent;stroke-dasharray:4 4",
+              style: completeStyle + "stroke-dasharray:4 4",
               curve: d3.curveBasis,
-              label: edge.value.toString(),
+              arrowhead: "undirected",
             });
           } else {
             g.setEdge(edge.source, edge.target, {
-              style: edgeColor + ";" + styleString + ";fill: transparent",
+              style: completeStyle,
               curve: d3.curveBasis,
-              label: edge.value.toString(),
+              arrowhead: "undirected",
             });
           }
         }
       });
-
+      let that = this;
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 20;
-        node.width = 20;
-        node.height = 20;
+        node.rx = node.ry = 5;
+
         if (node.type == 0) node.style = "fill: #f77;";
-        else if (node.type < 0) {
+        else {
           node.style = "fill:" + cmap[0];
         }
-        //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
       });
       dagre.layout(g);
-      if (this.ifGroup) {
-        this.finalPos = countPos(g);
-      }
+
       var svg = d3.select("svg");
       let inner = svg.select("g");
       if (this.tooltip) {
@@ -239,10 +238,11 @@ export default {
       this.tooltip = this.createTooltip();
       this.tooltip2 = this.createTooltip();
       // Set up zoom support
-      let that = this;
+
       var zoom = d3.zoom().on("zoom", function (event) {
+        that.transform = event.transform;
         inner.attr("transform", event.transform);
-        that.tipHidden();
+        //that.tipHidden();
         that.tip2Hidden();
       });
       svg.call(zoom);
@@ -269,39 +269,73 @@ export default {
               "</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
-              _this.tip2WatchBlur();
+              document.addEventListener("click", _this.listener2);
             }, 0);
           }
         })
-        .attr("title", function (v) {
-          return v;
-        })
-        .each(function (v) {
-          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
-        });
 
       // add hover effect & click hint to lines
-      var onmousepath = d3.selectAll(".edgePath");
+      // Center the graph
+
+      if (that.transform) {
+        inner.attr("transform", that.transform);
+      } else {
+        var initialScale = 1;
+        let xOffset = (1200 - g.graph().width * initialScale) / 2;
+        let yOffset = (450 - g.graph().height * initialScale) / 2;
+        svg.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+        );
+
+        svg.attr("height", g.graph().height * initialScale + 40);
+      }
+      var onmousepath = svg.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;
+      singleGraph.addArrowType(svg);
       allpathes
         .on("mouseout", function (d, id) {
-          allpathes.style("opacity", "1");
-          _this.tipHidden();
+          if (d3.select(this).style("stroke") !== "transparent") {
+            d3.select(this).style("stroke", "black");
+            if (!_this.isReverse(id)) {
+              d3.select(this).style("marker-end", "url(#normale)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#normals)"); //Added
+            }
+          }
+          //_this.tipHidden();
         })
         .on("mouseover", function (d, id) {
-          if (_this.isVisible(id)) {
-            allpathes.style("opacity", ".2"); // set all edges opacity 0.2
-            d3.select(this).style("opacity", "1");
+          let router = "";
+          if (d3.select(this).style("stroke") !== "transparent") {
+            if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
+              d3.select(this).style("marker-end", "url(#activeE)"); //Added
+            } else {
+              router = "(" + id.w + ", " + id.v + ")";
+              d3.select(this).style("marker-start", "url(#activeS)"); //Added
+            }
+            d3.select(this).style("stroke", "#1f77b4");
+            let width = d3.select(this).style("stroke-width");
+            let dash = d3.select(this).style("stroke-dasharray");
+
+            width.slice(width.length - 2, width.length);
+            if (dash.includes("4")) {
+              width = "-" + width;
+            }
+            if (_this.chartNow !== router) {
+              _this.chartNow = router;
+              if (!_this.tip2Show)
+                _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                });
+            }
           }
-          _this.tipVisible(id.v + "-" + id.w, {
-            pageX: d.pageX,
-            pageY: d.pageY,
-          });
         })
         .on("click", function (d, id) {
-          if (_this.isVisible(id)) {
-            _this.nowLine = id;
+          if (d3.select(this).style("stroke") !== "transparent") {
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
             <div class='operate-menu'>Delete edge<br/>(" +
@@ -311,71 +345,20 @@ export default {
               ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
-              _this.tipWatchBlur();
+              document.addEventListener("click", _this.listener);
             }, 0);
           }
         });
-      // Center the graph
-      var initialScale = 0.4;
-      let xOffset = (450 - g.graph().width * initialScale) / 2;
-      let yOffset = (450 - g.graph().height * initialScale) / 2;
-      svg.call(
-        zoom.transform,
-        d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
-      );
-
-      svg.attr("height", g.graph().height * initialScale + 40);
-      if (this.ifGroup) {
-        this.drawSonGraphs();
-      }
     },
     drawGraph() {
-      this.ifGroup = false;
-      let that = this;
-      this.sonNum = 0;
-      this.multipleSearchValue.nodesList.forEach(function (state) {
-        if (state.type === -1) that.ifGroup = true;
-        else if (state.type === 0) that.sonNum++;
-      });
-      console.log(this.ifGroup);
       setTimeout(() => {
         this.setGraph();
       }, 0);
     },
     plotChart(line) {
-      let dom = document.getElementsByClassName(line)[0];
+      document.getElementsByClassName("one-line-name")[0].innerHTML = line;
+      let dom = document.getElementsByClassName("line-chart")[0];
       createChart(dom, line);
-    },
-
-    drawSonGraphs() {
-      let sonGraphs = [];
-      let gap = {
-        xGap: 100,
-        yGap: 100,
-      };
-      for (let i = 1; i <= this.sonNum; i++) {
-        let ans = countSonPos(this.finalPos[i], this.finalPos[0]);
-        sonGraphs.push(ans.sonPos);
-        if (ans.gap.xGap < gap.xGap) {
-          gap.xGap = ans.gap.xGap;
-        }
-        if (ans.gap.yGap < gap.yGap) {
-          gap.yGap = ans.gap.yGap;
-        }
-      }
-
-      for (let i = 1; i <= this.sonNum; i++) {
-        let dom = document.getElementById("paper" + i);
-        drawSonCharts(
-          dom,
-          sonGraphs[i - 1],
-          this.multipleSearchValue.linksList.filter((link) => {
-            return !link.hidden;
-          }),
-          gap,
-          "paper" + i
-        );
-      }
     },
 
     showLoading() {
@@ -436,8 +419,9 @@ export default {
           this.multipleSearchValue = {
             linksList: response.data.links,
             nodesList: response.data.nodes,
+            history: this.multipleSearchValue.history,
           };
-
+          historyManage.reDoHistory(this.multipleSearchValue);
           this.loadingInstance.close();
           this.loadingInstance = null;
 
@@ -450,14 +434,6 @@ export default {
         });
     },
     //add document click listener
-    tipWatchBlur() {
-      document.addEventListener("click", this.listener);
-      console.log("listener");
-    },
-    tip2WatchBlur() {
-      document.addEventListener("click", this.listener2);
-      console.log("listener");
-    },
     handleCheckAllChange(val) {
       if (val === true) {
         this.checkedVariables = VariablesOptions;
@@ -512,13 +488,17 @@ export default {
         clickDOM !== "hint-menu" &&
         clickDOM !== "hint-list" &&
         clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
       ) {
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         if (text.includes("Delete")) this.deleteEdge(text);
-        else this.reverseDirection();
+        else {
+          let text = e.srcElement.parentElement.children[2].innerText;
+          this.reverseDirection(text);
+        }
       }
     },
     listener2(e) {
@@ -530,7 +510,8 @@ export default {
         clickDOM !== "hint-menu" &&
         clickDOM !== "hint-list" &&
         clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
       ) {
         document.removeEventListener("click", _this.listener2);
       } else if (clickDOM === "operate-menu") {
@@ -538,9 +519,8 @@ export default {
         this.deleteNode(text);
       }
     },
-    deleteNode(node) {
-      console.log("delete node");
 
+    deleteNode(node) {
       let nodeName = node.split(" ")[2];
       let nodeList = this.multipleSearchValue.nodesList.filter(
         (node) => node.id !== nodeName
@@ -550,20 +530,46 @@ export default {
       this.checkedVariables.splice(index, 1);
       this.tipHidden();
       this.getLinks();
-      /*
-      let linkList = this.multipleSearchValue.linksList.filter(
-        (link) => link.source !== nodeName && link.target !== nodeName
-      );
-      this.multipleSearchValue = {
-        nodesList: nodeList,
-        linksList: linkList,
-        CovariantNum: this.multipleSearchValue.CovariantNum - 1,
-      };
-
-      this.drawGraph();
-      */
     },
-    reverseDirection() {},
+    isReverse(edge) {
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === edge.v && row.target === edge.w && !row.hidden) {
+          return true;
+        } else return false;
+      });
+      if (index < 0) return false;
+      return this.multipleSearchValue.linksList[index].reverse === true;
+    },
+
+    reverseDirection(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        if (!this.multipleSearchValue.linksList[index].reverse) {
+          this.multipleSearchValue.linksList[index]["reverse"] = true;
+          historyManage.reverseEdge(this.multipleSearchValue.history, {
+            source: nodes[0],
+            target: nodes[1],
+          });
+          this.hasNoHidden = false;
+        } else {
+          this.multipleSearchValue.linksList[index].reverse = false;
+          history.source = nodes[1];
+          history.target = nodes[0];
+          historyManage.reverseEdge(this.multipleSearchValue.history, {
+            source: nodes[1],
+            target: nodes[0],
+          });
+        }
+        this.saveData();
+        this.tip2Hidden();
+        this.drawGraph();
+      }
+    },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
@@ -579,6 +585,13 @@ export default {
           value: this.multipleSearchValue.linksList[index].value,
           hidden: true,
         };
+        this.multipleSearchValue.history = historyManage.deleteEdge(
+          this.multipleSearchValue.history,
+          {
+            source: this.multipleSearchValue.linksList[index].source,
+            target: this.multipleSearchValue.linksList[index].target,
+          }
+        );
         this.saveData();
         this.hasNoHidden = false;
         this.tip2Hidden();
@@ -596,24 +609,10 @@ export default {
     },
     // display hover-line tooltip
     tipVisible(textContent, event) {
+      this.tip2Hidden();
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
-      this.tooltip
-        .transition()
-        .duration(0)
-        .style("opacity", 1)
-        .style("display", "block");
-      this.tooltip
-        .html(
-          '<div class="chart-box">' +
-            textContent +
-            '<div class="chart-hint ' +
-            textContent +
-            '"></div></div>'
-        )
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY + 15}px`);
-
+      this.chartVisible = true;
       const _this = this;
       setTimeout(() => {
         try {
@@ -621,12 +620,14 @@ export default {
         } catch (err) {
           console.log("too fast, the chart is not prepared");
         }
-      }, 100);
+      }, 0);
     },
     //display delete-menu tooltip
     tip2Visible(textContent, event) {
+      this.tip2Hidden();
       document.removeEventListener("click", this.listener);
       document.removeEventListener("click", this.listener2);
+      this.tip2Show = true;
       this.tooltip2
         .transition()
         .duration(0)
@@ -639,13 +640,10 @@ export default {
     },
     // tooltip隐藏
     tipHidden() {
-      this.tooltip
-        .transition()
-        .duration(100)
-        .style("opacity", 0)
-        .style("display", "none");
+      this.chartVisible = false;
     },
     tip2Hidden() {
+      this.tip2Show = false;
       this.tooltip2
         .transition()
         .duration(100)
@@ -663,93 +661,21 @@ export default {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
         return node.id;
       });
-      let hiddenNodes = this.multipleSearchValue.linksList.filter(
-        (link) => link.hidden
+      let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
+        (link) => link.hidden || link.reverse
       );
-      if (hiddenNodes.length > 0) this.hasNoHidden = false;
+      if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
       this.drawGraph();
     }
   },
 };
 </script>
 
-<style>
-.label > g > text {
-  fill: white;
-}
-
-.link {
-  fill: none;
-  stroke: #bbb;
-}
-.tooltip {
-  position: absolute;
-  text-align: left;
-  background-color: white;
-  border-radius: 3px;
-  box-shadow: rgb(174, 174, 174) 0px 0px 10px;
-
-  padding-top: 5px;
-}
-.node-name {
-  padding-bottom: 5px;
-}
-.tooltip > div {
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-.node {
-  cursor: pointer;
-  transition-duration: 0.2s;
-}
-.path {
-  transition-duration: 0.2s;
-}
-.tooltip {
-  font-size: 14px;
-}
-.hint-list {
-  font-weight: bold;
-  padding-top: 5px;
-  width: 60px;
-}
-.operate-menu {
-  width: auto;
-  text-align: left;
-  cursor: pointer;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-hr {
-  padding: 0;
-  margin-bottom: 0;
-
-  margin-left: 10px;
-  margin-right: 10px;
-}
-.operate-menu:hover {
-  background-color: #e1e1e1;
-}
-.operate-header {
-  padding: 0;
-  display: flex;
-  line-height: 24px;
-  justify-content: space-between;
-}
-.close-button {
-  font-size: 24px;
-  margin-right: 5px;
-  cursor: pointer;
-}
-</style>
 <style scoped>
 #DirectedGraph {
   flex: 3;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
 }
 .graph-info-header {
   padding: 16px;
@@ -799,7 +725,6 @@ hr {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -821,10 +746,10 @@ hr {
 .sum-svg {
   position: absolute;
   left: 16px;
-  bottom: 16px;
+  top: calc(8vh + 650px);
   padding: 16px;
-  width: 100%;
-  height: auto;
+  width: 458px;
+  height: 480px;
   background-color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -834,23 +759,24 @@ hr {
   font-weight: bold;
 }
 .sum-svg svg {
-  height:100%;
+  height: 450px;
   width: 458px;
 }
-.son-svg {
-  width: 35%;
-  height: 100%;
+
+.one-line-operator {
+  height: 10%;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-}
-.son-svg div {
-  padding: 16px;
-  flex: 1;
+  align-items: center;
+  justify-content: space-between;
 }
 
+.one-line-operator .drawing-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
 .graph-main-title {
   font-size: 20px;
-  margin-top: 20px;
   font-weight: bold;
   line-height: 36px;
 }
@@ -860,25 +786,4 @@ hr {
   line-height: 32px;
 }
 </style>
-<style>
-.counting-anime {
-  position: absolute !important;
-  top: 0;
-  height: 100%;
-}
-.chart-box {
-  display: flex;
-  padding: 8px;
-  flex-direction: column;
-  height: 180px;
-  justify-content: center;
 
-  width: 300px;
-  align-items: center;
-}
-.chart-hint {
-  display: flex;
-  height: 170px;
-  width: 284px;
-}
-</style>

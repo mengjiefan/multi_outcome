@@ -267,6 +267,47 @@ hr {
   top: 0;
   height: 100%;
 }
+
+.chart-content {
+  padding: 16px;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  bottom: 15px;
+  left: 10px;
+  width: 465px;
+  height: 29vh;
+  min-height: 0;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  transition-duration:  .1s;
+}
+.fade-leave-to {
+  opacity: 0;
+}
+.fade-leave-active {
+  transition-duration:  .1s;
+}
+
+.one-line-name {
+  flex: 0;
+  text-align: center;
+  align-items: center;
+}
+.line-chart {
+  flex: 1;
+  min-height: 25vh;
+}
+.line-title {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 32px;
+}
 .chart-box {
   display: flex;
   padding: 8px;

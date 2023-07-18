@@ -299,24 +299,25 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(
-                router + ": " + parseFloat(width).toFixed(2),
-                {
-                  pageX: d.pageX,
-                  pageY: d.pageY,
-                }
-              );
+              _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
+                pageX: d.pageX,
+                pageY: d.pageY,
+              });
           }
         })
         .on("click", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
+            let router = "";
+            if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
+            } else {
+              router = "(" + id.w + ", " + id.v + ")";
+            }
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>(" +
-              id.v +
-              ", " +
-              id.w +
-              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+              <div class='operate-menu'>Delete edge<br/>" +
+              router +
+              "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
               document.addEventListener("click", _this.listener);
@@ -448,7 +449,13 @@ export default {
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+        if (
+          (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) ||
+          (row.source === nodes[1] &&
+            row.target === nodes[0] &&
+            row.reverse &&
+            !row.hidden)
+        ) {
           return true;
         } else return false;
       });
@@ -503,7 +510,10 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1]) {
+        if (
+          (row.source === nodes[0] && row.target === nodes[1]) ||
+          (row.target === nodes[0] && row.source === nodes[1])
+        ) {
           return true;
         } else return false;
       });

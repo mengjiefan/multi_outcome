@@ -44,8 +44,7 @@ export const countPos = (g, childNodes) => {
             })
         })
         finalPos.push({
-            nodesList,
-            linksList: child.linksList
+            nodesList
         })
     })
     return finalPos;

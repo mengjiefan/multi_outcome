@@ -378,7 +378,7 @@ export default {
         drawSonCharts(
           dom,
           sonGraphs[i - 1],
-          this.finalPos[i].linksList,
+          this.multipleSearchValue.selections[i-1].linksList,
           gap,
           "paper" + i
         );
