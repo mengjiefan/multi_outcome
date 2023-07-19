@@ -230,15 +230,19 @@ export default {
         })
         .on("click", function (d, id) {
           if (d3.select(this).style("stroke") !== "transparent") {
+            let router = "";
+            if (!_this.isSonReverse(i, id)) {
+              router = "(" + id.v + ", " + id.w + ")";
+            } else {
+              router = "(" + id.w + ", " + id.v + ")";
+            }
             let hintHtml =
               "<div class='operate-header'><div class='hint-list'>" +
               selection.outcome +
               "</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>(" +
-              id.v +
-              ", " +
-              id.w +
-              ")</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+              <div class='operate-menu'>Delete edge<br/>" +
+              router +
+              "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
             _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
             setTimeout(() => {
               document.addEventListener("click", _this.listener3);
@@ -391,14 +395,18 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1]) {
+        if (
+          (row.source === nodes[0] && row.target === nodes[1]) ||
+          (row.source === nodes[1] && row.target === nodes[0])
+        ) {
           return true;
         } else return false;
       });
+      console.log(index);
       if (index > -1) {
         let history = historyManage.deleteEdge(selection.history, {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1],
         });
         selection.linksList[index] = {
           source: selection.linksList[index].source,
@@ -427,14 +435,24 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
-        if (row.source === nodes[0] && row.target === nodes[1] && !row.hidden) {
+        if (
+          (row.source === nodes[0] &&
+            row.target === nodes[1] &&
+            !row.hidden &&
+            !row.reverse) ||
+          (row.source === nodes[1] &&
+            row.target === nodes[0] &&
+            !row.hidden &&
+            row.reverse)
+        ) {
           return true;
         } else return false;
       });
+      console.log(selection.linksList[index]);
       if (index > -1) {
         historyManage.reverseEdge(selection.history, {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1],
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;

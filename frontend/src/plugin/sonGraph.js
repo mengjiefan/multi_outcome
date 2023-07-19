@@ -74,8 +74,8 @@ const svgZoom = (name) => {
 export const extractSonCharts = () => {
 
 }
-export const drawSonCharts = (dom, nodesList, linksList, gap, name) => {
-    linksList = linksList.filter(link => !link.hidden);
+export const drawSonCharts = (dom, nodesList, links, gap, name) => {
+    let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
         if (link.reverse) return {
             source: link.target,

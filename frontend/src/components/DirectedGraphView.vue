@@ -216,31 +216,7 @@ hr {
   height: 450px;
   width: 458px;
 }
-.son-svg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-.paper-svg {
-  flex: 1;
-  min-width: 25%;
-  max-width: 100%;
-}
-.son-svg div svg {
-  width: 100%;
-  height: 90%;
-}
-.one-line-operator {
-  height: 10%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+
 .son-title {
   font-size: 16px;
   font-weight: bold;

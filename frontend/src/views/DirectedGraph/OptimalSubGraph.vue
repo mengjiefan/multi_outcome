@@ -31,7 +31,7 @@
               >
             </div>
           </div>
-          <div :id="'paper' + index"></div>
+          <div :id="'paper' + index" class="svg-content"></div>
         </div>
       </div>
     </div>
@@ -50,7 +50,9 @@ import { countSonPos } from "@/plugin/optimal/CountPos";
 export default {
   data() {
     return {
-      papers: ref([]),
+      paper: ref(),
+      gap: ref(),
+      sonGraphs: ref([]),
       finalPos: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
@@ -58,6 +60,7 @@ export default {
       tooltip: null,
       tooltip2: null,
       sonNum: ref(0),
+      deleteLinkView: ref(),
       tip2Show: ref(false),
       transform: ref([]),
       multipleSearchValue: ref({
@@ -67,6 +70,80 @@ export default {
     };
   },
   methods: {
+    applySubGraph(index) {
+      let selection = this.multipleSearchValue.selections[index];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        if (i == index) continue;
+        let item = this.multipleSearchValue.selections[i];
+        this.applyToSingle(selection.linksList, item);
+        this.drawSonGraph(i);
+      }
+      for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
+        let link = this.multipleSearchValue.linksList[i];
+        let mapLink = link;
+        let index = selection.linksList.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) mapLink = selection.linksList[index];
+        this.multipleSearchValue.linksList[i] = mapLink;
+      }
+      this.saveData();
+    },
+    applyToSingle(answer, item) {
+      for (let i = 0; i < item.linksList.length; i++) {
+        let link = item.linksList[i];
+        let mapLink = link;
+        let index = answer.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) {
+          mapLink = answer[index];
+          if (link.hidden) {
+            mapLink = link;
+          } else if (mapLink.hidden) {
+            item.history = historyManage.deleteEdge(item.history, link);
+          } else if (mapLink.reverse && !link.reverse) {
+            historyManage.reverseEdge(item.history, link);
+          } else if (link.reverse && !mapLink.reverse) {
+            historyManage.reverseEdge(item.history, mapLink);
+          }
+        }
+        item.linksList[i] = mapLink;
+      }
+    },
+    saveSingleToTable(index) {
+      let selection = this.multipleSearchValue.selections[index];
+      let variables = [
+        {
+          type: 0,
+          id: selection.outcome,
+        },
+      ];
+
+      let finalData = {
+        nodesList: variables.concat(
+          selection.variable.map((v) => {
+            return {
+              id: v,
+              type: 1,
+            };
+          })
+        ),
+        linksList: selection.linksList,
+        history: selection.history,
+      };
+      localStorage.setItem("GET_SAVE_DATA", JSON.stringify(finalData));
+      this.$router.push({
+        path: this.$route.path,
+        query: {
+          mode: "save",
+        },
+      });
+    },
     createTooltip() {
       return d3
         .select("body")
@@ -93,19 +170,14 @@ export default {
       }, 0);
     },
     drawSonGraphs() {
-      for (let i = 1; i <= this.sonNum; i++) {
-        this.drawSonGraph(i - 1);
-      }
-    },
-    drawSonGraph(index) {
-      let sonGraphs = [];
+      this.sonGraphs = [];
       let gap = {
         xGap: 100,
         yGap: 100,
       };
       for (let i = 1; i <= this.sonNum; i++) {
         let ans = countSonPos(this.finalPos[i].nodesList);
-        sonGraphs.push(ans.sonPos);
+        this.sonGraphs.push(ans.sonPos);
         if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
         else ans.gap.xGap = ans.gap.xGap / this.sonNum;
         if (ans.gap.xGap < gap.xGap) {
@@ -117,12 +189,18 @@ export default {
           gap.yGap = ans.gap.yGap;
         }
       }
+      this.gap = gap;
+      for (let i = 1; i <= this.sonNum; i++) {
+        this.drawSonGraph(i - 1);
+      }
+    },
+    drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
       let paper = drawSonCharts(
         dom,
-        sonGraphs[index],
+        this.sonGraphs[index],
         this.multipleSearchValue.selections[index].linksList,
-        gap,
+        this.gap,
         "paper" + (index + 1)
       );
       this.setPaper(index, paper);
@@ -147,6 +225,8 @@ export default {
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+        _this.deleteLinkView = linkView;
+        _this.paper = paper;
         setTimeout(() => {
           document.addEventListener("click", _this.listener3);
         }, 0);
@@ -221,7 +301,7 @@ export default {
           return true;
         } else return false;
       });
-      console.log(index);
+      this.deleteLinkView.model.remove({ ui: true });
       if (index > -1) {
         let history = historyManage.deleteEdge(selection.history, {
           source: nodes[0],
@@ -236,7 +316,6 @@ export default {
         selection.history = history;
         this.tip2Hidden();
         this.saveData();
-        this.drawSonGraph(i);
       }
     },
     reverseSonEdge(outcome, edge) {
@@ -268,19 +347,57 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        this.deleteLinkView.model.remove({ ui: true });
+
         historyManage.reverseEdge(selection.history, {
           source: nodes[0],
           target: nodes[1],
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
+          this.addLink(this.sonGraphs[i], {
+            source: selection.linksList[index].target,
+            target: selection.linksList[index].source,
+            value: selection.linksList[index].value,
+          });
         } else {
           selection.linksList[index].reverse = false;
+          this.addLink(this.sonGraphs[i], selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
-        this.drawSonGraph(i);
       }
+    },
+    addLink(nodesList, link) {
+      var path = new joint.shapes.standard.Link({});
+      let sIndex = nodesList.findIndex((node) => {
+        if (node.id === link.source) return true;
+        else return false;
+      });
+
+      let tIndex = nodesList.findIndex((node) => {
+        if (node.id === link.target) return true;
+        else return false;
+      });
+      if (link.value < 0)
+        path.attr({
+          id: "(" + link.source + ", " + link.target + ")",
+          line: {
+            strokeWidth: -link.value * 10 + "",
+            strokeDasharray: "4 4",
+          },
+        });
+      else {
+        path.attr({
+          id: "(" + link.source + ", " + link.target + ")",
+          line: {
+            strokeWidth: link.value * 10 + "",
+          },
+        });
+      }
+      path.source(nodesList[sIndex].node);
+      path.target(nodesList[tIndex].node);
+      path.addTo(this.paper.model);
     },
     saveData() {
       localStorage.setItem(
@@ -306,8 +423,9 @@ export default {
   <style scoped>
 .sub-graph {
   display: flex;
-  flex-direction: column;
+  height: 100%;
   flex: 1;
+  padding: 16px;
 }
 .directed-tabs {
   background-color: rgb(55, 162, 228);
@@ -340,15 +458,9 @@ export default {
   cursor: pointer;
 }
 
-.graph-svg {
-  width: 100%;
-  display: flex;
-  height: 90%;
-}
 .group-graphs {
   width: 100%;
   display: flex;
-  height: 90%;
 }
 
 .son-svg {
@@ -356,18 +468,15 @@ export default {
   height: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding-left: 16px;
-  padding-right: 16px;
 }
 .paper-svg {
-  flex: 1;
-  min-width: 25%;
-  max-width: 100%;
+  padding: 1.5%;
+  flex: 1 1/3;
+  min-width: 30%;
 }
-.son-svg div svg {
+.svg-content {
   width: 100%;
-  height: 90%;
+  height: 90% !important;
 }
 .one-line-operator {
   height: 10%;
