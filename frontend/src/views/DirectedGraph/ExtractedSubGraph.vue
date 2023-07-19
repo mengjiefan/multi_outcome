@@ -614,14 +614,11 @@ export default {
   height: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding-left: 16px;
-  padding-right: 16px;
 }
 .paper-svg {
-  flex: 1;
-  min-width: 25%;
-  max-width: 100%;
+  padding: 1.5%;
+  flex: 1 1/3;
+  min-width: 30%;
 }
 .son-svg div svg {
   width: 100%;

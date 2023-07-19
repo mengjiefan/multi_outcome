@@ -40,6 +40,7 @@ export default {
 }
 .open-button {
   position: absolute;
+  z-index: 100;
   top: 50%;
   right: 0;
   width: 32px;
@@ -47,7 +48,6 @@ export default {
   border-bottom-left-radius: 15px;
   font-size: 24px;
   height: 40px;
-  vertical-align: center;
   display: flex;
   align-items: center;
   box-shadow: rgb(174, 174, 174) 0px 0px 10px;
@@ -55,9 +55,7 @@ export default {
 
 </style>
 <style>
-.right-side {
-  /*background-color: rgb(231, 235, 213);*/
-}
+
 #el-drawer__title {
   color: black ;
   font-weight: bold;
