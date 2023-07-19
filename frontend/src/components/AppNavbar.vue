@@ -59,7 +59,7 @@ export default {
  
 <style scoped>
 .box-card {
-  max-height: 70vh;
+  max-height: 90vh;
 }
 .navbar {
   min-width: 500px;

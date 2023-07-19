@@ -327,7 +327,7 @@ export default {
             if (_this.chartNow !== router) {
               _this.chartNow = router;
               if (!_this.tip2Show)
-                _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
+                _this.tipVisible(router + ": " + (parseFloat(width)/10).toFixed(2), {
                   pageX: d.pageX,
                   pageY: d.pageY,
                 });

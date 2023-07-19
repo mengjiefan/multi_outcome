@@ -53,6 +53,7 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
+    <div class="variable-chart" v-if="SelectedVariables.length > 0"></div>
     <div class="drawing-command">
       <el-select v-model="graphType" placeholder="请选择">
         <el-option
@@ -82,6 +83,7 @@ import axios from "axios";
 import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
+import * as echarts from "echarts";
 
 export default {
   props: {
@@ -147,6 +149,7 @@ export default {
       }
 
       this.showLoading();
+      const _this = this;
       axios({
         //请求类型
         method: "GET",
@@ -168,11 +171,76 @@ export default {
           //only the list
           this.SelectedVariables = this.Variables_result.top_factors_list;
           console.log("Variables_result:", this.Variables_result);
-          this.checkedVariables = this.Variables_result.top_factors_list;
+
+          setTimeout(() => {
+            _this.createChart();
+          }, 0);
         })
         .catch((error) => {
           console.log("请求失败了", error.message);
         });
+    },
+    createChart() {
+      let dom = document.getElementsByClassName("variable-chart")[0];
+      echarts.dispose(dom);
+      var myChart = echarts.init(dom);
+      let nodes = [...this.SelectedVariables].reverse();
+      let links = this.Variables_result.links;
+      let outcome = this.value;
+      let data = [];
+      nodes.forEach((node) => {
+        let index = links.findIndex((link) => {
+          if (link.source === outcome && node === link.target) {
+            return true;
+          } else if (link.target === outcome && node === link.source) {
+            return true;
+          } else return false;
+        });
+        if (index > -1) data.push(links[index].value);
+        else data.push(0);
+      });
+      let option = {
+        tooltip: {
+          trigger: "axis",
+          axisPointer: {
+            type: "shadow",
+          },
+        },
+        grid: {
+          top: 80,
+          bottom: 30,
+        },
+        xAxis: {
+          type: "value",
+          position: "top",
+          splitLine: {
+            lineStyle: {
+              type: "dashed",
+            },
+          },
+        },
+        yAxis: {
+          type: "category",
+          axisLine: { show: false },
+          axisLabel: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          data: nodes,
+        },
+        series: [
+          {
+            name: "value",
+            type: "bar",
+            stack: "Total",
+            label: {
+              show: true,
+              formatter: "{b}",
+            },
+            data: data,
+          },
+        ],
+      };
+      myChart.setOption(option);
     },
     showErrorMsg(msg) {
       this.$message({
@@ -287,7 +355,6 @@ export default {
 .OutcomeSelector {
   padding: 10px;
   height: auto;
-  max-height: 800px;
 }
 .outcome-main-title {
   font-size: 20px;
@@ -318,6 +385,10 @@ export default {
 }
 .loading-box {
   height: 0;
+}
+.variable-chart {
+  height: 500px;
+  width: 100%;
 }
 .show-variable-button {
   margin-left: 50px;

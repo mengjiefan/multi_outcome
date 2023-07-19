@@ -211,7 +211,7 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
+              _this.tipVisible(router + ": " + (parseFloat(width)/10).toFixed(2), {
                 pageX: d.pageX,
                 pageY: d.pageY,
               });

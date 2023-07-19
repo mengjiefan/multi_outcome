@@ -166,7 +166,8 @@ export default {
       }
       var edges = data.linksList;
       edges.forEach(function (edge) {
-        var valString = (edge.value * 10).toString() + "px";
+        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
+        var valString = edgeValue.toString() + "px";
         var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
         let completeStyle =
@@ -299,10 +300,13 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(router + ": " + parseFloat(width).toFixed(2), {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
+              _this.tipVisible(
+                router + ": " + (parseFloat(width) / 10).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
           }
         })
         .on("click", function (d, id) {
@@ -450,8 +454,14 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] && row.target === nodes[1] && !row.hidden && !row.reverse) ||
-          (row.target === nodes[0] && row.source === nodes[1] && !row.hidden && row.reverse)
+          (row.source === nodes[0] &&
+            row.target === nodes[1] &&
+            !row.hidden &&
+            !row.reverse) ||
+          (row.target === nodes[0] &&
+            row.source === nodes[1] &&
+            !row.hidden &&
+            row.reverse)
         ) {
           return true;
         } else return false;
@@ -460,7 +470,7 @@ export default {
         let history = {
           source: nodes[0],
           target: nodes[1],
-        }
+        };
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
           this.hasNoHidden = false;
@@ -512,7 +522,7 @@ export default {
       if (index > -1) {
         let history = {
           source: nodes[0],
-          target: nodes[1]
+          target: nodes[1],
         };
         this.multipleSearchValue.linksList[index] = {
           source: this.multipleSearchValue.linksList[index].source,

@@ -60,7 +60,8 @@ export default {
         });
         var edges = data.linksList;
         edges.forEach(function (edge) {
-            var valString = (edge.value * 10).toString() + "px";
+            let edgeValue = edge.value > 0 ? edge.value * 10 : (-edge.value) * 10
+            var valString = edgeValue.toString() + "px";
             var widthStr = "stroke-width: " + valString;
             var edgeColor = "stroke: black";
             let completeStyle =
