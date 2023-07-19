@@ -25,19 +25,36 @@ const VariablesOptions = [
   "f31_sum",
   "f5_whocaresick",
   "dependence_base",
-  "g15a1_HT",
-  "g15b1_DM",
-  "g15c1_CVD",
-  "g15e1_COPD",
-  "g15n1_RA",
-  "g15o1_dementia",
-  "g15k1_gastric",
-  "g15v1_hepatitis",
+  "','g15a1_HT",
+  "','g15b1_DM",
+  "','g15c1_CVD",
+  "','g15e1_COPD",
+  "','g15n1_RA",
+  "','g15o1_dementia",
+  "','g15k1_gastric",
+  "','g15v1_hepatitis",
   "eye_base",
-  "g15i1_cancer",
-  "g15l1_parkinson",
-  "g15j1_prostate",
-  "g15p1_mental",
-  "g15r1_others",
+  "','g15i1_cancer",
+  "','g15l1_parkinson",
+  "','g15j1_prostate",
+  "','g15p1_mental",
+  "','g15r1_others",
 ];
-export default VariablesOptions;
+export const defaultResults = [
+  'death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
+  'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid'
+];
+export const clhlsResults = [
+  'g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD', 'g15n1_RA', 'g15o1_dementia',
+  'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base'
+];
+export const ukbResults = [
+  'Hypertension',
+  'Diabetes',
+  'BreastMalignancy',
+  'ProstateMalignancy',
+  'Hypothyroidism',
+  'NutritionalAnaemias',
+  'InfectiousGastroenteritis',
+  'Septicemia',
+]

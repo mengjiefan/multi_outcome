@@ -173,7 +173,7 @@ export default {
       this.sonGraphs = [];
       let gap = {
         xGap: 100,
-        yGap: 100,
+        yGap: 70,
       };
       for (let i = 1; i <= this.sonNum; i++) {
         let ans = countSonPos(this.finalPos[i].nodesList);

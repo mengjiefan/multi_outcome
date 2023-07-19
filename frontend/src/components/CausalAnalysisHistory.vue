@@ -472,7 +472,6 @@ export default {
 <style scoped>
 .history-panel {
   height: auto;
-  max-height: 70vh;
   display: flex;
   flex-direction: column;
   padding: 10px;

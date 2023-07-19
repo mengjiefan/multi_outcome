@@ -1,17 +1,26 @@
 
 <template>
   <div class="navbar">
-    <br />
-    <el-tabs type="border-card" v-model="activeName">
-      <el-tab-pane label="Single Outcome" name="single">
-        <div class="CharacterSelector">
-          <OutcomeSelector></OutcomeSelector></div
-      ></el-tab-pane>
-      <el-tab-pane label="Multiple Outcomes" name="second">
-        <div class="AnalysisHistory">
-          <CausalAnalysisHistory></CausalAnalysisHistory></div
-      ></el-tab-pane>
-    </el-tabs>
+    <el-card class="box-card">
+      <el-radio-group
+        v-model="dataset"
+        style="margin-bottom: 30px"
+      >
+        <el-radio-button label="default">default</el-radio-button>
+        <el-radio-button label="clhls">clhls</el-radio-button>
+        <el-radio-button label="ukb">ukb</el-radio-button>
+      </el-radio-group>
+      <el-tabs v-model="activeName">
+        <el-tab-pane label="Single Outcome" name="single">
+          <div class="CharacterSelector">
+            <OutcomeSelector :dataset="dataset"></OutcomeSelector></div
+        ></el-tab-pane>
+        <el-tab-pane label="Multiple Outcomes" name="second">
+          <div class="AnalysisHistory">
+            <CausalAnalysisHistory></CausalAnalysisHistory></div
+        ></el-tab-pane>
+      </el-tabs>
+    </el-card>
   </div>
 </template>
  
@@ -27,6 +36,7 @@ export default {
   components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory },
   setup() {
     return {
+      dataset: ref("default"),
       activeName: ref("single"),
     };
   },
@@ -35,24 +45,30 @@ export default {
       handler: function (route) {
         console.log(route);
         if (route.query.mode === "save") {
-          this.activeName = 'second';
+          this.activeName = "second";
         }
       },
       immediate: true,
     },
   },
+  methods: {
+  },
 };
 </script>
  
 <style scoped>
+.box-card {
+  max-height: 70vh;
+}
 .navbar {
   min-width: 500px;
   max-width: 500px;
   font-size: 20px;
   position: relative;
-  padding-left: 10px;
-  padding-right: 10px;
-  height: 100vh;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 1vh;
+  height: 99vh;
   overflow-y: auto; /* 当内容过多时y轴出现滚动条 */
   background-color: #e0eeee55;
 }

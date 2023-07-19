@@ -5,7 +5,7 @@
     <div class="outcome-input">
       <el-select
         v-model="value"
-        :disabled="loadingInstance!==null"
+        :disabled="loadingInstance !== null"
         @change="reselect()"
         filterable
         placeholder="Please choose an outcome"
@@ -38,7 +38,7 @@
       </div>
       <div>variables</div>
       <el-button
-      :disabled="loadingInstance!==null"
+        :disabled="loadingInstance !== null"
         size="small"
         class="show-variable-button"
         type="primary"
@@ -64,7 +64,11 @@
         </el-option>
       </el-select>
 
-      <el-button size="small" type="primary" @click="saveSingleData" :disabled="!Variables_result"
+      <el-button
+        size="small"
+        type="primary"
+        @click="saveSingleData"
+        :disabled="!Variables_result"
         >Plot the list</el-button
       >
     </div>
@@ -76,54 +80,30 @@
 // 引入axios
 import axios from "axios";
 import { Loading } from "element-ui";
-import VariablesOptions from "@/plugin/variable";
+import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
 
 export default {
+  props: {
+    dataset: String,
+    required: true,
+  },
   name: "OutcomeSelector",
   setup() {
+    const options = defaultResults.map((result) => {
+      return {
+        label: result,
+        value: result,
+      };
+    });
     return {
       CovariantNum: ref(""),
       value: ref(""),
       SelectedVariables: ref([]),
-      options: [
-        {
-          value: "death",
-          label: "death",
-        },
-        {
-          value: "follow_dura",
-          label: "follow_dura",
-        },
-        {
-          value: "multimorbidity_incid_byte",
-          label: "multimorbidity_incid_byte",
-        },
-        {
-          value: "hospital_freq",
-          label: "hospital_freq",
-        },
-        {
-          value: "MMSE_MCI_incid",
-          label: "MMSE_MCI_incid",
-        },
-        {
-          value: "physi_limit_incid",
-          label: "physi_limit_incid",
-        },
-        {
-          value: "dependence_incid",
-          label: "dependence_incid",
-        },
-        {
-          value: "b11_incid",
-          label: "b11_incid",
-        },
-        {
-          value: "b121_incid",
-          label: "b121_incid",
-        },
-      ],
+      defaultResults,
+      clhlsResults,
+      ukbResults,
+      options: ref(options),
       graphOption: [
         {
           value: "DirectedGraphView",
@@ -142,12 +122,11 @@ export default {
     return {
       loadingInstance: ref(null),
       Variables_result: ref(),
-      Variables: VariablesOptions,
     };
   },
   methods: {
-    reselect(){
-      console.log('reselect');
+    reselect() {
+      console.log("reselect");
       this.Variables_result = null;
       this.SelectedVariables = [];
     },
@@ -232,7 +211,7 @@ export default {
           nodesList: nodesList,
           linksList: this.Variables_result.links,
           CovariantNum: this.Variables_result.CovariantNum,
-          history: []
+          history: [],
         })
       );
       this.routeToGraph();
@@ -243,7 +222,40 @@ export default {
         query: { next: this.graphType },
       });
     },
+    getTag(dataset) {
+      let options = [];
+      switch (dataset) {
+        case "default":
+          options = this.defaultResults;
+          break;
+        case "clhls":
+          options = this.clhlsResults;
+          break;
+        case "ukb":
+          options = this.ukbResults;
+          break;
+        default:
+          break;
+      }
+      this.options = options.map((option) => {
+        return {
+          value: option,
+          label: option,
+        };
+      });
+      console.log(this.options);
+    },
   },
+  watch: {
+    dataset: {
+      handler: function (dataset) {
+        console.log("dataset changes");
+        this.getTag(dataset);
+      },
+      immediate: true,
+    },
+  },
+  mounted() {},
 };
 </script>
 
