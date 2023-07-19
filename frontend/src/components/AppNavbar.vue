@@ -17,7 +17,7 @@
         ></el-tab-pane>
         <el-tab-pane label="Multiple Outcomes" name="second">
           <div class="AnalysisHistory">
-            <CausalAnalysisHistory></CausalAnalysisHistory></div
+            <CausalAnalysisHistory :dataset="dataset"></CausalAnalysisHistory></div
         ></el-tab-pane>
       </el-tabs>
     </el-card>
@@ -36,6 +36,7 @@ export default {
   components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory },
   setup() {
     return {
+      oldChoice: ref("default"),
       dataset: ref("default"),
       activeName: ref("single"),
     };

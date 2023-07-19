@@ -18,8 +18,7 @@
           width="120"
         />
 
-        <el-table-column prop="CovariantNum" 
-       label="Num" width="75" />
+        <el-table-column prop="CovariantNum" label="Num" width="75" />
         <el-table-column
           prop="Variables"
           label="Variables"
@@ -82,20 +81,14 @@ import { node } from "dagre-d3/lib/intersect/index.js";
 import historyManage from "@/plugin/history";
 export default {
   name: "CausalAnalysisHistory",
+  props: {
+    dataset: String,
+    required: true,
+  },
   data() {
     return {
+      nowdataset: ref("default"),
       value: "",
-      OutcomeOptions: [
-        "death",
-        "follow_dura",
-        "multimorbidity_incid_byte",
-        "hospital_freq",
-        "MMSE_MCI_incid",
-        "physi_limit_incid",
-        "dependence_incid",
-        "b11_incid",
-        "b121_incid",
-      ],
       CovariantNum: "",
       SelectedVariables: [],
       Variables_result: {},
@@ -114,6 +107,7 @@ export default {
       graphType: ref("DirectedGraphView"),
       selectType: ref("1"),
       multipleSelection: [],
+      dataString: ref('tableData'),
       selection: [],
       search: "",
       selection_result: {},
@@ -123,6 +117,13 @@ export default {
     };
   },
   watch: {
+    dataset: {
+      handler: function (dataset) {
+        console.log("dataset changes");
+        this.changeTableData(dataset);
+      },
+      immediate: true,
+    },
     $route: {
       handler: function (route) {
         if (route.query.mode === "save") {
@@ -132,8 +133,32 @@ export default {
       immediate: true,
     },
   },
-  computed: {},
   methods: {
+    changeTableData(dataset) {
+      if (this.nowdataset === dataset) return;
+      let dataString = "";
+      switch (this.nowdataset) {
+        case "default":
+          dataString = "tableData";
+          break;
+        default:
+          dataString = this.nowdataset + "data";
+          break;
+      }
+      localStorage.setItem(dataString, JSON.stringify(this.tableData));
+      dataString = "";
+      switch (dataset) {
+        case "default":
+          dataString = "tableData";
+          break;
+        default:
+          dataString = dataset + "data";
+          break;
+      }
+      this.tableData = JSON.parse(localStorage.getItem(dataString));
+      this.dataString = dataString;
+      this.nowdataset = dataset;
+    },
     // 实现表格数据去重（定义unique函数）
     unique(arr) {
       if (!Array.isArray(arr)) {
@@ -391,15 +416,16 @@ export default {
 
     deleteRow(index, rows) {
       rows.splice(index, 1);
-      localStorage.setItem("tableData", JSON.stringify(this.tableData));
+      localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
     },
     saveToTable() {
       console.log("saveMode");
-      const newRow = JSON.parse(localStorage.getItem("GET_SAVE_DATA"));
-      this.getDifferentRows(newRow);
-      this.$router.push({
-        path: this.$route.path,
-      });
+      let saveData = localStorage.getItem("GET_SAVE_DATA");
+      localStorage.setItem("GET_SAVE_DATA", "");
+      if (saveData) {
+        const newRow = JSON.parse(saveData);
+        this.getDifferentRows(newRow);
+      }
     },
     getDifferentRows(newRow) {
       let history = newRow.history;
@@ -457,13 +483,13 @@ export default {
           links: rowLinks,
         });
 
-        localStorage.setItem("tableData", JSON.stringify(this.tableData));
+        localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
       });
     },
   },
   // 到站接收数据，在接收组件的mounted中接收
   mounted() {
-    this.tableData = JSON.parse(localStorage.getItem("tableData"));
+    this.tableData = JSON.parse(localStorage.getItem(this.dataString));
     if (!this.tableData) this.tableData = [];
   },
 };

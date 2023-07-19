@@ -243,13 +243,11 @@ export default {
           label: option,
         };
       });
-      console.log(this.options);
     },
   },
   watch: {
     dataset: {
       handler: function (dataset) {
-        console.log("dataset changes");
         this.getTag(dataset);
       },
       immediate: true,
