@@ -15,7 +15,7 @@
       </el-button>
     </div>
     <div class="sum-svg">
-      <svg>
+      <svg v-if="simplePos">
         <g />
       </svg>
     </div>
@@ -32,7 +32,7 @@ import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
-import { countPos } from "@/plugin/tightened/CountPos";
+import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -54,6 +54,7 @@ export default {
   },
   data() {
     return {
+      simplePos: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -83,6 +84,7 @@ export default {
       });
     },
     trulyDelete() {
+      this.simplePos = null;
       console.log("delete edge");
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
@@ -165,6 +167,7 @@ export default {
         });
       }
       var edges = data.linksList;
+      let that = this;
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -172,6 +175,7 @@ export default {
         var edgeColor = "stroke: black";
         let completeStyle =
           edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+        let direction = "";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -179,13 +183,19 @@ export default {
             curve: d3.curveBasis,
           });
         } else {
-          if (edge.reverse)
+          if (edge.reverse) {
+            direction = that.checkDirection(edge.target, edge.source);
             completeStyle = completeStyle + "marker-start:url(#normals);";
-          else completeStyle = completeStyle + "marker-end:url(#normale);";
+          } else {
+            direction = that.checkDirection(edge.source, edge.target);
+            completeStyle = completeStyle + "marker-end:url(#normale);";
+          }
           if (edge.value < 0) {
+            completeStyle = completeStyle + "stroke-dasharray:4 4";
+          }
+          if (direction === "DOWN") {
             g.setEdge(edge.source, edge.target, {
-              style: completeStyle + "stroke-dasharray:4 4",
-              curve: d3.curveBasis,
+              style: completeStyle,
               arrowhead: "undirected",
             });
           } else {
@@ -197,7 +207,6 @@ export default {
           }
         }
       });
-      let that = this;
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
@@ -213,6 +222,13 @@ export default {
 
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
+      if (!that.simplePos) {
+        that.simplePos = countSimplePos(g, this.multipleSearchValue.nodesList);
+        console.log("simplePos", that.simplePos);
+        setTimeout(() => {
+          that.setGraph();
+        }, 0);
+      }
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
@@ -329,13 +345,19 @@ export default {
           }
         });
     },
-    showLoading() {
-      const options = {
-        target: document.getElementsByClassName("sum-svg")[0],
-        background: "rgba(255, 255, 255, 0.5)",
-        customClass: "counting-anime",
-      };
-      this.loadingInstance = Loading.service(options);
+    checkDirection(source, target) {
+      if (!this.simplePos) return "DOWN";
+      let sIndex = this.simplePos.findIndex((node) => {
+        if (node.id === source) return true;
+        else return false;
+      });
+      let tIndex = this.simplePos.findIndex((node) => {
+        if (node.id === target) return true;
+        else return false;
+      });
+      if (sIndex < 0 || tIndex < 0) return "DOWN";
+      if (this.simplePos[sIndex].y <= this.simplePos[tIndex].y) return "DOWN";
+      else return "UP";
     },
     drawGraph() {
       this.ifGroup = false;
@@ -373,48 +395,6 @@ export default {
         "GET_JSON_RESULT",
         JSON.stringify(this.multipleSearchValue)
       );
-    },
-    getLinks() {
-      this.hasNoHidden = true;
-      let newFac = [];
-      let newOut = [];
-      this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type !== 0) newFac.push(row.id);
-      });
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) newOut.push(row.id);
-      });
-      this.countingGraph = true;
-      this.showLoading();
-
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/getLink",
-        //参数
-        params: {
-          outcomes: newOut.join(),
-          factors: newFac.join(),
-        },
-      })
-        .then((response) => {
-          console.log("new links", response.data);
-          this.multipleSearchValue = {
-            linksList: response.data.links,
-            nodesList: response.data.nodes,
-          };
-
-          this.loadingInstance.close();
-          this.loadingInstance = null;
-
-          this.saveData();
-          this.drawGraph();
-          this.countingGraph = false;
-        })
-        .catch((error) => {
-          console.log("请求失败了", error);
-        });
     },
 
     //document click listener => to close line tooltip

@@ -26,8 +26,21 @@ const exist = (links, link) => {
 
 const sonGraph = ref(null);
 export default {
+    checkDirection(position, source, target) {
+        let sIndex = position.findIndex((node) => {
+            if (node.id === source) return true;
+            else return false;
+        });
+        let tIndex = position.findIndex((node) => {
+            if (node.id === target) return true;
+            else return false;
+        });
+        if (sIndex < 0 || tIndex < 0) return "DOWN";
+        if (position[sIndex].y <= position[tIndex].y) return "DOWN";
+        else return "UP";
+    },
     linksList: [],
-    setSingleGraph(svg, multipleSearchValue, selection, size, transform) {
+    setSingleGraph(svg, multipleSearchValue, selection, size, transform, sonPos) {
         this.addArrowType(svg)
         sonGraph.value = this;
         var data = multipleSearchValue;
@@ -37,7 +50,7 @@ export default {
         let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
             ranker: "tight-tree",
         });
-
+        console.log('pos',sonPos)
         // Automatically label each of the nodes
         states.forEach(function (state) {
             let node = {
@@ -59,6 +72,7 @@ export default {
             }
         });
         var edges = data.linksList;
+        let that = this;
         edges.forEach(function (edge) {
             let edgeValue = edge.value > 0 ? edge.value * 10 : (-edge.value) * 10
             var valString = edgeValue.toString() + "px";
@@ -75,14 +89,21 @@ export default {
                     arrowhead: "undirected",
                 });
             } else {
+                let direction = '';
                 edge = selection.linksList[index];
-                if (edge.reverse)
+                if (edge.reverse) {
+                    direction = that.checkDirection(sonPos, edge.target, edge.source);
                     completeStyle = completeStyle + "marker-start:url(#normals);";
-                else completeStyle = completeStyle + "marker-end:url(#normale);";
+                } else {
+                    direction = that.checkDirection(sonPos, edge.source, edge.target);
+                    completeStyle = completeStyle + "marker-end:url(#normale);";
+                }
                 if (edge.value < 0) {
+                    completeStyle = completeStyle + "stroke-dasharray:4 4";
+                }
+                if (direction === "DOWN") {
                     g.setEdge(edge.source, edge.target, {
-                        style: completeStyle + "stroke-dasharray:4 4",
-                        curve: d3.curveBasis,
+                        style: completeStyle,
                         arrowhead: "undirected",
                     });
                 } else {
@@ -129,13 +150,13 @@ export default {
             console.log(size)
             let xOffset = (size.width - g.graph().width * initialScale) / 2;
             let yOffset = 10;
+
             svg.call(
                 zoom.transform,
                 d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
             );
             svg.attr("height", g.graph().height * initialScale + 40);
         }
-
         this.linksList = selection.linksList;
         this.outcome = selection.outcome;
         this.variables = selection.variable;

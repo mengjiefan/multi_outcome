@@ -172,7 +172,7 @@ export default {
     drawSonGraphs() {
       this.sonGraphs = [];
       let gap = {
-        xGap: 100,
+        xGap: 66,
         yGap: 70,
       };
       for (let i = 1; i <= this.sonNum; i++) {

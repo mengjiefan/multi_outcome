@@ -5,11 +5,11 @@ import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
 import { g } from "jointjs";
 
-let xGap = 50;
+let xGap = 40;
 let yGap = 45;
 
 const countXPos = (x) => {
-    let start = 50;
+    let start = 0;
     return start + x * xGap;
 };
 

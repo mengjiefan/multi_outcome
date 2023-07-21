@@ -211,10 +211,13 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(router + ": " + (parseFloat(width)/10).toFixed(2), {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
+              _this.tipVisible(
+                router + ": " + (parseFloat(width) / 10).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
           }
         })
         .on("mouseout", function (d, id) {
@@ -294,13 +297,13 @@ export default {
         width = width / this.sonNum;
       }
       let size = {
-        scale: this.sonNum > 0 ? 1.8 / this.sonNum : 1,
+        scale: this.sonNum > 0 ? 1.8 / 3 : 1,
         width: width,
         height: height,
       };
       let selection = this.multipleSearchValue.selections[i];
       let svg = d3.select(".paper" + (i + 1)).select("svg");
-
+      let finalPos = JSON.parse(localStorage.getItem("SON_POS"));
       singleGraph.setSingleGraph(
         svg,
         {
@@ -309,7 +312,8 @@ export default {
         },
         selection,
         size,
-        this.transform[i]
+        this.transform[i],
+        finalPos[i+1].nodesList
       );
 
       //Set up zoom support
