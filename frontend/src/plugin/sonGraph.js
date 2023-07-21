@@ -7,7 +7,14 @@ import { g } from "jointjs";
 
 let xGap = 40;
 let yGap = 45;
-
+const findLink = (links, edge) => {
+    let index = links.findIndex(link => {
+        if (link.source === edge.source && link.target === edge.target) return true;
+        else if (link.source === edge.target && link.target === edge.source) return true;
+        else return false;
+    })
+    return links[index];
+}
 const countXPos = (x) => {
     let start = 0;
     return start + x * xGap;
@@ -75,13 +82,14 @@ export const checkDirection = (source, target) => {
     if (source.y <= target.y) return "DOWN";
     else return "UP";
 }
-export const drawSonCharts = (dom, nodesList, links, gap, name) => {
+export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
         if (link.reverse) return {
             source: link.target,
             target: link.source,
-            value: link.value
+            value: link.value,
+            reverse: true
         };
         else return link;
     })
@@ -89,7 +97,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
     yGap = gap.yGap;
     tooltip.value = createTooltip();
     let graph = new joint.dia.Graph({});
-    
+
     let paper = new joint.dia.Paper({
         el: dom,
         model: graph,
@@ -145,8 +153,18 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         nodesList[nodeI]["node"] = faRect;
     }
     linksList.forEach(link => {
+        let points = findLink(linksPos, link);
         let path = new joint.shapes.standard.Link({
         });
+        let vertices = [];
+        for (let i = 0; i < points.points.length; i++) {
+            let point = points.points[i];
+            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
+        }
+        if(link.reverse) vertices.reverse();
+        if (link.source.includes('fra') && link.target.includes('hear')) {
+            console.log('draw', points.points)
+        }
         if (link.value < 0)
             path.attr({
                 id: '(' + link.source + ', ' + link.target + ')',
@@ -161,7 +179,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
                         'd': 'M 10 -5 0 0 10 5 '
                     }
                 }
-            })
+            });
         else {
             path.attr({
                 id: '(' + link.source + ', ' + link.target + ')',
@@ -188,32 +206,23 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         })
         path.target(nodesList[tindex].node);
         path.addTo(graph);
+        if (nodesList[sindex].id.includes('fra') && nodesList[tindex].id.includes('base_by')) {
+            path.vertices(vertices);
+        }
+        path.vertices(vertices);
         if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
-            path.connector("curve");
+            path.connector("rounded");
+            path.router('metro');
         } else {
+            /*
             path.router('manhattan', {
                 maxAllowedDirectionChange: 20,
-                isPointObstacle: function (point){
+                isPointObstacle: function (point) {
                 }
             });
-            path.connector("rounded");
+            path.connector("rounded");*/
         }
-        //path.connector("curve");
-
-        //path.router('metro')
-        //
     })
-    /*
-    let removeButton = new joint.linkTools.Remove();
-    let toolsView = new joint.dia.ToolsView({
-        tools: [
-            removeButton
-        ]
-    })
-    paper.on('link:mouseenter', function(linkView) {
-        linkView.addTools(toolsView);
-    });
-    */
     paper.on('link:mouseleave', function (linkView) {
         linkView.removeTools();
     });

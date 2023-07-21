@@ -1,8 +1,6 @@
 export const countPos = (g, childNodes) => {
     let y = [];
     let x = [];
-    let edgeX = [];
-    let edgeY = [];
     let edges = [];
     let commonNode = [];
     let finalPos = [];
@@ -17,10 +15,8 @@ export const countPos = (g, childNodes) => {
     g.edges().forEach((v) => {
         let pos = g.edge(v);
         let points = pos.points;
-        points.forEach(point => {
-            traversal(edgeX, point.x);
-            traversal(edgeY, point.Y);
-        });
+        points.splice(0, 1);
+        points.splice(points.length - 1, 1);
         edges.push({
             source: v.v,
             target: v.w,
@@ -58,7 +54,14 @@ export const countPos = (g, childNodes) => {
                 type: commonNode.includes(factor) ? -1 : 1,
                 x: x.indexOf(pos.x),
                 y: y.indexOf(pos.y),
-            })
+            });
+            if (factor.includes('hear')) {
+                console.log('end', {
+                    origin: pos.x,
+                    x: x.indexOf(pos.x),
+                    y: y.indexOf(pos.y),
+                })
+            }
         })
         child.linksList.forEach(link => {
             let path = findLink(edges, link);
@@ -69,6 +72,11 @@ export const countPos = (g, childNodes) => {
                     y: evenValue(y, point.y)
                 })
             })
+
+            if (link.source.includes('fra') && link.target.includes('death')) {
+                console.log(path.points);
+                console.log('try', points)
+            }
             linksList.push({
                 source: link.source,
                 target: link.target,
@@ -84,16 +92,35 @@ export const countPos = (g, childNodes) => {
     return finalPos;
 }
 const evenValue = (values, value) => {
+    if (values.length === 0 || !values) return value;
     if (value < values[0]) {
-        return -0.5;
-    } else if (value > values[values.length - 1]) return values.length - 0.5;
-    let index = 0;
-    for (; index < values.length; index++) {
+        if (values.length === 1)
+            return -0.5;
+        else {
+            let cha = (values[0] - value) / (values[1] - values[0]);
+            while (cha > 1) cha = cha / 2;
+            return 0 - cha;
+        }
+    } else if (value > values[values.length - 1]) {
+        if (values.length === 1)
+            return values.length - 0.5;
+        else {
+            let cha = (value - values[values.length - 1]) / (values[1] - values[0]);
+            while (cha > 1) cha = cha / 2;
+            return values.length - 1 + cha;
+        }
+    }
+    let index = values.length - 1;
+    for (index = values.length - 1; index >= 0; index--) {
         let now = values[index];
         if (now <= value) break;
     }
     if (values[index] === value) return index;
-    else return index + 0.5;
+    else {
+        let cha = (value - values[index]) / (values[index + 1] - values[index]);
+        while (cha > 1) cha = cha / 2;
+        return cha + index;
+    }
 }
 const findLink = (links, edge) => {
     let index = links.findIndex(link => {
@@ -144,8 +171,9 @@ const traversal = (list, value) => {
     }
     return list;
 }
-export const countSonPos = (sonPos, commonPos) => {
-
+export const countSonPos = (son, commonPos, linksList) => {
+    let sonPos = son.nodesList;
+    let verticePos = son.linksList;
     let minPosX = -1;
     let maxPosX = 0;
     let minPosY = -1;
@@ -157,9 +185,13 @@ export const countSonPos = (sonPos, commonPos) => {
         if (pos.y > maxPosY) maxPosY = pos.y;
     });
     let lX = [];
+
     let lY = [];
+
     let rX = [];
+
     let rY = [];
+
     sonPos.forEach((pos) => {
         if (pos.x < minPosX) {
             traversal(lX, pos.x)
@@ -173,10 +205,38 @@ export const countSonPos = (sonPos, commonPos) => {
             traversal(rY, pos.y);
         }
     });
-    //maxPosX = maxPosX - minPosX + lX.length;
-    //maxPosY = maxPosY - minPosY + lY.length;
     let minX = minPosX - lX.length;
     let minY = minPosY - lY.length;
+    let linksPos = [];
+    linksList.forEach(link => {
+        let vertice = findLink(verticePos, link);
+        let points = [];
+        vertice.points.forEach(pos => {
+            let point = {
+                x: pos.x,
+                y: pos.y
+            }
+            if (pos.x < minPosX) {
+                point.x = minX + evenValue(lX, pos.x);
+            } else if (pos.x > maxPosX) {
+                point.x = evenValue(rX, pos.x) + maxPosX + 1;
+            }
+            if (pos.y < minPosY) {
+                point.y = minY + evenValue(lY, pos.y);
+            } else if (pos.y > maxPosY) {
+                point.y = evenValue(rY, pos.y) + maxPosY + 1;
+            }
+            points.push(point);
+        })
+
+        linksPos.push({
+            source: link.source,
+            target: link.target,
+            points
+        })
+    })
+    //maxPosX = maxPosX - minPosX + lX.length;
+    //maxPosY = maxPosY - minPosY + lY.length;
     sonPos = sonPos.map((pos) => {
         let newPos = {
             x: pos.x,
@@ -196,12 +256,9 @@ export const countSonPos = (sonPos, commonPos) => {
         }
         return newPos;
     });
-
-    console.log(commonPos)
     let gap = {
         xGap: 50,
         yGap: 50,
-
     }
     if (maxPosX + rX.length > 0) {
         gap.xGap = 1500 / (maxPosX + rX.length);
@@ -209,9 +266,9 @@ export const countSonPos = (sonPos, commonPos) => {
     if (maxPosY + rY.length > 0) {
         gap.yGap = 920 / (maxPosY + rX.length);
     }
-    console.log(sonPos.concat(commonPos))
     return {
         gap: gap,
-        sonPos: sonPos.concat(commonPos)
+        sonPos: sonPos.concat(commonPos),
+        linksPos
     };
 };

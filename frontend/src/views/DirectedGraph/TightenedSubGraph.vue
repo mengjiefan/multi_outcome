@@ -176,8 +176,15 @@ export default {
         yGap: 70,
       };
       for (let i = 1; i <= this.sonNum; i++) {
-        let ans = countSonPos(this.finalPos[i].nodesList, this.finalPos[0].nodesList);
-        this.sonGraphs.push(ans.sonPos);
+        let ans = countSonPos(
+          this.finalPos[i],
+          this.finalPos[0].nodesList,
+          this.multipleSearchValue.selections[i - 1].linksList
+        );
+        this.sonGraphs.push({
+          nodes: ans.sonPos,
+          links: ans.linksPos,
+        });
         if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
         else ans.gap.xGap = ans.gap.xGap / this.sonNum;
         if (ans.gap.xGap < gap.xGap) {
@@ -198,10 +205,11 @@ export default {
       let dom = document.getElementById("paper" + (index + 1));
       let paper = drawSonCharts(
         dom,
-        this.sonGraphs[index],
+        this.sonGraphs[index].nodes,
         this.multipleSearchValue.selections[index].linksList,
         this.gap,
-        "paper" + (index + 1)
+        "paper" + (index + 1),
+        this.sonGraphs[index].links
       );
       this.setPaper(index, paper);
     },
@@ -355,14 +363,14 @@ export default {
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(this.sonGraphs[i], {
+          this.addLink(this.sonGraphs[i].nodes, {
             source: selection.linksList[index].target,
             target: selection.linksList[index].source,
             value: selection.linksList[index].value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(this.sonGraphs[i], selection.linksList[index]);
+          this.addLink(this.sonGraphs[i].nodes, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
