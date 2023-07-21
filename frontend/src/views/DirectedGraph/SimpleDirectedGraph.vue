@@ -48,7 +48,7 @@
           Relayout
         </el-button>
       </div>
-      <svg class="graph-svg"><g /></svg>
+      <svg v-if="simplePos.length > 0" class="graph-svg"><g /></svg>
     </div>
   </div>
 </template>
@@ -100,6 +100,7 @@ export default {
       hasNoHidden: ref(true),
       tip2Show: ref(false),
       transform: ref(),
+      simplePos: ref([]),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -191,6 +192,7 @@ export default {
         var edgeColor = "stroke: black";
         let completeStyle =
           edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+        let direction = "";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -198,13 +200,19 @@ export default {
             curve: d3.curveBasis,
           });
         } else {
-          if (edge.reverse)
+          if (edge.reverse) {
+            direction = that.checkDirection(edge.target, edge.source);
             completeStyle = completeStyle + "marker-start:url(#normals);";
-          else completeStyle = completeStyle + "marker-end:url(#normale);";
+          } else {
+            completeStyle = completeStyle + "marker-end:url(#normale);";
+            direction = that.checkDirection(edge.source, edge.target);
+          }
           if (edge.value < 0) {
+            completeStyle = completeStyle + "stroke-dasharray:4 4";
+          }
+          if (direction === "DOWN") {
             g.setEdge(edge.source, edge.target, {
-              style: completeStyle + "stroke-dasharray:4 4",
-              curve: d3.curveBasis,
+              style: completeStyle,
               arrowhead: "undirected",
             });
           } else {
@@ -218,8 +226,13 @@ export default {
       });
 
       dagre.layout(g);
-      let simplePos = countSimplePos(g, this.multipleSearchValue.nodesList);
-      console.log(simplePos);
+      if (that.simplePos.length <= 0) {
+        that.simplePos = countSimplePos(g, this.multipleSearchValue.nodesList);
+        console.log("simplePos", that.simplePos);
+        setTimeout(() => {
+          that.drawGraph();
+        }, 0);
+      }
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
@@ -355,6 +368,20 @@ export default {
             }, 0);
           }
         });
+    },
+    checkDirection(source, target) {
+      if (this.simplePos.length <= 0) return "DOWN";
+      let sIndex = this.simplePos.findIndex((node) => {
+        if (node.id === source) return true;
+        else return false;
+      });
+      let tIndex = this.simplePos.findIndex((node) => {
+        if (node.id === target) return true;
+        else return false;
+      });
+      if (sIndex < 0 || tIndex < 0) return "DOWN";
+      if (this.simplePos[sIndex].y <= this.simplePos[tIndex].y) return "DOWN";
+      else return "UP";
     },
     drawGraph() {
       setTimeout(() => {
