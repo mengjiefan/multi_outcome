@@ -89,6 +89,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
     yGap = gap.yGap;
     tooltip.value = createTooltip();
     let graph = new joint.dia.Graph({});
+    
     let paper = new joint.dia.Paper({
         el: dom,
         model: graph,
@@ -152,6 +153,13 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
                 line: {
                     strokeWidth: (-link.value * 10) + '',
                     strokeDasharray: "4 4",
+                    targetMarker: { // minute hand
+                        'type': 'path',
+                        'stroke': 'black',
+                        'stroke-width': 2,
+                        'fill': 'transparent',
+                        'd': 'M 10 -5 0 0 10 5 '
+                    }
                 }
             })
         else {
@@ -159,6 +167,13 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
                 id: '(' + link.source + ', ' + link.target + ')',
                 line: {
                     strokeWidth: (link.value * 10) + '',
+                    targetMarker: { // minute hand
+                        'type': 'path',
+                        'stroke': 'black',
+                        'stroke-width': 2,
+                        'fill': 'transparent',
+                        'd': 'M 10 -5 0 0 10 5 '
+                    }
                 }
             })
         }
@@ -176,12 +191,17 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
             path.connector("curve");
         } else {
-            path.connector("normal");
+            path.router('manhattan', {
+                maxAllowedDirectionChange: 20,
+                isPointObstacle: function (point){
+                }
+            });
+            path.connector("rounded");
         }
         //path.connector("curve");
 
         //path.router('metro')
-        //path.connector("rounded");
+        //
     })
     /*
     let removeButton = new joint.linkTools.Remove();

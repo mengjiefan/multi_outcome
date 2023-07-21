@@ -1,6 +1,9 @@
 export const countPos = (g, childNodes) => {
     let y = [];
     let x = [];
+    let edgeX = [];
+    let edgeY = [];
+    let edges = [];
     let commonNode = [];
     let finalPos = [];
     g.nodes().forEach((v) => {
@@ -11,6 +14,19 @@ export const countPos = (g, childNodes) => {
         }
         if (pos.type === -1) commonNode.push(v);
     });
+    g.edges().forEach((v) => {
+        let pos = g.edge(v);
+        let points = pos.points;
+        points.forEach(point => {
+            traversal(edgeX, point.x);
+            traversal(edgeY, point.Y);
+        });
+        edges.push({
+            source: v.v,
+            target: v.w,
+            points: points
+        })
+    })
     let cnodesList = [];
     commonNode.forEach(node => {
         let pos = g.node(node);
@@ -26,6 +42,7 @@ export const countPos = (g, childNodes) => {
     });
     childNodes.forEach(child => {
         let nodesList = [];
+        let linksList = [];
         let pos = g.node(child.outcome);
 
         nodesList.push({
@@ -43,11 +60,48 @@ export const countPos = (g, childNodes) => {
                 y: y.indexOf(pos.y),
             })
         })
+        child.linksList.forEach(link => {
+            let path = findLink(edges, link);
+            let points = [];
+            path.points.forEach(point => {
+                points.push({
+                    x: evenValue(x, point.x),
+                    y: evenValue(y, point.y)
+                })
+            })
+            linksList.push({
+                source: link.source,
+                target: link.target,
+                points: points
+            })
+
+        })
         finalPos.push({
-            nodesList
+            nodesList,
+            linksList
         })
     })
     return finalPos;
+}
+const evenValue = (values, value) => {
+    if (value < values[0]) {
+        return -0.5;
+    } else if (value > values[values.length - 1]) return values.length - 0.5;
+    let index = 0;
+    for (; index < values.length; index++) {
+        let now = values[index];
+        if (now <= value) break;
+    }
+    if (values[index] === value) return index;
+    else return index + 0.5;
+}
+const findLink = (links, edge) => {
+    let index = links.findIndex(link => {
+        if (link.source === edge.source && link.target === edge.target) return true;
+        else if (link.source === edge.target && link.target === edge.source) return true;
+        else return false;
+    })
+    return links[index];
 }
 export const countSimplePos = (g, nodes) => {
     let y = [];

@@ -220,6 +220,7 @@ export default {
       });
       dagre.layout(g);
 
+      //储存坐标
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
       if (!that.simplePos) {
