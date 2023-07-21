@@ -124,6 +124,7 @@ export default {
 
     truelyDelete() {
       console.log("delete edge");
+      this.simplePos = [];
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
@@ -447,6 +448,7 @@ export default {
         },
       })
         .then((response) => {
+          this.simplePos = [];
           console.log("new links", response.data);
           this.multipleSearchValue = {
             linksList: response.data.links,
