@@ -1,4 +1,4 @@
-const VariablesOptions = [
+export const VariablesOptions = [
   "frailty_base_tri",
   "age_group_decade",
   "a1_sex",

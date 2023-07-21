@@ -107,7 +107,7 @@ export default {
       graphType: ref("DirectedGraphView"),
       selectType: ref("1"),
       multipleSelection: [],
-      dataString: ref('tableData'),
+      dataString: ref("tableData"),
       selection: [],
       search: "",
       selection_result: {},
@@ -427,64 +427,58 @@ export default {
         this.getDifferentRows(newRow);
       }
     },
-    getDifferentRows(newRow) {
-      let history = newRow.history;
-      let nodesList = newRow.nodesList;
-      let linksList = newRow.linksList;
-      let outcomes = nodesList.filter((node) => node.type === 0);
-      outcomes = outcomes.map((outcome) => {
-        return outcome.id;
-      });
-      outcomes.forEach((outcome) => {
-        let nextNodes = [];
+    saveRow(outcome, linksList, history) {
+      let nextNodes = [];
+      nextNodes.push(outcome);
 
-        nextNodes.push(outcome);
-        let rowLinks = [];
-
-        let flag = false;
-        while (!flag) {
-          flag = true;
-          linksList.forEach((link) => {
-            if (nextNodes.includes(link.source)) {
-              if (
-                !outcomes.includes(link.target) &&
-                !nextNodes.includes(link.target)
-              ) {
-                nextNodes.push(link.target);
-
-                flag = false;
-              }
-            } else if (nextNodes.includes(link.target)) {
-              if (
-                !outcomes.includes(link.source) &&
-                !nextNodes.includes(link.source)
-              ) {
-                nextNodes.push(link.source);
-
-                flag = false;
-              }
-            }
-          });
-        }
+      let flag = false;
+      while (!flag) {
+        flag = true;
         linksList.forEach((link) => {
-          if (
-            nextNodes.includes(link.source) &&
-            nextNodes.includes(link.target)
-          ) {
-            rowLinks.push(link);
+          if (nextNodes.includes(link.source)) {
+            if (!nextNodes.includes(link.target)) {
+              nextNodes.push(link.target);
+              flag = false;
+            }
+          } else if (nextNodes.includes(link.target)) {
+            if (!nextNodes.includes(link.source)) {
+              nextNodes.push(link.source);
+              flag = false;
+            }
           }
         });
-        nextNodes.splice(0, 1);
-        this.tableData.push({
-          CovariantNum: nextNodes.length,
-          outcome: outcome,
-          Variables: nextNodes,
-          history: history,
-          links: rowLinks,
-        });
+      }
 
-        localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
+      nextNodes.splice(0, 1);
+      this.tableData.push({
+        CovariantNum: nextNodes.length,
+        outcome: outcome,
+        Variables: nextNodes,
+        history: history,
+        links: linksList,
       });
+    },
+    getDifferentRows(newRow) {
+      let nodesList = newRow.nodesList;
+      let sonNum = 0;
+      nodesList.forEach(function (state) {
+        if (state.type === 0) sonNum++;
+      });
+      if (sonNum > 1) {
+        let _this = this;
+        for (let index = 0; index < newRow.selections.length; index++) {
+          let row = newRow.selections[index];
+          _this.saveRow(row.outcome, row.linksList, row.history);
+        }
+      } else {
+        let index = nodesList.findIndex((node) => {
+          if (node.type === 0) return true;
+          else return false;
+        });
+        let outcome = nodesList[index].id;
+        this.saveRow(outcome, newRow.linksList, newRow.history);
+      }
+      localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
     },
   },
   // 到站接收数据，在接收组件的mounted中接收

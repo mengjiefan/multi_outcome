@@ -49,7 +49,28 @@ export const countPos = (g, childNodes) => {
     })
     return finalPos;
 }
+export const countSimplePos = (g, nodes) => {
+    let y = [];
+    let x = [];
+    g.nodes().forEach((v) => {
+        let pos = g.node(v);
+        if (v !== 'group') {
+            traversal(y, pos.y)
+            traversal(x, pos.x);
+        }
+    });
 
+    let nodesList = [];
+    nodes.forEach(factor => {
+        let pos = g.node(factor.id);
+        nodesList.push({
+            id: factor.id,
+            x: x.indexOf(pos.x),
+            y: y.indexOf(pos.y),
+        })
+    })
+    return nodesList;
+}
 const traversal = (list, value) => {
     if (list.includes(value)) return list;
     let i;
@@ -118,7 +139,7 @@ export const countSonPos = (sonPos, commonPos) => {
             newPos.y = minY + lY.indexOf(newPos.y);
         } else if (rY.includes(pos.y)) {
             newPos.y = rY.indexOf(newPos.y) + maxPosY + 1;
-        } 
+        }
         return newPos;
     });
 

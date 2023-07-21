@@ -61,11 +61,12 @@ import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import VariablesOptions from "@/plugin/variable";
+import { VariablesOptions } from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
+import { countSimplePos } from "@/plugin/tightened/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -149,7 +150,7 @@ export default {
       this.saveData();
       this.drawGraph();
     },
-
+    getDown() {},
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
@@ -170,6 +171,17 @@ export default {
       });
 
       var edges = data.linksList;
+      let that = this;
+      // Set some general styles
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        node.rx = node.ry = 5;
+
+        if (node.type == 0) node.style = "fill: #f77;";
+        else {
+          node.style = "fill:" + cmap[0];
+        }
+      });
       edges.forEach(function (edge) {
         var valString = (edge.value * 10).toString() + "px";
         if (edge.value < 0) {
@@ -204,21 +216,15 @@ export default {
           }
         }
       });
-      let that = this;
-      // Set some general styles
-      g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        node.rx = node.ry = 5;
 
-        if (node.type == 0) node.style = "fill: #f77;";
-        else {
-          node.style = "fill:" + cmap[0];
-        }
-      });
       dagre.layout(g);
+      let simplePos = countSimplePos(g, this.multipleSearchValue.nodesList);
+      console.log(simplePos);
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
+      console.log(svg.selectAll(".edgePath").select(".path"));
+      //正直反曲
       if (this.tooltip) {
         this.tipHidden();
       }
@@ -321,10 +327,13 @@ export default {
               width = "-" + width;
             }
             if (!_this.tip2Show)
-              _this.tipVisible(router + ": " + (parseFloat(width)/10).toFixed(2), {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
+              _this.tipVisible(
+                router + ": " + (parseFloat(width) / 10).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
           }
         })
         .on("click", function (d, id) {
@@ -541,8 +550,14 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] && row.target === nodes[1] && !row.reverse && !row.hidden) ||
-          (row.target === nodes[0] && row.source === nodes[1] && row.reverse && !row.hidden)
+          (row.source === nodes[0] &&
+            row.target === nodes[1] &&
+            !row.reverse &&
+            !row.hidden) ||
+          (row.target === nodes[0] &&
+            row.source === nodes[1] &&
+            row.reverse &&
+            !row.hidden)
         ) {
           return true;
         } else return false;
