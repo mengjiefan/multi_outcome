@@ -71,8 +71,9 @@ const svgZoom = (name) => {
     svgZoom.setZoomScaleSensitivity(0.5);
 
 };
-export const extractSonCharts = () => {
-
+export const checkDirection = (source, target) => {
+    if (source.y <= target.y) return "DOWN";
+    else return "UP";
 }
 export const drawSonCharts = (dom, nodesList, links, gap, name) => {
     let linksList = links.filter(link => !link.hidden);
@@ -143,7 +144,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         nodesList[nodeI]["node"] = faRect;
     }
     linksList.forEach(link => {
-        var path = new joint.shapes.standard.Link({
+        let path = new joint.shapes.standard.Link({
         });
         if (link.value < 0)
             path.attr({
@@ -172,6 +173,11 @@ export const drawSonCharts = (dom, nodesList, links, gap, name) => {
         })
         path.target(nodesList[tindex].node);
         path.addTo(graph);
+        if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
+            path.connector("curve");
+        } else {
+            path.connector("normal");
+        }
         //path.connector("curve");
 
         //path.router('metro')
