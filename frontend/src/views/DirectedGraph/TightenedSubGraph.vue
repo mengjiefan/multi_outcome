@@ -433,7 +433,6 @@ export default {
   display: flex;
   height: 100%;
   flex: 1;
-  padding: 16px;
 }
 .directed-tabs {
   background-color: rgb(55, 162, 228);

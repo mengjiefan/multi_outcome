@@ -610,7 +610,7 @@ export default {
 .group-graphs {
   width: 100%;
   display: flex;
-  height: 90%;
+  height: 100%;
 }
 
 .son-svg {
