@@ -55,13 +55,6 @@ export const countPos = (g, childNodes) => {
                 x: x.indexOf(pos.x),
                 y: y.indexOf(pos.y),
             });
-            if (factor.includes('hear')) {
-                console.log('end', {
-                    origin: pos.x,
-                    x: x.indexOf(pos.x),
-                    y: y.indexOf(pos.y),
-                })
-            }
         })
         child.linksList.forEach(link => {
             let path = findLink(edges, link);
@@ -73,10 +66,6 @@ export const countPos = (g, childNodes) => {
                 })
             })
 
-            if (link.source.includes('fra') && link.target.includes('death')) {
-                console.log(path.points);
-                console.log('try', points)
-            }
             linksList.push({
                 source: link.source,
                 target: link.target,
@@ -92,33 +81,31 @@ export const countPos = (g, childNodes) => {
     return finalPos;
 }
 const evenValue = (values, value) => {
+    //求value在values中的坐标
     if (values.length === 0 || !values) return value;
     if (value < values[0]) {
-        if (values.length === 1)
-            return -0.5;
-        else {
-            let cha = (values[0] - value) / (values[1] - values[0]);
-            while (cha > 1) cha = cha / 2;
-            return 0 - cha;
-        }
+        let cha = (values[0] - value);
+        if (values.length !== 1)
+            cha = cha / (values[1] - values[0]);
+
+        return 0 - cha;
+
     } else if (value > values[values.length - 1]) {
-        if (values.length === 1)
-            return values.length - 0.5;
-        else {
-            let cha = (value - values[values.length - 1]) / (values[1] - values[0]);
-            while (cha > 1) cha = cha / 2;
-            return values.length - 1 + cha;
-        }
+        let cha = value - values[values.length - 1];
+        if (values.length !== 1)
+            cha = cha / (values[1] - values[0]);
+
+        return values.length - 1 + cha;
     }
     let index = values.length - 1;
     for (index = values.length - 1; index >= 0; index--) {
         let now = values[index];
         if (now <= value) break;
     }
+    //中间值，求平均
     if (values[index] === value) return index;
     else {
         let cha = (value - values[index]) / (values[index + 1] - values[index]);
-        while (cha > 1) cha = cha / 2;
         return cha + index;
     }
 }
@@ -208,6 +195,14 @@ export const countSonPos = (son, commonPos, linksList) => {
     let minX = minPosX - lX.length;
     let minY = minPosY - lY.length;
     let linksPos = [];
+
+    rX.unshift(maxPosX);//lower bound of rX ;while index = 0 
+    rY.unshift(maxPosY);
+    if (commonPos.length > 0) {
+        lX.push(minPosX); // upper bound of lX;
+        lY.push(minPosY);
+    }
+
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
         let points = [];
@@ -216,19 +211,18 @@ export const countSonPos = (son, commonPos, linksList) => {
                 x: pos.x,
                 y: pos.y
             }
-            if (pos.x < minPosX) {
+            if (pos.x < minPosX && lX.length > 1) {
                 point.x = minX + evenValue(lX, pos.x);
-            } else if (pos.x > maxPosX) {
-                point.x = evenValue(rX, pos.x) + maxPosX + 1;
+            } else if (pos.x > maxPosX && rX.length > 1) {
+                point.x = evenValue(rX, pos.x) + maxPosX;
             }
-            if (pos.y < minPosY) {
+            if (pos.y < minPosY && lY.length > 1) {
                 point.y = minY + evenValue(lY, pos.y);
-            } else if (pos.y > maxPosY) {
-                point.y = evenValue(rY, pos.y) + maxPosY + 1;
+            } else if (pos.y > maxPosY && rY.length > 1) {
+                point.y = evenValue(rY, pos.y) + maxPosY;
             }
             points.push(point);
         })
-
         linksPos.push({
             source: link.source,
             target: link.target,
@@ -247,12 +241,12 @@ export const countSonPos = (son, commonPos, linksList) => {
         if (lX.includes(pos.x)) {
             newPos.x = minX + lX.indexOf(newPos.x);
         } else if (rX.includes(pos.x)) {
-            newPos.x = rX.indexOf(newPos.x) + maxPosX + 1;
+            newPos.x = rX.indexOf(newPos.x) + maxPosX;
         }
         if (lY.includes(pos.y)) {
             newPos.y = minY + lY.indexOf(newPos.y);
         } else if (rY.includes(pos.y)) {
-            newPos.y = rY.indexOf(newPos.y) + maxPosY + 1;
+            newPos.y = rY.indexOf(newPos.y) + maxPosY;
         }
         return newPos;
     });

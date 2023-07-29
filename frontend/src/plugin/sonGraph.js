@@ -110,8 +110,8 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     });
     let outRect = new joint.shapes.standard.Rectangle();
     outRect.position(
-        countXPos(nodesList[0].x),
-        countYPos(nodesList[0].y)
+        countXPos(nodesList[0].x) - nodesList[0].id.length * 5,
+        countYPos(nodesList[0].y) - 14
     );
     outRect.resize(nodesList[0].id.length * 10, 28);
     outRect.attr({
@@ -131,11 +131,12 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     nodesList[0]["node"] = outRect;
     for (let nodeI = 1; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
-        faRect.position(
-            countXPos(nodesList[nodeI].x),
-            countYPos(nodesList[nodeI].y)
-        );
+
         faRect.resize(nodesList[nodeI].id.length * 10, 28);
+        faRect.position(
+            countXPos(nodesList[nodeI].x) - nodesList[nodeI].id.length * 5,
+            countYPos(nodesList[nodeI].y) - 14
+        );
         faRect.attr({
             body: {
                 fill: nodesList[nodeI].type === -1 ? "#1f77b4" : "black",
@@ -161,7 +162,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
             let point = points.points[i];
             vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
         }
-        if(link.reverse) vertices.reverse();
+        if (link.reverse) vertices.reverse();
         if (link.source.includes('fra') && link.target.includes('hear')) {
             console.log('draw', points.points)
         }
@@ -212,7 +213,6 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
         path.vertices(vertices);
         if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
             path.connector("rounded");
-            path.router('metro');
         } else {
             /*
             path.router('manhattan', {
@@ -223,11 +223,10 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
             path.connector("rounded");*/
         }
     })
-    paper.on('link:mouseleave', function (linkView) {
-        linkView.removeTools();
+    paper.on('link:mouseover', function (linkView) {
+
     });
     paper.on('element:mouseover', function (elementView, evt) {
-        //tipHidden();
         joint.highlighters.mask.add(elementView, { selector: 'root' }, 'my-element-highlight', {
             padding: 0,
             deep: true,
