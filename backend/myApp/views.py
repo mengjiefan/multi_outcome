@@ -23,6 +23,8 @@ import linecache  # 用于读取指定行
 import sys
 import warnings
 warnings.filterwarnings("ignore")
+import networkx as nx
+from dowhy import CausalModel
 from causallearn.search.ScoreBased.GES import ges
 from causallearn.search.ConstraintBased.PC import pc
 from causallearn.utils.cit import chisq, fisherz, gsq, kci, mv_fisherz
@@ -31,9 +33,6 @@ from functools import reduce
 
 sys.path.append("")
 
-# 以列表形式告诉程序哪些变量是结局变量，其他变量均视为因素变量
-results = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
 # SETTINGS.verbose = True
 
 # Create your views here.
@@ -149,10 +148,173 @@ def get_causal_edges(request):
                          'nodes': nodes_variables, 'links': links})
 
 
+ukb_outcomes = ['Hypertension', 'Diabetes', 'BreastMalignancy', 'ProstateMalignancy',
+           'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
+clhls_outcomes = ['g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD',
+          'g15n1_RA', 'g15o1_dementia', 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base']
+
+ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
+clhls_file = "./myApp/clhls_10_outcomes_data.csv"
+
+def get_list(request):
+    num_top = request.GET.get("CovariantNum")  # CovariantNum
+    num_top = int(num_top)
+    outcome = request.GET.get("outcome")
+    dataset = request.GET.get('dataset')
+    fileName = "./myApp/MissingValue_fill_data_all.csv"
+    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
+           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
+    if dataset == 'ukb':
+        fileName = ukb_file
+        outcomes =ukb_outcomes
+    elif dataset == 'clhls':
+        fileName = clhls_file
+        outcomes = clhls_outcomes
+
+    # 读取CSV文件
+    data = pd.read_csv(fileName)
+
+    # 获取除了outcomes列表中指定的变量之外的其他变量
+    factors = [col for col in data.columns if col not in outcomes]
+    # 计算因素变量的大小
+    factor_size = len(factors)
+    # 打印结果
+    print("因素变量的大小：", factor_size)
+
+    outcome_corr = data[factors].corrwith(data[outcome])
+    # 获取 top 变量
+    top_correlated = outcome_corr.abs().nlargest(num_top)
+    top_correlated_factors = top_correlated.index.tolist()
+    # 所有的节点（包括结局变量和与结局变量相关的前top变量）
+    outcome_vars = top_correlated_factors + [outcome]
+
+    outcome_data_df = data[outcome_vars]
+    print("var names of dag:", outcome_vars)
+    print("Result DataFrame:", outcome)
+    print("outcome_data_df为:\n", outcome_data_df)
+
+    # 将DataFrame转换为NumPy数组
+    data_array = outcome_data_df.to_numpy()
+
+    # 使用转换后的NumPy数组运行PC算法
+    cg = pc(data_array, 0.05, fisherz, True, 0, 3, outcome_vars)
+    # Retrieving the graph nodes with labels
+    nodes_pc = cg.G.get_nodes()
+    node_labels = outcome_vars  # Use variable names as labels
+
+    replace_dict = {}
+    # node = nodes_list_all
+    for i in range(len(outcome_vars)):
+        # 使用字典修改多个词语
+        replace_dict_single = {str(nodes_pc[i]): str(GraphNode(outcome_vars[i]))}
+        replace_dict[str(nodes_pc[i])] = str(GraphNode(outcome_vars[i]))
+    result_data = str(cg.G)
+
+    origin_edges = re.findall('X\d --> X\d', result_data)
+
+    # 使用字典修改多个词语
+    new_edges = []
+    effect_values = {}  # 存储效应值的字典
+    for ele in origin_edges:
+        ele_sin = ele.split(' --> ')
+        new_ele_sin = [replace_dict[j] if j in replace_dict else j for j in ele_sin]
+        # print(new_ele_sin)
+        X1 = new_ele_sin[0]
+        X2 = new_ele_sin[1]
+        # 计算线性回归系数
+        data_corr = outcome_data_df[X1].corr(outcome_data_df[X2])
+        new_ele_sin.append(float("%.3f" % data_corr))
+        new_edges.append(new_ele_sin)
+
+    print('替换后的边new_edges为:\n', new_edges)
+
+    # 获取特定结局的PC因果算法所得的边
+    links = []
+    for link_ele in new_edges:
+        link_sin = {}
+        link_sin['source'] = link_ele[0]
+        link_sin['target'] = link_ele[1]
+        link_sin['corr'] = link_ele[2]
+        links.append(link_sin)
+    print('因果图的有向边为：\n', links)
+
+    # 获取特定结局的PC因果算法所得的节点
+    nodes_variables = []
+    node_outcome = {}  # TypeError: list indices must be integers or slices, not str --- 设成对象而非数组
+    node_outcome['id'] = outcome
+    node_outcome['type'] = 0
+    for node_ele in top_correlated_factors:
+        node_sin = {}
+        node_sin['id'] = node_ele
+        node_sin['type'] = 1
+        nodes_variables.append(node_sin)
+    nodes_variables.append(node_outcome)
+    print('因果图的节点为：\n', nodes_variables)
+
+    # 构建有向图
+    G = nx.DiGraph()
+
+    # 添加节点
+    for node in nodes_variables:
+        G.add_node(node['id'])
+
+    # 添加边
+    for link in links:
+        source = link['source']
+        target = link['target']
+        G.add_edge(source, target)
+
+    # 检查是否为有向无环图（DAG）
+    if nx.is_directed_acyclic_graph(G):
+        print(
+            "The causal graph is a Directed Acyclic Graph (DAG).")  # The causal graph is a Directed Acyclic Graph (DAG).
+    else:
+        print(
+            "The causal graph contains cycles and is not a Directed Acyclic Graph (DAG). Please ensure your causal graph is acyclic.")
+    print("---------------------")
+
+    # 计算links中每一个source到target的效应量
+    # Step 1: 构建因果图
+
+    # Step 2: 循环计算因果效应
+    effect_values = {}
+
+    for link in links:
+        source = link['source']
+        target = link['target']
+        # Step 3: 定义因果模型
+        # 不对以下model提供 graph=graph_gml 时，可以得到想要的effect，否则总是报错
+        model = CausalModel(
+            data=outcome_data_df,
+            treatment=source,
+            outcome=target,
+        )
+        # print("model为\n", model)
+
+        # Step 4: 识别因果效应
+        identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+        if identified_estimand is not None:
+            # Step 5: 估计因果效应
+            estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
+            if estimate is not None:
+                effect_values[(source, target)] = estimate.value
+                link["effect_value"] = estimate.value
+            else:
+                print(f"Causal effect estimation failed for {source} to {target}")
+        else:
+            print(f"Causal identification failed for {source} to {target}")
+
+    # 输出所有因果效应值
+    print("All causal effect values:", effect_values)
+    print('return value', {'outcome': outcome, 'CovariantNum': num_top,
+                         'nodes':nodes_variables,'links':links})
+    return JsonResponse({'outcome': outcome, 'CovariantNum': num_top,
+                         'nodes':nodes_variables,'links':links})
+
 def select_factor(request):
     # 数据文件的路径，需要为excel表格;Django读取失败时，需 install openpyxl，Excel文件路径前的r是为了Windows转义用
     # filename = r"C:\MyProjects_yuxi\ComparativeVis\Django+vue前后端交互\django_vue\multiOutcomeInter\myApp\MissingValue_fill_data_all.xlsx"
-    filename = "./myApp/MissingValue_fill_data_all.xlsx"
+    filename = "./myApp/MissingValue_fill_data_all.csv"
     # filename = "C:/MyProjects_yuxi/6-comparativeVis/Django+vue前后端交互/django_vue/multiOutcomeInter/MissingValue_fill_data_all.xlsx"
     # 指定的选出因素变量的数目
     # 通过 num = request.GET.get("num")，来获取前端get请求中的参数"num"的值

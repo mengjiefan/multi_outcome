@@ -5,7 +5,7 @@ from . import views   # .指的是上级目录（myApp）
 urlpatterns = [
     # path('',views.index,name='index'), #将该路由myproject.urls加入到总路由C:\MyProjects_yuxi\6-comparativeVis\Django+vue前后端交互\multiOutcomeInter\multiOutcomeInter\urls.py中
     # path('add/',views.add,name='add'), #调用views中的add方法
-    path("covariant/",views.select_factor,name='select_factor'),
+    path("covariant/",views.get_list,name='get_list'),
     path("linksnodes/",views.list_dict_duplicate_removal,name='list_dict_duplicate_removal'),
     path("getLink/",views.get_causal_edges,name='get_causal_edges'),
     path("test11/",views.test11),
