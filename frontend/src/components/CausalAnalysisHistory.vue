@@ -450,6 +450,7 @@ export default {
       }
 
       nextNodes.splice(0, 1);
+      if(!this.tableData) this.tableData = [];
       this.tableData.push({
         CovariantNum: nextNodes.length,
         outcome: outcome,
@@ -464,8 +465,8 @@ export default {
       nodesList.forEach(function (state) {
         if (state.type === 0) sonNum++;
       });
-      if (sonNum > 1) {
-        let _this = this;
+      let _this = this;
+      if (sonNum > 1) {      
         for (let index = 0; index < newRow.selections.length; index++) {
           let row = newRow.selections[index];
           _this.saveRow(row.outcome, row.linksList, row.history);
@@ -476,7 +477,7 @@ export default {
           else return false;
         });
         let outcome = nodesList[index].id;
-        this.saveRow(outcome, newRow.linksList, newRow.history);
+        _this.saveRow(outcome, newRow.linksList, newRow.history);
       }
       localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
     },

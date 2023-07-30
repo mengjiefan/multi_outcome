@@ -99,6 +99,7 @@ export default {
       };
     });
     return {
+      nowType: ref("default"),
       CovariantNum: ref(""),
       value: ref(""),
       SelectedVariables: ref([]),
@@ -157,6 +158,7 @@ export default {
         url: "http://localhost:8000/api/covariant",
         //参数
         params: {
+          dataset: this.nowType,
           outcome: outcome,
           CovariantNum: CovariantNum,
         },
@@ -169,7 +171,13 @@ export default {
           //include node & links & list
           this.Variables_result = response.data;
           //only the list
-          this.SelectedVariables = this.Variables_result.top_factors_list;
+          let nodes = this.Variables_result.nodes.filter(
+            (node) => node.type === 1
+          );
+
+          this.SelectedVariables = nodes.map((node) => {
+            return node.id;
+          });
           console.log("Variables_result:", this.Variables_result);
 
           setTimeout(() => {
@@ -196,7 +204,7 @@ export default {
             return true;
           } else return false;
         });
-        if (index > -1) data.push(links[index].value);
+        if (index > -1) data.push(links[index].corr);
         else data.push(0);
       });
       let option = {
@@ -259,25 +267,23 @@ export default {
     },
     saveSingleData() {
       let nodesList = [];
-      if (!this.Variables_result.top_factors_list) {
+      if (!this.Variables_result.nodes) {
         this.showErrorMsg("Please confirm first!");
         return;
       }
-      nodesList.push({
-        type: 0,
-        id: this.Variables_result.outcome,
-      });
-      this.Variables_result.top_factors_list.forEach((row) => {
-        nodesList.push({
-          type: 1,
-          id: row,
-        });
+      let linksList = this.Variables_result.links.map((link) => {
+        return {
+          source: link.source,
+          target: link.target,
+          value: link.corr,
+          effect: link.effect,
+        };
       });
       localStorage.setItem(
         "GET_JSON_RESULT",
         JSON.stringify({
-          nodesList: nodesList,
-          linksList: this.Variables_result.links,
+          nodesList: this.Variables_result.nodes,
+          linksList: linksList,
           CovariantNum: this.Variables_result.CovariantNum,
           history: [],
         })
@@ -305,18 +311,29 @@ export default {
         default:
           break;
       }
-      this.options = options.map((option) => {
-        return {
-          value: option,
-          label: option,
-        };
-      });
+      if (this.nowType !== dataset) {
+        this.nowType = dataset;
+        this.options = options.map((option) => {
+          return {
+            value: option,
+            label: option,
+          };
+        });
+        localStorage.setItem("GET_JSON_RESULT", "");
+        localStorage.setItem("GET_SAVE_DATA", "");
+        if (this.$route.name !== "DirectedGraphView")
+          this.$router.push({
+            path: "/AppMainPlot/redirect",
+            query: { next: "DirectedGraphView" },
+          });
+      }
     },
   },
   watch: {
     dataset: {
       handler: function (dataset) {
         this.getTag(dataset);
+        this.value = null;
       },
       immediate: true,
     },
