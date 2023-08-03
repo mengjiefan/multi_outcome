@@ -53,7 +53,9 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
-    <div class="variable-chart" v-if="SelectedVariables.length > 0"></div>
+    <div v-for="(item, index) in SelectedVariables" :key="index">
+      <div class="variable-chart"></div>
+    </div>
     <div class="drawing-command">
       <el-select v-model="graphType" placeholder="请选择">
         <el-option
@@ -83,7 +85,7 @@ import axios from "axios";
 import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
-import * as echarts from "echarts";
+import { createSexRangeChart, createAgeRangeChart } from "@/plugin/charts";
 
 export default {
   props: {
@@ -189,66 +191,17 @@ export default {
         });
     },
     createChart() {
-      let dom = document.getElementsByClassName("variable-chart")[0];
-      echarts.dispose(dom);
-      var myChart = echarts.init(dom);
-      let nodes = [...this.SelectedVariables].reverse();
-      let links = this.Variables_result.links;
-      let outcome = this.value;
-      let data = [];
-      nodes.forEach((node) => {
-        let index = links.findIndex((link) => {
-          if (link.source === outcome && node === link.target) {
-            return true;
-          } else if (link.target === outcome && node === link.source) {
-            return true;
-          } else return false;
-        });
-        if (index > -1) data.push(links[index].corr);
-        else data.push(0);
-      });
-      let option = {
-        tooltip: {
-          trigger: "axis",
-          axisPointer: {
-            type: "shadow",
-          },
-        },
-        grid: {
-          top: 80,
-          bottom: 30,
-        },
-        xAxis: {
-          type: "value",
-          position: "top",
-          splitLine: {
-            lineStyle: {
-              type: "dashed",
-            },
-          },
-        },
-        yAxis: {
-          type: "category",
-          axisLine: { show: false },
-          axisLabel: { show: false },
-          axisTick: { show: false },
-          splitLine: { show: false },
-          data: nodes,
-        },
-        series: [
-          {
-            name: "value",
-            type: "bar",
-            stack: "Total",
-            label: {
-              show: true,
-              formatter: "{b}",
-            },
-            data: data,
-          },
-        ],
-      };
-      myChart.setOption(option);
+      for (let i = 0; i < this.SelectedVariables.length; i++) {
+        let dom = document.getElementsByClassName("variable-chart")[i];
+        let id = this.SelectedVariables[i];
+        if (id === "Sex" || id === "a1_sex") {
+          createSexRangeChart(dom, this.Variables_result.nodes[i].range);
+        } else if (id === "Age" || id === "trueage") {
+          createAgeRangeChart(dom, this.Variables_result.nodes[i].range);
+        } else {
+          
+        }
+      }
     },
     showErrorMsg(msg) {
       this.$message({
