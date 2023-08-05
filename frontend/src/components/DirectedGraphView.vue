@@ -19,13 +19,16 @@ export default {
   },
 
   mounted() {
-    let multipleSearchValue = JSON.parse(
-      localStorage.getItem("GET_JSON_RESULT")
-    );
-    let that = this;
-    multipleSearchValue.nodesList.forEach(function (state) {
-      if (state.type === 0) that.sonNum++;
-    });
+    let result = localStorage.getItem("GET_JSON_RESULT");
+
+    if (result) {
+      let multipleSearchValue = JSON.parse(result);
+      let that = this;
+      multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === 0) that.sonNum++;
+      });
+    }
+
     if (this.$route.name === "DirectedGraphView") {
       if (this.sonNum > 1) {
         this.$router.push({
@@ -261,13 +264,13 @@ hr {
   opacity: 0;
 }
 .fade-enter-active {
-  transition-duration:  .1s;
+  transition-duration: 0.1s;
 }
 .fade-leave-to {
   opacity: 0;
 }
 .fade-leave-active {
-  transition-duration:  .1s;
+  transition-duration: 0.1s;
 }
 
 .one-line-name {

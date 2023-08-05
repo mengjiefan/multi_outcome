@@ -54,6 +54,7 @@
       </li>
     </ul>
     <div v-for="(item, index) in SelectedVariables" :key="index">
+      {{ SelectedVariables[index] }}
       <div class="variable-chart"></div>
     </div>
     <div class="drawing-command">
@@ -85,7 +86,11 @@ import axios from "axios";
 import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
-import { createSexRangeChart, createAgeRangeChart } from "@/plugin/charts";
+import {
+  createSexRangeChart,
+  createAgeRangeChart,
+  creatAllRangeChart,
+} from "@/plugin/charts";
 
 export default {
   props: {
@@ -199,7 +204,7 @@ export default {
         } else if (id === "Age" || id === "trueage") {
           createAgeRangeChart(dom, this.Variables_result.nodes[i].range);
         } else {
-          
+          creatAllRangeChart(dom, this.Variables_result.nodes[i].range);
         }
       }
     },
@@ -357,7 +362,7 @@ export default {
   height: 0;
 }
 .variable-chart {
-  height: 500px;
+  height: 300px;
   width: 100%;
 }
 .show-variable-button {

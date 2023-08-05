@@ -108,5 +108,4 @@ const traversal = (list, value) => {
     if (i === list.length) {
         list.push(value);
     }
-    return list;
 }

@@ -712,9 +712,9 @@ export default {
   },
 
   mounted() {
-    this.multipleSearchValue = JSON.parse(
-      localStorage.getItem("GET_JSON_RESULT")
-    );
+    let result = localStorage.getItem("GET_JSON_RESULT");
+    if (result) this.multipleSearchValue = JSON.parse(result);
+    else this.multipleSearchValue = null;
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
