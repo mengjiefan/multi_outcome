@@ -70,9 +70,8 @@ export default {
   padding-right: 10px;
 }
 rect#hover-node {
-  stroke: rgba(169, 169, 169, 0.562);
+  stroke: #FF4365;
   stroke-width: 2.5px;
-  transition-duration: 0.2s;
   display: block;
 }
 .node {

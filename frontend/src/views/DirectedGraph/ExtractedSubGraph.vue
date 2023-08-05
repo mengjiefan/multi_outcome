@@ -171,7 +171,26 @@ export default {
         },
       });
     },
-
+    hoverAll(id) {
+      d3.selectAll("g.node").each(function (v) {
+        if (v === id) {
+          let rect = this.children[0];
+          if (!rect.getAttribute("style").includes("transparent")) {
+            rect.setAttribute("stroke", "#FF4365");
+            rect.setAttribute("stroke-width", "2.5px");
+          }
+        }
+      });
+    },
+    removeAll(id) {
+      d3.selectAll("g.node").each(function (v) {
+        if (v === id) {
+          let rect = this.children[0];
+          rect.setAttribute("stroke", null);
+          rect.setAttribute("stroke-width", "0px");
+        }
+      });
+    },
     setSonGraph(i) {
       const _this = this;
       let selection = this.multipleSearchValue.selections[i];
@@ -183,11 +202,12 @@ export default {
           if (
             (selection.variable.includes(id) || selection.outcome === id) &&
             v.fromElement.__data__ !== "group"
-          )
-            v.fromElement.setAttribute("id", "hover-node");
+          ) {
+            _this.hoverAll(id);
+          }
         })
-        .on("mouseout", (v) => {
-          v.fromElement.setAttribute("id", "");
+        .on("mouseout", (v, id) => {
+          _this.removeAll(id);
         });
       svg
         .selectAll(".edgePath")
@@ -313,7 +333,7 @@ export default {
         selection,
         size,
         this.transform[i],
-        finalPos[i+1].nodesList
+        finalPos[i + 1].nodesList
       );
 
       //Set up zoom support
