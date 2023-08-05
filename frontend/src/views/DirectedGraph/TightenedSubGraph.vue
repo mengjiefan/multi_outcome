@@ -42,7 +42,11 @@ import * as d3 from "d3";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
-import { drawSonCharts } from "@/plugin/sonGraph";
+import {
+  drawSonCharts,
+  addHighLight,
+  removeHighLight,
+} from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/tightened/CountPos";
@@ -50,6 +54,7 @@ import { countSonPos } from "@/plugin/tightened/CountPos";
 export default {
   data() {
     return {
+      papers: ref([]),
       paper: ref(),
       gap: ref(),
       sonGraphs: ref([]),
@@ -211,6 +216,9 @@ export default {
         "paper" + (index + 1),
         this.sonGraphs[index].links
       );
+      if (!this.papers[index]) {
+        this.papers.push(paper);
+      } else this.papers[index] = paper;
       this.setPaper(index, paper);
     },
     setPaper(index, paper) {
@@ -238,6 +246,34 @@ export default {
         setTimeout(() => {
           document.addEventListener("click", _this.listener3);
         }, 0);
+      });
+      paper.on("element:mouseover", function (elementView, evt) {
+        _this.highLightAllPaper(elementView.model.attributes.attrs.title);
+      });
+      paper.on("element:mouseout", function (elementView, evt) {
+        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+      });
+    },
+    highLightAllPaper(id) {
+      this.papers.forEach((paper) => {
+        var elements = paper.model.getElements();
+        elements.forEach((element) => {
+          if (element.attributes.attrs.title === id) {
+            let view = element.findView(paper);
+            addHighLight(view);
+          }
+        });
+      });
+    },
+    removeAllHighLight(id) {
+      this.papers.forEach((paper) => {
+        var elements = paper.model.getElements();
+        elements.forEach((element) => {
+          if (element.attributes.attrs.title === id) {
+            let view = element.findView(paper);
+            removeHighLight(view);
+          }
+        });
       });
     },
     tip2Hidden() {

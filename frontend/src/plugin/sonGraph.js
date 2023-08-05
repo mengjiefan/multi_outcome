@@ -82,6 +82,28 @@ export const checkDirection = (source, target) => {
     if (source.y <= target.y) return "DOWN";
     else return "UP";
 }
+export const addHighLight = (elementView) => {
+    joint.highlighters.mask.add(
+        elementView,
+        { selector: "root" },
+        "my-element-highlight",
+        {
+            padding: 0,
+            deep: true,
+            attrs: {
+                stroke: "#FF4365",
+                "stroke-width": 3,
+            },
+        }
+    );
+}
+export const removeHighLight = (elementView) => {
+    const highlighter = joint.dia.HighlighterView.get(
+        elementView,
+        "my-element-highlight"
+    );
+    highlighter.remove();
+}
 export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
@@ -226,24 +248,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     paper.on('link:mouseover', function (linkView) {
 
     });
-    paper.on('element:mouseover', function (elementView, evt) {
-        joint.highlighters.mask.add(elementView, { selector: 'root' }, 'my-element-highlight', {
-            padding: 0,
-            deep: true,
-            attrs: {
-                'stroke': '#FF4365',
-                'stroke-width': 3
-            }
-        });
-        //var currentElement = elementView.model;
-        //let name = currentElement.attributes.attrs.title;
-        //tipVisible(name, evt)
-    });
-    paper.on('element:mouseout', function (elementView, evt) {
-        const highlighter = joint.dia.HighlighterView.get(elementView, 'my-element-highlight');
-        highlighter.remove();
-        //tipHidden();
-    });
+
     if (nodesList) {
         svgZoom(name);
     }
