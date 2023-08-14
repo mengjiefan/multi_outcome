@@ -16,11 +16,15 @@
       <div
         :class="name === 'TightenedSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('TightenedSubGraph')"
-      >Tightened Subgraphs</div>
+      >
+        Tightened Subgraphs
+      </div>
       <div
         :class="name === 'OptimalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OptimalSubGraph')"
-      >Optimal Subgraphs</div>
+      >
+        Optimal Subgraphs
+      </div>
     </div>
     <router-view></router-view>
   </div>
@@ -39,7 +43,7 @@ export default {
       vm.getTag();
     });
   },
-  mounted(){
+  mounted() {
     this.getTag();
   },
   methods: {
@@ -48,10 +52,10 @@ export default {
     },
     routeTo(name) {
       this.name = name;
-      if(this.$route.name !== this.name)
-      this.$router.push({
-        name,
-      });
+      if (this.$route.name !== this.name)
+        this.$router.push({
+          name,
+        });
     },
   },
 };
