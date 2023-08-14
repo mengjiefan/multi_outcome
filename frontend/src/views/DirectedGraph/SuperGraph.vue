@@ -622,7 +622,6 @@ export default {
     // create tooltip but not show it
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
-      console.log(tooltips);
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -632,7 +631,6 @@ export default {
           .style("display", "none");
       else
         return d3.selectAll(".tooltip").select(function (d, i, nodes) {
-          console.log(this, d, i, nodes);
           if (i === number - 1) return this;
         });
     },

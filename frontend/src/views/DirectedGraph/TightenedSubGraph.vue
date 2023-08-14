@@ -12,7 +12,7 @@
             <div class="son-title">
               <div
                 class="color-hint"
-                :style="[{ 'background-color': cmap[index-1] }]"
+                :style="[{ 'background-color': cmap[index - 1] }]"
               ></div>
               {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
@@ -171,13 +171,19 @@ export default {
         },
       });
     },
-    createTooltip() {
-      return d3
-        .select("body")
-        .append("div")
-        .classed("tooltip", true)
-        .style("opacity", 0)
-        .style("display", "none");
+    createTooltip(number) {
+      let tooltips = d3.selectAll(".tooltip")._groups[0];
+      if (tooltips.length < number)
+        return d3
+          .select("body")
+          .append("div")
+          .classed("tooltip", true)
+          .style("opacity", 0)
+          .style("display", "none");
+      else
+        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
+          if (i === number - 1) return this;
+        });
     },
     drawGraph() {
       this.ifGroup = false;
@@ -186,8 +192,8 @@ export default {
       if (this.tooltip2) {
         this.tip2Hidden();
       }
-
-      this.tooltip2 = this.createTooltip();
+      this.tooltip1 = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
       this.multipleSearchValue.nodesList.forEach(function (state) {
         if (state.type === -1) that.ifGroup = true;
         else if (state.type === 0) that.sonNum++;

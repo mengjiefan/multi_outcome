@@ -565,7 +565,6 @@ export default {
           .style("display", "none");
       else
         return d3.selectAll(".tooltip").select(function (d, i, nodes) {
-          console.log(this, d, i, nodes);
           if (i === number - 1) return this;
         });
     },
