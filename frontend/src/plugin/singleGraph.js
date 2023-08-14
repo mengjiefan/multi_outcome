@@ -3,16 +3,16 @@ import * as dagreD3 from "dagre-d3";
 import dagre from "dagre-d3/lib/dagre";
 import { ref } from 'vue'
 const cmap = [
-    "#1f77b4",
-    "#ff7f0e",
-    "#2ca02c",
-    "#d62728",
-    "#9467bd",
-    "#8c564b",
-    "#e377c2",
-    "#7f7f7f",
-    "#bcbd22",
-    "#17becf",
+    "#FF595E",
+    "#FF924C",
+    "#FFCA3A",
+    "#C5CA30",
+    "#8AC926",
+    "#36949D",
+    "#1982C4",
+    "#4267AC",
+    "#565AA0",
+    "#6A4C93",
 ];
 
 const exist = (links, link) => {
@@ -22,6 +22,15 @@ const exist = (links, link) => {
         else return false;
     })
     return index;
+}
+const getNodeIndex = (id, selections) => {
+    let indexes = [];
+    for (let i = 0; i < selections.length; i++) {
+        let selection = selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+    }
+    return indexes;
 }
 
 const sonGraph = ref(null);
@@ -50,11 +59,11 @@ export default {
         let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
             ranker: "tight-tree",
         });
-        console.log('pos',sonPos)
+        console.log('pos', sonPos)
         // Automatically label each of the nodes
         states.forEach(function (state) {
             let node = {
-                label: state.id,
+                label: '',
                 type: state.type,
             };
             if (node.type === 0) node["index"] = state.index;
@@ -120,15 +129,13 @@ export default {
         // Set some general styles
         g.nodes().forEach(function (v) {
             var node = g.node(v);
-            node.rx = node.ry = 5;
-            node.style = "fill: transparent";
-            if (v === selection.outcome) node.style = "fill: #f77;";
-            else if (node.type < 0) {
-                node.style = "fill:" + cmap[0];
-            }
-            else if (selection.variable.includes(v)) {
-                node.style = "fill: black";
-            }
+            node.rx = node.ry = 20;
+            let indexes = getNodeIndex(v, multipleSearchValue.selections);
+
+            if (v !== selection.outcome && !selection.variable.includes(v)) node.style = "fill: transparent";
+            else if (indexes.length === 1) node.style = "fill:" + cmap[indexes[0]];
+            else
+                node.style = "fill:url(#" + v.replaceAll("_", "") + ")";
         });
         dagre.layout(g);
 
@@ -159,6 +166,20 @@ export default {
             );
             svg.attr("height", g.graph().height * initialScale + 40);
         }
+        g.nodes().forEach(function (v) {
+
+            var node = g.node(v);
+            if (v === selection.outcome || selection.variable.includes(v))
+                inner
+                    .append("text")
+                    .attr("x", node.x - v.length * 2)
+                    .attr("y", node.y - 20)
+                    .style("font-weight", 500)
+                    .style("font-size", 8)
+                    .style("font-family", "Arial")
+                    .style("fill", "black")
+                    .text(v);
+        });
         this.linksList = selection.linksList;
         this.outcome = selection.outcome;
         this.variables = selection.variable;

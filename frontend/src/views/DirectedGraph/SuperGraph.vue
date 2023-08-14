@@ -1,18 +1,33 @@
 <template>
   <div class="super-graph">
-    <div class="drawing-buttons">
-      <el-button @click="saveToTable" type="success" size="small" round
-        >Save to Table</el-button
-      >
-      <el-button
-        @click="trulyDelete()"
-        type="success"
-        round
-        size="small"
-        :disabled="hasNoHidden"
-      >
-        Relayout
-      </el-button>
+    <div class="guide-line">
+      <div class="drawing-buttons">
+        <el-button @click="saveToTable" type="success" size="small" round
+          >Save to Table</el-button
+        >
+        <el-button
+          @click="trulyDelete()"
+          type="success"
+          round
+          size="small"
+          :disabled="hasNoHidden"
+        >
+          Relayout
+        </el-button>
+      </div>
+      <div class="graph-directors">
+        <div
+          class="single-hint"
+          v-for="(child, index) in multipleSearchValue.selections"
+          :key="index"
+        >
+          <div
+            class="color-hint"
+            :style="[{ 'background-color': cmap[index] }]"
+          ></div>
+          <div class="outcome-name">{{ child.outcome }}</div>
+        </div>
+      </div>
     </div>
     <div class="sum-svg">
       <svg v-if="simplePos">
@@ -24,8 +39,7 @@
       aria-hidden="true"
       focusable="false"
       style="width: 0; height: 0; position: absolute"
-    >
-    </svg>
+    ></svg>
   </div>
 </template>
 
@@ -40,19 +54,6 @@ import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
 import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
-
-var cmap = [
-  "#FF595E",
-  "#FF924C",
-  "#FFCA3A",
-  "#C5CA30",
-  "#8AC926",
-  "#36949D",
-  "#1982C4",
-  "#4267AC",
-  "#565AA0",
-  "#6A4C93"
-];
 
 export default {
   name: "DirectedGraph",
@@ -75,6 +76,18 @@ export default {
         nodesList: [],
         linksList: [],
       }),
+      cmap: [
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
     };
   },
   methods: {
@@ -153,7 +166,7 @@ export default {
 
       states.forEach(function (state) {
         let node = {
-          label: state.id,
+          label: "",
           type: state.type,
         };
         if (node.type === 0) node["index"] = state.index;
@@ -215,19 +228,20 @@ export default {
           }
         }
       });
+
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 5;
+        node.rx = node.ry = 20;
         let indexes = that.getNodeIndex(v);
 
-        if (indexes.length === 1) node.style = "fill:" + cmap[indexes[0]];
+        if (indexes.length === 1) node.style = "fill:" + that.cmap[indexes[0]];
         else if (that.simplePos)
           node.style = "fill:url(#" + v.replaceAll("_", "") + ")";
       });
       dagre.layout(g);
 
-      //储存坐标
+      //save positon and redraw, which need to know the direction of edges
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
       if (!that.simplePos) {
@@ -236,10 +250,12 @@ export default {
         setTimeout(() => {
           that.setGraph();
         }, 0);
+        return;
       }
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
+
       if (this.tooltip) {
         this.tipHidden();
       }
@@ -266,7 +282,7 @@ export default {
       inner
         .selectAll("g.node")
         .on("mouseover", (v) => {
-          v.fromElement.setAttribute("id", "hover-node");
+          //v.fromElement.setAttribute("id", "hover-node");
         })
         .on("mouseout", (v) => {
           v.fromElement.setAttribute("id", "");
@@ -287,7 +303,18 @@ export default {
 
         svg.attr("height", g.graph().height * initialScale + 40);
       }
-
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        inner
+          .append("text")
+          .attr("x", node.x - v.length * 2)
+          .attr("y", node.y - 20)
+          .style("font-weight", 500)
+          .style("font-size", 8)
+          .style("font-family", "Arial")
+          .style("fill", "black")
+          .text(v);
+      });
       var onmousepath = svg.selectAll(".edgePath");
       var allpathes = onmousepath.select(".path");
       const _this = this;
@@ -412,9 +439,11 @@ export default {
 
           for (let i = 0; i < indexes.length; i++) {
             let stop = document.createElementNS(
-            "http://www.w3.org/2000/svg","stop");
+              "http://www.w3.org/2000/svg",
+              "stop"
+            );
             stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
-            stop.setAttribute("stop-color", cmap[indexes[i]]);
+            stop.setAttribute("stop-color", that.cmap[indexes[i]]);
             gradient.appendChild(stop);
           }
           gradientSvg.appendChild(gradient);
@@ -685,9 +714,30 @@ export default {
   flex-direction: column;
   flex: 1;
 }
+.guide-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+}
+.graph-directors {
+  display: flex;
+  gap: 12px;
+}
+.single-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.color-hint {
+  height: 16px;
+  width: 16px;
+  border-radius: 16px;
+}
+.outcome-name {
+  font-size: 16px;
+}
 .drawing-buttons {
   height: 10;
-  padding: 16px;
 }
 .sum-svg {
   display: flex;
@@ -698,5 +748,12 @@ export default {
 .sum-svg svg {
   width: 100%;
   height: 100%;
+}
+</style>
+<style >
+.super-graph .label-container:hover {
+  stroke: #ff4365;
+  stroke-width: 2.5px;
+  display: block;
 }
 </style>

@@ -10,7 +10,11 @@
         >
           <div class="one-line-operator">
             <div class="son-title">
-              · {{ multipleSearchValue.selections[index - 1].outcome }}
+              <div
+                class="color-hint"
+                :style="[{ 'background-color': cmap[index-1] }]"
+              ></div>
+              {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
             <div class="drawing-buttons">
               <!--Apply Changes to Super Graph-->
@@ -37,6 +41,12 @@
         </div>
       </div>
     </div>
+    <svg
+      id="gradient-svg"
+      aria-hidden="true"
+      focusable="false"
+      style="width: 0; height: 0; position: absolute"
+    ></svg>
   </div>
 </template>
 
@@ -50,19 +60,6 @@ import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import historyManage from "@/plugin/history";
 import singleGraph from "@/plugin/singleGraph";
-
-var cmap = [
-  "#1f77b4",
-  "#ff7f0e",
-  "#2ca02c",
-  "#d62728",
-  "#9467bd",
-  "#8c564b",
-  "#e377c2",
-  "#7f7f7f",
-  "#bcbd22",
-  "#17becf",
-];
 
 export default {
   name: "DirectedGraph",
@@ -82,6 +79,18 @@ export default {
         nodesList: [],
         linksList: [],
       }),
+      cmap: [
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
     };
   },
   methods: {
@@ -273,6 +282,50 @@ export default {
           }
         });
     },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
+    },
+    setGradient() {
+      let nodes = this.multipleSearchValue.nodesList;
+      let gradientSvg = document.getElementById("gradient-svg");
+      let that = this;
+
+      // Set some general styles
+      nodes.forEach(function (node) {
+        let v = node.id;
+        let indexes = that.getNodeIndex(v);
+
+        v = v.replaceAll("_", "");
+        if (indexes.length !== 1) {
+          let gradient = document.getElementById(v);
+
+          if (gradient) gradientSvg.removeChild(gradient);
+
+          gradient = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "linearGradient"
+          );
+          gradient.setAttribute("id", v);
+
+          for (let i = 0; i < indexes.length; i++) {
+            let stop = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "stop"
+            );
+            stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
+            stop.setAttribute("stop-color", that.cmap[indexes[i]]);
+            gradient.appendChild(stop);
+          }
+          gradientSvg.appendChild(gradient);
+        }
+      });
+    },
     setGraph() {
       if (this.tooltip) {
         this.tipHidden();
@@ -326,10 +379,7 @@ export default {
       let finalPos = JSON.parse(localStorage.getItem("SON_POS"));
       singleGraph.setSingleGraph(
         svg,
-        {
-          linksList: this.multipleSearchValue.linksList,
-          nodesList: this.multipleSearchValue.nodesList,
-        },
+        this.multipleSearchValue,
         selection,
         size,
         this.transform[i],
@@ -577,6 +627,7 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
+    this.setGradient();
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
       this.drawGraph();
@@ -658,6 +709,14 @@ export default {
 .son-title {
   font-size: 16px;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+.color-hint {
+  height: 20px;
+  width: 20px;
+  margin-right: 8px;
+  border-radius: 16px;
 }
 .one-line-operator .drawing-buttons {
   display: flex;
