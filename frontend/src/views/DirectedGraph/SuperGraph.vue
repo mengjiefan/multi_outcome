@@ -19,6 +19,13 @@
         <g />
       </svg>
     </div>
+    <svg
+      id="gradient-svg"
+      aria-hidden="true"
+      focusable="false"
+      style="width: 0; height: 0; position: absolute"
+    >
+    </svg>
   </div>
 </template>
 
@@ -35,16 +42,16 @@ import historyManage from "@/plugin/history";
 import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
 
 var cmap = [
-  "#1f77b4",
-  "#ff7f0e",
-  "#2ca02c",
-  "#d62728",
-  "#9467bd",
-  "#8c564b",
-  "#e377c2",
-  "#7f7f7f",
-  "#bcbd22",
-  "#17becf",
+  "#FF595E",
+  "#FF924C",
+  "#FFCA3A",
+  "#C5CA30",
+  "#8AC926",
+  "#36949D",
+  "#1982C4",
+  "#4267AC",
+  "#565AA0",
+  "#6A4C93"
 ];
 
 export default {
@@ -152,6 +159,7 @@ export default {
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
       });
+      /*
       if (this.ifGroup) {
         console.log("!");
         g.setNode("group", {
@@ -165,7 +173,7 @@ export default {
             g.setParent(state.id, "group");
           }
         });
-      }
+      }*/
       var edges = data.linksList;
       let that = this;
       edges.forEach(function (edge) {
@@ -211,12 +219,11 @@ export default {
       g.nodes().forEach(function (v) {
         var node = g.node(v);
         node.rx = node.ry = 5;
+        let indexes = that.getNodeIndex(v);
 
-        if (node.type == 0) node.style = "fill: #f77;";
-        else if (node.type < 0 || that.sonNum < 2) {
-          node.style = "fill:" + cmap[0];
-        }
-        //else if (node.type > 0) node.style = "fill:" + cmap[node.type % 10];
+        if (indexes.length === 1) node.style = "fill:" + cmap[indexes[0]];
+        else if (that.simplePos)
+          node.style = "fill:url(#" + v.replaceAll("_", "") + ")";
       });
       dagre.layout(g);
 
@@ -346,6 +353,15 @@ export default {
           }
         });
     },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
+    },
     checkDirection(source, target) {
       if (!this.simplePos) return "DOWN";
       let sIndex = this.simplePos.findIndex((node) => {
@@ -371,6 +387,39 @@ export default {
       setTimeout(() => {
         this.setGraph();
       }, 0);
+    },
+    setGradient() {
+      let nodes = this.multipleSearchValue.nodesList;
+      let gradientSvg = document.getElementById("gradient-svg");
+      let that = this;
+
+      // Set some general styles
+      nodes.forEach(function (node) {
+        let v = node.id;
+        let indexes = that.getNodeIndex(v);
+
+        v = v.replaceAll("_", "");
+        if (indexes.length !== 1) {
+          let gradient = document.getElementById(v);
+
+          if (gradient) gradientSvg.removeChild(gradient);
+
+          gradient = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "linearGradient"
+          );
+          gradient.setAttribute("id", v);
+
+          for (let i = 0; i < indexes.length; i++) {
+            let stop = document.createElementNS(
+            "http://www.w3.org/2000/svg","stop");
+            stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
+            stop.setAttribute("stop-color", cmap[indexes[i]]);
+            gradient.appendChild(stop);
+          }
+          gradientSvg.appendChild(gradient);
+        }
+      });
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
@@ -616,6 +665,7 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
+    this.setGradient();
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
       let hiddenOrReverse = this.multipleSearchValue.linksList.filter(

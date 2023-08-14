@@ -60,6 +60,7 @@ export default {
             if (node.type === 0) node["index"] = state.index;
             g.setNode(state.id, node);
         });
+        /*
         g.setNode("group", {
             label: "",
             clusterLabelPos: "bottom",
@@ -71,6 +72,7 @@ export default {
                 g.setParent(state.id, "group");
             }
         });
+        */
         var edges = data.linksList;
         let that = this;
         edges.forEach(function (edge) {
