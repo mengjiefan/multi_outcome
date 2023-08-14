@@ -509,7 +509,9 @@ export default {
   flex-wrap: wrap;
 }
 .paper-svg {
-  padding: 1.5%;
+  padding: 1%;
+  margin: .5%;
+  border: 1px solid rgba(151, 151, 151, 0.49);
   flex: 1 1/3;
   min-width: 30%;
 }

@@ -262,8 +262,8 @@ export default {
       if (this.tooltip2) {
         this.tip2Hidden();
       }
-      this.tooltip = this.createTooltip();
-      this.tooltip2 = this.createTooltip();
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
       // Set up zoom support
 
       var zoom = d3.zoom().on("zoom", function (event) {
@@ -620,13 +620,21 @@ export default {
       }
     },
     // create tooltip but not show it
-    createTooltip() {
-      return d3
-        .select("body")
-        .append("div")
-        .classed("tooltip", true)
-        .style("opacity", 0)
-        .style("display", "none");
+    createTooltip(number) {
+      let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips);
+      if (tooltips.length < number)
+        return d3
+          .select("body")
+          .append("div")
+          .classed("tooltip", true)
+          .style("opacity", 0)
+          .style("display", "none");
+      else
+        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
+          console.log(this, d, i, nodes);
+          if (i === number - 1) return this;
+        });
     },
     // display hover-line tooltip
     tipVisible(textContent, event) {

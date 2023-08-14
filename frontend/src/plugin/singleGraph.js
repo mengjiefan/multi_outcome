@@ -238,7 +238,7 @@ export default {
             .attr("orient", "auto")
             .append("path")
             .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
-            .style("stroke", cmap[0])
+            .style("stroke", "#1f77b4")
             .style("opacity", "1");
 
         svg
@@ -259,7 +259,7 @@ export default {
             .append("path")
             .attr("transform", "rotate(180)")
             .attr("d", "M0,-5L10,0L0,5L10,0L0, -4")
-            .style("stroke", cmap[0])
+            .style("stroke", "#1f77b4")
             .style("opacity", "1");
     },
 

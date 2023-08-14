@@ -333,8 +333,8 @@ export default {
       if (this.tooltip2) {
         this.tip2Hidden();
       }
-      this.tooltip = this.createTooltip();
-      this.tooltip2 = this.createTooltip();
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
 
       if (this.sonNum > 1) {
         this.drawSonGraphs();
@@ -553,13 +553,21 @@ export default {
     },
 
     // create tooltip but not show it
-    createTooltip() {
-      return d3
-        .select("body")
-        .append("div")
-        .classed("tooltip", true)
-        .style("opacity", 0)
-        .style("display", "none");
+    createTooltip(number) {
+      let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips);
+      if (tooltips.length < number)
+        return d3
+          .select("body")
+          .append("div")
+          .classed("tooltip", true)
+          .style("opacity", 0)
+          .style("display", "none");
+      else
+        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
+          console.log(this, d, i, nodes);
+          if (i === number - 1) return this;
+        });
     },
     // display hover-line tooltip
     tipVisible(textContent, event) {
@@ -691,9 +699,11 @@ export default {
   flex-wrap: wrap;
 }
 .paper-svg {
-  padding: 1.5%;
+  padding: 1%;
+  margin: .5%;
   flex: 1 1/3;
   min-width: 30%;
+  border: 1px solid rgba(151, 151, 151, 0.49);
 }
 .son-svg div svg {
   width: 100%;

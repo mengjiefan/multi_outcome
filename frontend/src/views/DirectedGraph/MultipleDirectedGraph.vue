@@ -48,6 +48,7 @@ export default {
     },
     routeTo(name) {
       this.name = name;
+      if(this.$route.name !== this.name)
       this.$router.push({
         name,
       });

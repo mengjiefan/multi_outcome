@@ -4,7 +4,18 @@ import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
 import { g } from "jointjs";
-
+const cmap = [
+    "#FF595E",
+    "#FF924C",
+    "#FFCA3A",
+    "#C5CA30",
+    "#8AC926",
+    "#36949D",
+    "#1982C4",
+    "#4267AC",
+    "#565AA0",
+    "#6A4C93",
+];
 let xGap = 40;
 let yGap = 45;
 const findLink = (links, edge) => {
@@ -104,7 +115,8 @@ export const removeHighLight = (elementView) => {
     );
     highlighter.remove();
 }
-export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
+export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) => {
+    let name = "paper" + (sonindex + 1);
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
         if (link.reverse) return {
@@ -132,20 +144,22 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     });
     let outRect = new joint.shapes.standard.Rectangle();
     outRect.position(
-        countXPos(nodesList[0].x) - nodesList[0].id.length * 5,
+        countXPos(nodesList[0].x),
         countYPos(nodesList[0].y) - 14
     );
-    outRect.resize(nodesList[0].id.length * 10, 28);
+    outRect.resize(24, 24);
     outRect.attr({
         body: {
-            fill: "#f77",
+            fill: cmap[sonindex],
             strokeWidth: 0,
-            rx: 5,
-            ry: 5,
+            rx: 20,
+            ry: 20,
         },
         label: {
             text: nodesList[0].id,
-            fill: "white",
+            fill: "black",
+            fontSize: 8,
+            y: 0
         },
         title: nodesList[0].id
     });
@@ -154,21 +168,24 @@ export const drawSonCharts = (dom, nodesList, links, gap, name, linksPos) => {
     for (let nodeI = 1; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(nodesList[nodeI].id.length * 10, 28);
+        faRect.resize(24, 24);
         faRect.position(
-            countXPos(nodesList[nodeI].x) - nodesList[nodeI].id.length * 5,
+            countXPos(nodesList[nodeI].x) ,
             countYPos(nodesList[nodeI].y) - 14
         );
+        let indexes = nodesList[nodeI].indexes;
         faRect.attr({
             body: {
-                fill: nodesList[nodeI].type === -1 ? "#1f77b4" : "black",
+                fill: indexes.length===1?cmap[sonindex]:"url(#" + nodesList[nodeI].id.replaceAll("_", "") + ")",
                 strokeWidth: 0,
-                rx: 5,
-                ry: 5,
+                rx: 20,
+                ry: 20,
             },
             label: {
                 text: nodesList[nodeI].id,
-                fill: "white",
+                fill: "black",
+                y: 0,
+                fontSize: 8,
             },
             title: nodesList[nodeI].id
         });
