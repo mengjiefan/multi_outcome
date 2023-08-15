@@ -20,7 +20,6 @@ const evenValue = (values, value) => {
         let cha = value - values[values.length - 1];
         if (values.length !== 1)
             cha = cha / (values[1] - values[0]);
-
         return values.length - 1 + cha;
     }
     let index = values.length - 1;
@@ -47,16 +46,59 @@ export const countSonPos = (son, linksList) => {
             traversal(y, node.y)
     })
     let linksPos = [];
+    let xGroups = [];//xGroups[i] cotain nodes whose x < i
+    let yGroups = [];
+    for (let i = 0; i <= x.length; i++)
+        xGroups.push([]);
+    for (let i = 0; i <= y.length; i++) {
+        yGroups.push([])
+    }
+    linksList.forEach(link => {
+        let vertice = findLink(verticePos, link);
+        vertice.points.forEach(pos => {
+            let xIndex = Math.ceil(evenValue(x, pos.x));
+            let yIndex = Math.ceil(evenValue(y, pos.y));
+            if (xIndex < 0)
+                traversal(xGroups[0], pos.x)
+            else if (xIndex > x.length) {
+                traversal(xGroups[x.length], pos.x)
+            }
+            else
+                traversal(xGroups[xIndex], pos.x);
+            if (xIndex < 0)
+                traversal(yGroups[0], pos.y)
+            else if (yIndex > y.length)
+                traversal(yGroups[y.length], pos.y);
+            else
+                traversal(yGroups[yIndex], pos.y)
+
+        })
+    })
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
         let points = [];
+        console.log(link.source, link.target)
         vertice.points.forEach(pos => {
             let point = {
                 x: pos.x,
                 y: pos.y
             }
-            point.x = evenValue(x, pos.x);
-            point.y = evenValue(y, pos.y);
+            let xIndex = Math.ceil(evenValue(x, pos.x));
+            if (xIndex < 0) xIndex = 0;
+            if (xIndex > x.length) xIndex = x.length;
+            if (x.includes(pos.x)) {
+                point.x = x.indexOf(pos.x)
+            } else
+                point.x = xIndex - 1 + 1 / (xGroups[xIndex].length + 1) * (xGroups[xIndex].indexOf(pos.x) + 1)
+
+            let yIndex = Math.ceil(evenValue(y, pos.y));
+            if (yIndex < 0) yIndex = 0;
+            if (yIndex > y.length) yIndex = y.length;
+            if (y.includes(pos.y))
+                point.y = y.indexOf(pos.y);
+            else
+                point.y = yIndex - 1 + 1 / (yGroups[yIndex].length + 1) * (yGroups[yIndex].indexOf(pos.y) + 1)
+
             points.push(point);
         })
         linksPos.push({
@@ -73,7 +115,7 @@ export const countSonPos = (son, linksList) => {
             id: pos.id
         }
     });
-    console.log(x, y)
+    console.log(x, 'optimal pos')
     let gap = {
         xGap: 50,
         yGap: 50,

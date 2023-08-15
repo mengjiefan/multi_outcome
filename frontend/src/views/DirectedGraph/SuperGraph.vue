@@ -308,7 +308,7 @@ export default {
         inner
           .append("text")
           .attr("x", node.x - v.length * 2)
-          .attr("y", node.y - 20)
+          .attr("y", node.y)
           .style("font-weight", 500)
           .style("font-size", 8)
           .style("font-family", "Arial")

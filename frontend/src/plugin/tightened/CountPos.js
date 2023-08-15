@@ -80,6 +80,7 @@ export const countPos = (g, childNodes) => {
     })
     return finalPos;
 }
+
 const evenValue = (values, value) => {
     //求value在values中的坐标
     if (values.length === 0 || !values) return value;
@@ -87,6 +88,8 @@ const evenValue = (values, value) => {
         let cha = (values[0] - value);
         if (values.length !== 1)
             cha = cha / (values[1] - values[0]);
+        while (cha > 1)
+            cha = cha / 2;
 
         return 0 - cha;
 
@@ -94,7 +97,8 @@ const evenValue = (values, value) => {
         let cha = value - values[values.length - 1];
         if (values.length !== 1)
             cha = cha / (values[1] - values[0]);
-
+        while (cha > 1)
+            cha = cha / 2;
         return values.length - 1 + cha;
     }
     let index = values.length - 1;
@@ -254,11 +258,12 @@ export const countSonPos = (son, commonPos, linksList) => {
         xGap: 50,
         yGap: 50,
     }
+    console.log(lX.length, maxPosX - minPosX, rX.length, 'tightened pos')
     if (maxPosX + rX.length > 0) {
-        gap.xGap = 1500 / (maxPosX + rX.length);
+        gap.xGap = 1500 / (maxPosX - minPosX + rX.length + lX.length);
     }
     if (maxPosY + rY.length > 0) {
-        gap.yGap = 920 / (maxPosY + rX.length);
+        gap.yGap = 920 / (maxPosY - minPosY + rY.length + lY.length);
     }
     return {
         gap: gap,

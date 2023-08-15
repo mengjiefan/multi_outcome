@@ -144,10 +144,10 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
     });
     let outRect = new joint.shapes.standard.Rectangle();
     outRect.position(
-        countXPos(nodesList[0].x),
-        countYPos(nodesList[0].y) - 14
+        countXPos(nodesList[0].x) - 16,
+        countYPos(nodesList[0].y) - 16
     );
-    outRect.resize(24, 24);
+    outRect.resize(32, 32);
     outRect.attr({
         body: {
             fill: cmap[sonindex],
@@ -168,15 +168,15 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
     for (let nodeI = 1; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(24, 24);
+        faRect.resize(32, 32);
         faRect.position(
-            countXPos(nodesList[nodeI].x) ,
-            countYPos(nodesList[nodeI].y) - 14
+            countXPos(nodesList[nodeI].x) - 16,
+            countYPos(nodesList[nodeI].y) - 16
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
             body: {
-                fill: indexes.length===1?cmap[sonindex]:"url(#" + nodesList[nodeI].id.replaceAll("_", "") + ")",
+                fill: indexes.length === 1 ? cmap[sonindex] : "url(#" + nodesList[nodeI].id.replaceAll("_", "") + ")",
                 strokeWidth: 0,
                 rx: 20,
                 ry: 20,
