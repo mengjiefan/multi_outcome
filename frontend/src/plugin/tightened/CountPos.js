@@ -207,6 +207,47 @@ export const countSonPos = (son, commonPos, linksList) => {
         lY.push(minPosY);
     }
 
+    let lxGroups = [];//xGroups[i] cotain nodes whose x < i
+    let lyGroups = [];
+    let rxGroups = [];
+    let ryGroups = [];
+    for (let i = 0; i <= lX.length; i++)
+        lxGroups.push([]);
+    for (let i = 0; i <= lY.length; i++)
+        lyGroups.push([])
+    for (let i = 0; i <= rX.length; i++)
+        rxGroups.push([]);
+    for (let i = 0; i <= rY.length; i++)
+        ryGroups.push([])
+    linksList.forEach(link => {
+        let vertice = findLink(verticePos, link);
+        vertice.points.forEach(pos => {
+            if (pos.x < minPosX && lX.length > 1) {
+                let xIndex = Math.ceil(evenValue(lX, pos.x));
+                if (xIndex < 0) xIndex = 0;
+                else if (xIndex > lX.length) xIndex = lX.length;
+                traversal(lxGroups[xIndex], pos.x)
+            } else if (pos.x > maxPosX && rX.length > 1) {
+                let xIndex = Math.ceil(evenValue(rX, pos.x));
+                if (xIndex < 0) xIndex = 0;
+                else if (xIndex > rX.length) xIndex = rX.length;
+                traversal(rxGroups[xIndex], pos.x)
+            }
+
+            if (pos.y < minPosY && lY.length > 1) {
+                let yIndex = Math.ceil(evenValue(lY, pos.y));
+                if (yIndex < 0) yIndex = 0;
+                else if (yIndex > lY.length) yIndex = lY.length;
+                traversal(lyGroups[yIndex], pos.y)
+            } else if (pos.y > maxPosY && rY.length > 1) {
+                let yIndex = Math.ceil(evenValue(rY, pos.y));
+                if (yIndex < 0) yIndex = 0;
+                else if (yIndex > rY.length) yIndex = rY.length;
+                traversal(ryGroups[yIndex], pos.y)
+            }
+        })
+    }
+    );
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
         let points = [];
@@ -216,14 +257,38 @@ export const countSonPos = (son, commonPos, linksList) => {
                 y: pos.y
             }
             if (pos.x < minPosX && lX.length > 1) {
-                point.x = minX + evenValue(lX, pos.x);
+                let xIndex = Math.ceil(evenValue(lX, pos.x));
+                if (xIndex < 0) xIndex = 0;
+                if (xIndex > lX.length) xIndex = lX.length;
+                if (lX.includes(pos.x)) {
+                    point.x = minX + lX.indexOf(pos.x)
+                } else
+                    point.x = minX + xIndex - 1 + 1 / (lxGroups[xIndex].length + 1) * (lxGroups[xIndex].indexOf(pos.x) + 1)
             } else if (pos.x > maxPosX && rX.length > 1) {
-                point.x = evenValue(rX, pos.x) + maxPosX;
+                let xIndex = Math.ceil(evenValue(rX, pos.x));
+                if (xIndex < 0) xIndex = 0;
+                if (xIndex > rX.length) xIndex = rX.length;
+                if (rX.includes(pos.x)) {
+                    point.x = maxPosX + rX.indexOf(pos.x)
+                } else
+                    point.x = maxPosX + xIndex - 1 + 1 / (rxGroups[xIndex].length + 1) * (rxGroups[xIndex].indexOf(pos.x) + 1)
             }
             if (pos.y < minPosY && lY.length > 1) {
-                point.y = minY + evenValue(lY, pos.y);
+                let yIndex = Math.ceil(evenValue(lY, pos.y));
+                if (yIndex < 0) yIndex = 0;
+                if (yIndex > lY.length) yIndex = lY.length;
+                if (lY.includes(pos.y)) {
+                    point.y = minY + lY.indexOf(pos.y)
+                } else
+                    point.y = minY + yIndex - 1 + 1 / (lyGroups[yIndex].length + 1) * (lyGroups[yIndex].indexOf(pos.y) + 1)
             } else if (pos.y > maxPosY && rY.length > 1) {
-                point.y = evenValue(rY, pos.y) + maxPosY;
+                let yIndex = Math.ceil(evenValue(rY, pos.y));
+                if (yIndex < 0) yIndex = 0;
+                if (yIndex > rY.length) yIndex = rY.length;
+                if (rY.includes(pos.y)) {
+                    point.y = maxPosY + rY.indexOf(pos.y)
+                } else
+                    point.y = maxPosY + yIndex - 1 + 1 / (ryGroups[yIndex].length + 1) * (ryGroups[yIndex].indexOf(pos.y) + 1)
             }
             points.push(point);
         })
