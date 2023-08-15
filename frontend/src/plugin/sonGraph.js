@@ -215,20 +215,9 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
         })
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        if (nodesList[sindex].id.includes('fra') && nodesList[tindex].id.includes('base_by')) {
-            path.vertices(vertices);
-        }
         path.vertices(vertices);
         if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
             path.connector("rounded");
-        } else {
-            /*
-            path.router('manhattan', {
-                maxAllowedDirectionChange: 20,
-                isPointObstacle: function (point) {
-                }
-            });
-            path.connector("rounded");*/
         }
     })
     paper.on('link:mouseover', function (linkView) {

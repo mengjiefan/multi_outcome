@@ -306,6 +306,7 @@ export default {
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         });
+        console.log(linkView);
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
         let width = parseFloat(attributes.line.strokeWidth);
@@ -510,6 +511,10 @@ export default {
         this.saveData();
       }
     },
+    checkDirection(source, target) {
+      if (source.y <= target.y) return "DOWN";
+      else return "UP";
+    },
     addLink(nodesList, link) {
       var path = new joint.shapes.standard.Link({});
       let sIndex = nodesList.findIndex((node) => {
@@ -527,6 +532,14 @@ export default {
           line: {
             strokeWidth: -link.value * 10 + "",
             strokeDasharray: "4 4",
+            targetMarker: {
+              // minute hand
+              type: "path",
+              stroke: "black",
+              "stroke-width": 2,
+              fill: "transparent",
+              d: "M 10 -5 0 0 10 5 ",
+            },
           },
         });
       else {
@@ -534,12 +547,27 @@ export default {
           id: "(" + link.source + ", " + link.target + ")",
           line: {
             strokeWidth: link.value * 10 + "",
+            targetMarker: {
+              // minute hand
+              type: "path",
+              stroke: "black",
+              "stroke-width": 2,
+              fill: "transparent",
+              d: "M 10 -5 0 0 10 5 ",
+            },
           },
         });
       }
+      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      path.vertices(vertices);
       path.source(nodesList[sIndex].node);
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);
+
+  
+      if (this.checkDirection(nodesList[sIndex], nodesList[tIndex]) === "UP") {
+        path.connector("rounded");
+      }
     },
     getNodeIndex(id) {
       let indexes = [];
