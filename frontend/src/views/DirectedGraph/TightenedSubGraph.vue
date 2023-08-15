@@ -249,6 +249,7 @@ export default {
         index,
         this.sonGraphs[index].links
       );
+      
       if (!this.papers[index]) {
         this.papers.push(paper);
       } else this.papers[index] = paper;
