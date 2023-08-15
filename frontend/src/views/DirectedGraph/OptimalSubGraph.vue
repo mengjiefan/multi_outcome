@@ -13,7 +13,8 @@
               <div
                 class="color-hint"
                 :style="[{ 'background-color': cmap[index - 1] }]"
-              ></div>{{ multipleSearchValue.selections[index - 1].outcome }}
+              ></div>
+              {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
             <div class="drawing-buttons">
               <!--Apply Changes to Super Graph-->
@@ -170,13 +171,19 @@ export default {
         },
       });
     },
-    createTooltip() {
-      return d3
-        .select("body")
-        .append("div")
-        .classed("tooltip", true)
-        .style("opacity", 0)
-        .style("display", "none");
+    createTooltip(number) {
+      let tooltips = d3.selectAll(".tooltip")._groups[0];
+      if (tooltips.length < number)
+        return d3
+          .select("body")
+          .append("div")
+          .classed("tooltip", true)
+          .style("opacity", 0)
+          .style("display", "none");
+      else
+        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
+          if (i === number - 1) return this;
+        });
     },
     drawGraph() {
       this.ifGroup = false;
@@ -185,8 +192,8 @@ export default {
       if (this.tooltip2) {
         this.tip2Hidden();
       }
-
-      this.tooltip2 = this.createTooltip();
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
       this.multipleSearchValue.nodesList.forEach(function (state) {
         if (state.type === -1) that.ifGroup = true;
         else if (state.type === 0) that.sonNum++;
@@ -202,7 +209,10 @@ export default {
         yGap: 80,
       };
       for (let i = 1; i <= this.sonNum; i++) {
-        let ans = countSonPos(this.finalPos[i], this.multipleSearchValue.selections[i - 1].linksList);
+        let ans = countSonPos(
+          this.finalPos[i],
+          this.multipleSearchValue.selections[i - 1].linksList
+        );
         this.sonGraphs.push({
           nodes: ans.sonPos,
           links: ans.linksPos,
@@ -286,15 +296,79 @@ export default {
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
     },
+    tipVisible(textContent, event) {
+      this.tip2Hidden();
+      document.removeEventListener("click", this.listener3);
+      this.tooltip
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip
+        .html(
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
+        )
+        .style("left", `${event.pageX + 15}px`)
+        .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
+    },
+    tipHidden() {
+      this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
 
-      paper.on("link:mouseenter", function (linkView) {
+      paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
+        linkView.model.attr("line/targetMarker", {
+          type: "path",
+          stroke: "#1f77b4",
+          "stroke-width": 2,
+          fill: "transparent",
+          d: "M 10 -5 0 0 10 5 ",
+        });
+        let attributes = linkView.model.attributes.attrs;
+        let router = attributes.id;
+        let width = parseFloat(attributes.line.strokeWidth);
+        width = (width / 10).toFixed(2);
+        if (attributes.line.strokeDasharray) width = 0 - width;
+        if (!_this.tip2Show)
+          _this.tipVisible(router + ": " + width, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
       });
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
+        linkView.model.attr("line/targetMarker", {
+          type: "path",
+          stroke: "black",
+          "stroke-width": 2,
+          fill: "transparent",
+          d: "M 10 -5 0 0 10 5 ",
+        });
+        _this.tipHidden();
       });
       paper.on("link:pointerclick", function (linkView, d) {
         let router = linkView.model.attributes.attrs.id;
@@ -580,7 +654,7 @@ export default {
 }
 .paper-svg {
   padding: 1%;
-  margin: .5%;
+  margin: 0.5%;
   border: 1px solid rgba(151, 151, 151, 0.49);
   flex: 1 1/3;
   min-width: 30%;

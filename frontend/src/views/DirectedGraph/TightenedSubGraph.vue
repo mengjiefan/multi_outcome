@@ -173,6 +173,7 @@ export default {
     },
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips.length, number, "tooltip");
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -192,7 +193,7 @@ export default {
       if (this.tooltip2) {
         this.tip2Hidden();
       }
-      this.tooltip1 = this.createTooltip(1);
+      this.tooltip = this.createTooltip(1);
       this.tooltip2 = this.createTooltip(2);
       this.multipleSearchValue.nodesList.forEach(function (state) {
         if (state.type === -1) that.ifGroup = true;
@@ -253,15 +254,80 @@ export default {
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
     },
+    tipVisible(textContent, event) {
+      this.tip2Hidden();
+      document.removeEventListener("click", this.listener3);
+      this.tooltip
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip
+        .html(
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
+        )
+        .style("left", `${event.pageX + 15}px`)
+        .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
+    },
+    tipHidden() {
+      this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
 
-      paper.on("link:mouseenter", function (linkView) {
+      paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
+        linkView.model.attr("line/targetMarker", {
+          type: "path",
+          stroke: "#1f77b4",
+          "stroke-width": 2,
+          fill: "transparent",
+          d: "M 10 -5 0 0 10 5 ",
+        });
+        let attributes = linkView.model.attributes.attrs;
+        let router = attributes.id;
+        let width = parseFloat(attributes.line.strokeWidth);
+        width = (width / 10).toFixed(2);
+        if (attributes.line.strokeDasharray) width = 0 - width;
+        if (!_this.tip2Show)
+          _this.tipVisible(router + ": " + width, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
       });
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
+        linkView.model.attr("line/targetMarker", {
+          type: "path",
+          stroke: "black",
+          "stroke-width": 2,
+          fill: "transparent",
+          d: "M 10 -5 0 0 10 5 ",
+        });
+
+        _this.tipHidden();
       });
       paper.on("link:pointerclick", function (linkView, d) {
         let router = linkView.model.attributes.attrs.id;

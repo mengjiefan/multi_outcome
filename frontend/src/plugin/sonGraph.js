@@ -35,37 +35,7 @@ const countYPos = (y) => {
     let start = 20;
     return start + y * yGap;
 };
-const tooltip = ref(null);
 
-const tipVisible = (textContent, event) => {
-    tooltip.value
-        .transition()
-        .duration(0)
-        .style("opacity", 1)
-        .style("display", "block");
-    tooltip.value
-        .html(textContent)
-        .style("left", `${event.pageX}px`)
-        .style("top", `${event.pageY}px`);
-};
-const tipHidden = () => {
-    tooltip.value
-        .transition()
-        .duration(100)
-        .style("opacity", 0)
-        .style("display", "none");
-}
-const createTooltip = () => {
-    return d3
-        .select("body")
-        .append("div")
-        .classed("tooltip", true)
-        .style("opacity", 0)
-        .style("display", "none")
-        .style("background", "rgba(0, 0, 0, 0.85)")
-        .style("color", "white")
-        .style("padding", "4px 16px 4px 16px");
-};
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
     let svgZoom = svgPanZoom("#" + name + " svg", {
@@ -129,7 +99,6 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
     })
     xGap = gap.xGap;
     yGap = gap.yGap;
-    tooltip.value = createTooltip();
     let graph = new joint.dia.Graph({});
 
     let paper = new joint.dia.Paper({
