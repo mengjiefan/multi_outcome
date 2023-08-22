@@ -348,6 +348,7 @@ export default {
         }, 0);
       });
       paper.on("element:mouseover", function (elementView, evt) {
+        if (elementView.model.attributes.type === "standard.Rectangle")
         _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {

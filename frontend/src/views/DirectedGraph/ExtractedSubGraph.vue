@@ -12,7 +12,7 @@
             <div class="son-title">
               <div
                 class="color-hint"
-                :style="[{ 'background-color': cmap[index-1] }]"
+                :style="[{ 'background-color': cmap[index - 1] }]"
               ></div>
               {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
@@ -35,46 +35,39 @@
               >
             </div>
           </div>
-          <svg>
-            <g />
-          </svg>
+          <div :id="'paper' + index" class="svg-content"></div>
         </div>
       </div>
     </div>
-    <svg
-      id="gradient-svg"
-      aria-hidden="true"
-      focusable="false"
-      style="width: 0; height: 0; position: absolute"
-    ></svg>
   </div>
 </template>
-
-<script>
+  <script>
 import * as d3 from "d3";
-import * as dagreD3 from "dagre-d3";
-import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
+import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
+import { drawExtractedGraph } from "@/plugin/superGraph";
+import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import singleGraph from "@/plugin/singleGraph";
+import { countSonPos } from "@/plugin/extracted/CountPos";
 
 export default {
-  name: "DirectedGraph",
-  setup() {
-    return {
-      transform: ref([]),
-    };
-  },
   data() {
     return {
+      papers: ref([]),
+      paper: ref(),
+      sonGraphs: ref([]),
+      finalPos: ref(),
       ifGroup: ref(false),
+      loadingInstance: ref(null),
+      countingGraph: ref(false),
       tooltip: null,
       tooltip2: null,
-      tip2Show: ref(false),
       sonNum: ref(0),
+      deleteLinkView: ref(),
+      tip2Show: ref(false),
+      transform: ref([]),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -94,18 +87,6 @@ export default {
     };
   },
   methods: {
-    saveToTable() {
-      localStorage.setItem(
-        "GET_SAVE_DATA",
-        JSON.stringify(this.multipleSearchValue)
-      );
-      this.$router.push({
-        path: this.$route.path,
-        query: {
-          mode: "save",
-        },
-      });
-    },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -180,257 +161,232 @@ export default {
         },
       });
     },
-    hoverAll(id) {
-      d3.selectAll("g.node").each(function (v) {
-        if (v === id) {
-          let rect = this.children[0];
-          if (!rect.getAttribute("style").includes("transparent")) {
-            rect.setAttribute("stroke", "#FF4365");
-            rect.setAttribute("stroke-width", "2.5px");
-          }
-        }
-      });
-    },
-    removeAll(id) {
-      d3.selectAll("g.node").each(function (v) {
-        if (v === id) {
-          let rect = this.children[0];
-          rect.setAttribute("stroke", null);
-          rect.setAttribute("stroke-width", "0px");
-        }
-      });
-    },
-    setSonGraph(i) {
-      const _this = this;
-      let selection = this.multipleSearchValue.selections[i];
-      let svg = d3.select(".paper" + (i + 1)).select("svg");
-      let inner = svg.select("g");
-      inner
-        .selectAll("g.node")
-        .on("mouseover", (v, id) => {
-          if (
-            (selection.variable.includes(id) || selection.outcome === id) &&
-            v.fromElement.__data__ !== "group"
-          ) {
-            _this.hoverAll(id);
-          }
-        })
-        .on("mouseout", (v, id) => {
-          _this.removeAll(id);
+    createTooltip(number) {
+      let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips.length, number, "tooltip");
+      if (tooltips.length < number)
+        return d3
+          .select("body")
+          .append("div")
+          .classed("tooltip", true)
+          .style("opacity", 0)
+          .style("display", "none");
+      else
+        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
+          if (i === number - 1) return this;
         });
-      svg
-        .selectAll(".edgePath")
-        .select(".path")
-        .on("mouseover", function (d, id) {
-          if (d3.select(this).style("stroke") !== "transparent") {
-            let router = "";
-            if (!_this.isSonReverse(i, id)) {
-              router = "(" + id.v + ", " + id.w + ")";
-              d3.select(this).style("marker-end", "url(#activeE)"); //Added
-            } else {
-              router = "(" + id.w + ", " + id.v + ")";
-              d3.select(this).style("marker-start", "url(#activeS)"); //Added
-            }
-            d3.select(this).style("stroke", "#1f77b4");
-
-            let width = d3.select(this).style("stroke-width");
-            let dash = d3.select(this).style("stroke-dasharray");
-            width.slice(width.length - 2, width.length);
-            if (dash.includes("4")) {
-              width = "-" + width;
-            }
-            if (!_this.tip2Show)
-              _this.tipVisible(
-                router + ": " + (parseFloat(width) / 10).toFixed(2),
-                {
-                  pageX: d.pageX,
-                  pageY: d.pageY,
-                }
-              );
-          }
-        })
-        .on("mouseout", function (d, id) {
-          if (d3.select(this).style("stroke") !== "transparent") {
-            d3.select(this).style("stroke", "black");
-            if (!_this.isSonReverse(i, id)) {
-              d3.select(this).style("marker-end", "url(#normale)"); //Added
-            } else {
-              d3.select(this).style("marker-start", "url(#normals)"); //Added
-            }
-          }
-          _this.tipHidden();
-        })
-        .on("click", function (d, id) {
-          if (d3.select(this).style("stroke") !== "transparent") {
-            let router = "";
-            if (!_this.isSonReverse(i, id)) {
-              router = "(" + id.v + ", " + id.w + ")";
-            } else {
-              router = "(" + id.w + ", " + id.v + ")";
-            }
-            let hintHtml =
-              "<div class='operate-header'><div class='hint-list'>" +
-              selection.outcome +
-              "</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>" +
-              router +
-              "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
-            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-            setTimeout(() => {
-              document.addEventListener("click", _this.listener3);
-            }, 0);
-          }
-        });
-    },
-    getNodeIndex(id) {
-      let indexes = [];
-      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        if (selection.outcome === id) indexes.push(i);
-        else if (selection.variable.includes(id)) indexes.push(i);
-      }
-      return indexes;
-    },
-    setGradient() {
-      let nodes = this.multipleSearchValue.nodesList;
-      let gradientSvg = document.getElementById("gradient-svg");
-      let that = this;
-
-      // Set some general styles
-      nodes.forEach(function (node) {
-        let v = node.id;
-        let indexes = that.getNodeIndex(v);
-
-        v = v.replaceAll("_", "");
-        if (indexes.length !== 1) {
-          let gradient = document.getElementById(v);
-
-          if (gradient) gradientSvg.removeChild(gradient);
-
-          gradient = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "linearGradient"
-          );
-          gradient.setAttribute("id", v);
-
-          for (let i = 0; i < indexes.length; i++) {
-            let stop = document.createElementNS(
-              "http://www.w3.org/2000/svg",
-              "stop"
-            );
-            stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
-            stop.setAttribute("stop-color", that.cmap[indexes[i]]);
-            gradient.appendChild(stop);
-          }
-          gradientSvg.appendChild(gradient);
-        }
-      });
-    },
-    setGraph() {
-      if (this.tooltip) {
-        this.tipHidden();
-      }
-      if (this.tooltip2) {
-        this.tip2Hidden();
-      }
-      this.tooltip = this.createTooltip(1);
-      this.tooltip2 = this.createTooltip(2);
-
-      if (this.sonNum > 1) {
-        this.drawSonGraphs();
-      }
     },
     drawGraph() {
       this.ifGroup = false;
       let that = this;
       this.sonNum = 0;
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
       this.multipleSearchValue.nodesList.forEach(function (state) {
         if (state.type === -1) that.ifGroup = true;
         else if (state.type === 0) that.sonNum++;
       });
       setTimeout(() => {
-        this.setGraph();
+        this.drawSonGraphs();
       }, 0);
+    },
+    drawSonGraphs() {
+      this.sonGraphs = [];
+      for (let i = 0; i < this.sonNum; i++) {
+        let ans = countSonPos(
+          this.finalPos,
+          this.multipleSearchValue.selections[i]
+        );
+        this.sonGraphs.push(ans);
+      }
+      for (let i = 0; i < this.sonNum; i++) {
+        this.drawSonGraph(i);
+      }
+    },
+    drawSonGraph(index) {
+      let dom = document.getElementById("paper" + (index + 1));
+
+      let minW = 150000;
+      let maxW = 0;
+      let minH = 15000;
+      let maxH = 0;
+      this.sonGraphs[index].nodesList.forEach((node) => {
+        if (node.x > maxW) maxW = node.x;
+        if (node.x < minW) minW = node.x;
+        if (node.y > maxH) maxH = node.y;
+        if (node.y < minH) minH = node.y;
+      });
+      this.sonGraphs[index].linksList.forEach((link) => {
+        link.points.forEach((node) => {
+          if (node.x > maxW) maxW = node.x;
+          if (node.x < minW) minW = node.x;
+          if (node.y > maxH) maxH = node.y;
+          if (node.y < minH) minH = node.y;
+        });
+      });
+      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
+      if ((dom.clientHeight - 32) / (maxH - minH + 24) < gap)
+        gap = dom.clientHeight / (maxH - minH + 24);
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
+      let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
+      console.log(gap);
+      let paper = drawExtractedGraph(
+        dom,
+        this.sonGraphs[index].nodesList,
+        this.sonGraphs[index].linksList,
+        {
+          gap,
+          startX,
+          startY,
+        },
+        index
+      );
+
+      if (!this.papers[index]) {
+        this.papers.push(paper);
+      } else this.papers[index] = paper;
+      this.setPaper(index, paper);
+    },
+    tipVisible(textContent, event) {
+      this.tip2Hidden();
+      document.removeEventListener("click", this.listener3);
+      this.tooltip
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip
+        .html(
+          '<div class="chart-box">' +
+            textContent +
+            '<div class="chart-hint ' +
+            textContent +
+            '"></div></div>'
+        )
+        .style("left", `${event.pageX + 15}px`)
+        .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
+    },
+    tipHidden() {
+      this.tooltip
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
-    drawSonGraph(i) {
-      let height = 1200;
-      if (this.sonNum > 6) {
-        height = height / 3;
-      } else if (this.sonNum > 3) {
-        height = height / 2;
-      }
-      let width = 1500;
-      if (this.sonNum > 3) {
-        width = width / 3;
-      } else if (this.sonNum > 0) {
-        width = width / this.sonNum;
-      }
-      let size = {
-        scale: this.sonNum > 0 ? 1.8 / 3 : 1,
-        width: width,
-        height: height,
-      };
-      let selection = this.multipleSearchValue.selections[i];
-      let svg = d3.select(".paper" + (i + 1)).select("svg");
-      let finalPos = JSON.parse(localStorage.getItem("SON_POS"));
-      singleGraph.setSingleGraph(
-        svg,
-        this.multipleSearchValue,
-        selection,
-        size,
-        this.transform[i],
-        finalPos[i + 1].nodesList
-      );
+    setPaper(index, paper) {
+      const _this = this;
+      let outcome = this.multipleSearchValue.selections[index].outcome;
 
-      //Set up zoom support
-      let that = this;
-      let inner = svg.select("g");
-      var zoom = d3.zoom().on("zoom", function (event) {
-        that.transform[i] = event.transform;
-        inner.attr("transform", event.transform);
-        that.tipHidden();
-        that.tip2Hidden();
+      paper.on("link:mouseenter", function (linkView, d) {
+        linkView.model.attr("line/stroke", "#1f77b4");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
+        let attributes = linkView.model.attributes.attrs;
+        let router = attributes.id;
+        let width = parseFloat(attributes.line.strokeWidth);
+        width = (width / 10).toFixed(2);
+        if (attributes.line.strokeDasharray) width = 0 - width;
+        if (!_this.tip2Show)
+          _this.tipVisible(router + ": " + width, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
       });
-      svg.call(zoom);
+      paper.on("link:mouseout", function (linkView) {
+        linkView.model.attr("line/stroke", "black");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker/stroke", "black");
 
-      this.setSonGraph(i);
-    },
-    drawSonGraphs() {
-      this.transform = [];
-      for (let i = 0; i < this.sonNum; i++) {
-        this.transform.push(null);
-        this.drawSonGraph(i);
-      }
-    },
-
-    ifOutCome(node) {
-      let allOut = [];
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) allOut.push(row.id);
+        _this.tipHidden();
       });
-      if (allOut.includes(node)) return true;
-      else return false;
+      paper.on("link:pointerclick", function (linkView, d) {
+        let router = linkView.model.attributes.attrs.id;
+        let hintHtml =
+          "<div class='operate-header'><div class='hint-list'>" +
+          outcome +
+          "</div><div class='close-button'>x</div></div><hr/>\
+              <div class='operate-menu'>Delete edge<br/>" +
+          router +
+          "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+        _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+        _this.deleteLinkView = linkView;
+        _this.paper = paper;
+        setTimeout(() => {
+          document.addEventListener("click", _this.listener3);
+        }, 0);
+      });
+      paper.on("element:mouseover", function (elementView, evt) {
+        if (elementView.model.attributes.type === "standard.Rectangle")
+          _this.highLightAllPaper(elementView.model.attributes.attrs.title);
+      });
+      paper.on("element:mouseout", function (elementView, evt) {
+        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+      });
     },
-    isVisible(path) {
-      let link = this.multipleSearchValue.linksList.filter(
-        (item) => item.source === path.v && item.target === path.w
-      );
-      if (link[0].hidden) return false;
-      else return true;
+    highLightAllPaper(id) {
+      this.papers.forEach((paper) => {
+        var elements = paper.model.getElements();
+        elements.forEach((element) => {
+          if (element.attributes.attrs.title === id) {
+            let view = element.findView(paper);
+            addHighLight(view);
+          }
+        });
+      });
     },
-    saveData() {
-      localStorage.setItem(
-        "GET_JSON_RESULT",
-        JSON.stringify(this.multipleSearchValue)
-      );
+    removeAllHighLight(id) {
+      this.papers.forEach((paper) => {
+        var elements = paper.model.getElements();
+        elements.forEach((element) => {
+          if (element.attributes.attrs.title === id) {
+            let view = element.findView(paper);
+            removeHighLight(view);
+          }
+        });
+      });
+    },
+    tip2Hidden() {
+      this.tip2Show = false;
+      this.tooltip2
+        .transition()
+        .duration(100)
+        .style("opacity", 0)
+        .style("display", "none");
+    },
+    tip2Visible(textContent, event) {
+      this.tip2Hidden();
+      document.removeEventListener("click", this.listener3);
+      this.tip2Show = true;
+      this.tooltip2
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip2
+        .html(textContent)
+        .style("left", `${event.pageX}px`)
+        .style("top", `${event.pageY}px`);
     },
     listener3(e) {
       let _this = this;
       let clickDOM = e.target.className;
+
       _this.tip2Hidden();
       if (
         clickDOM !== "operate-menu" &&
@@ -453,7 +409,6 @@ export default {
         }
       }
     },
-    //delete edge from son graph
     deleteSonEdge(outcome, edge) {
       for (let i = outcome.length - 1; i >= 0; i--) {
         if (!outcome[i]) {
@@ -465,7 +420,6 @@ export default {
         else return false;
       });
       let selection = this.multipleSearchValue.selections[i];
-
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
 
       let index = selection.linksList.findIndex(function (row) {
@@ -476,7 +430,7 @@ export default {
           return true;
         } else return false;
       });
-      console.log(index);
+      this.deleteLinkView.model.remove({ ui: true });
       if (index > -1) {
         let history = historyManage.deleteEdge(selection.history, {
           source: nodes[0],
@@ -491,7 +445,6 @@ export default {
         selection.history = history;
         this.tip2Hidden();
         this.saveData();
-        this.drawSonGraph(i);
       }
     },
     reverseSonEdge(outcome, edge) {
@@ -522,111 +475,99 @@ export default {
           return true;
         } else return false;
       });
-      console.log(selection.linksList[index]);
       if (index > -1) {
+        this.deleteLinkView.model.remove({ ui: true });
+
         historyManage.reverseEdge(selection.history, {
           source: nodes[0],
           target: nodes[1],
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
+          this.addLink(this.sonGraphs[i].nodes, {
+            source: selection.linksList[index].target,
+            target: selection.linksList[index].source,
+            value: selection.linksList[index].value,
+          });
         } else {
           selection.linksList[index].reverse = false;
+          this.addLink(this.sonGraphs[i].nodes, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
-        this.drawSonGraph(i);
       }
     },
-    isSonReverse(i, edge) {
-      let index = this.multipleSearchValue.selections[i].linksList.findIndex(
-        function (row) {
-          if (row.source === edge.v && row.target === edge.w && !row.hidden) {
-            return true;
-          } else return false;
-        }
-      );
-      if (index < 0) return false;
-      return (
-        this.multipleSearchValue.selections[i].linksList[index].reverse === true
-      );
+    checkDirection(source, target) {
+      if (source.y <= target.y) return "DOWN";
+      else return "UP";
     },
+    addLink(nodesList, link) {
+      var path = new joint.shapes.standard.Link({});
+      let sIndex = nodesList.findIndex((node) => {
+        if (node.id === link.source) return true;
+        else return false;
+      });
 
-    // create tooltip but not show it
-    createTooltip(number) {
-      let tooltips = d3.selectAll(".tooltip")._groups[0];
-      console.log(tooltips);
-      if (tooltips.length < number)
-        return d3
-          .select("body")
-          .append("div")
-          .classed("tooltip", true)
-          .style("opacity", 0)
-          .style("display", "none");
-      else
-        return d3.selectAll(".tooltip").select(function (d, i, nodes) {
-          if (i === number - 1) return this;
+      let tIndex = nodesList.findIndex((node) => {
+        if (node.id === link.target) return true;
+        else return false;
+      });
+      if (link.value < 0)
+        path.attr({
+          id: "(" + link.source + ", " + link.target + ")",
+          line: {
+            strokeWidth: -link.value * 10 + "",
+            strokeDasharray: "4 4",
+            targetMarker: {
+              // minute hand
+              type: "path",
+              stroke: "black",
+              "stroke-width": 2,
+              fill: "transparent",
+              d: "M 10 -5 0 0 10 5 ",
+            },
+          },
         });
-    },
-    // display hover-line tooltip
-    tipVisible(textContent, event) {
-      this.tip2Hidden();
-      document.removeEventListener("click", this.listener3);
-      this.tooltip
-        .transition()
-        .duration(0)
-        .style("opacity", 1)
-        .style("display", "block");
-      this.tooltip
-        .html(
-          '<div class="chart-box">' +
-            textContent +
-            '<div class="chart-hint ' +
-            textContent +
-            '"></div></div>'
-        )
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY + 15}px`);
+      else {
+        path.attr({
+          id: "(" + link.source + ", " + link.target + ")",
+          line: {
+            strokeWidth: link.value * 10 + "",
+            targetMarker: {
+              // minute hand
+              type: "path",
+              stroke: "black",
+              "stroke-width": 2,
+              fill: "transparent",
+              d: "M 10 -5 0 0 10 5 ",
+            },
+          },
+        });
+      }
+      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      path.vertices(vertices);
+      path.source(nodesList[sIndex].node);
+      path.target(nodesList[tIndex].node);
+      path.addTo(this.paper.model);
 
-      const _this = this;
-      setTimeout(() => {
-        try {
-          _this.plotChart(textContent);
-        } catch (err) {
-          console.log("too fast, the chart is not prepared");
-        }
-      }, 100);
+      if (this.checkDirection(nodesList[sIndex], nodesList[tIndex]) === "UP") {
+        path.connector("rounded");
+      }
     },
-    //display delete-menu tooltip
-    tip2Visible(textContent, event) {
-      this.tip2Hidden();
-      document.removeEventListener("click", this.listener3);
-      this.tip2Show = true;
-      this.tooltip2
-        .transition()
-        .duration(0)
-        .style("opacity", 1)
-        .style("display", "block");
-      this.tooltip2
-        .html(textContent)
-        .style("left", `${event.pageX}px`)
-        .style("top", `${event.pageY}px`);
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
     },
-    // tooltip隐藏
-    tipHidden() {
-      this.tooltip
-        .transition()
-        .duration(100)
-        .style("opacity", 0)
-        .style("display", "none");
-    },
-    tip2Hidden() {
-      this.tip2Show = false;
-      this.tooltip2
-        .transition()
-        .duration(100)
-        .style("opacity", 0)
-        .style("display", "none");
+    saveData() {
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify(this.multipleSearchValue)
+      );
     },
   },
 
@@ -634,19 +575,19 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
-    this.setGradient();
     console.log("getItem", this.multipleSearchValue);
+    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
   },
 };
 </script>
-  
- <style scoped>
+    
+  <style scoped>
 .sub-graph {
   display: flex;
-  flex-direction: column;
+  height: 100%;
   flex: 1;
 }
 .directed-tabs {
@@ -680,15 +621,9 @@ export default {
   cursor: pointer;
 }
 
-.graph-svg {
-  width: 100%;
-  display: flex;
-  height: 90%;
-}
 .group-graphs {
   width: 100%;
   display: flex;
-  height: 100%;
 }
 
 .son-svg {
@@ -699,14 +634,14 @@ export default {
 }
 .paper-svg {
   padding: 1%;
-  margin: .5%;
+  margin: 0.5%;
+  border: 1px solid rgba(151, 151, 151, 0.49);
   flex: 1 1/3;
   min-width: 30%;
-  border: 1px solid rgba(151, 151, 151, 0.49);
 }
-.son-svg div svg {
+.svg-content {
   width: 100%;
-  height: 90%;
+  height: 90% !important;
 }
 .one-line-operator {
   height: 10%;
@@ -743,4 +678,9 @@ export default {
   line-height: 32px;
 }
 </style>
- 
+<style>
+.joint-link path {
+  transition-duration: 0.2s;
+}
+</style>
+   

@@ -222,6 +222,7 @@ export default {
           this.simplePos.nodesList[i].id
         );
       }
+      localStorage.setItem("SIMPLE_POS", JSON.stringify(this.simplePos));
       if (this.tooltip) {
         this.tipHidden();
       }
@@ -670,5 +671,4 @@ export default {
   height: 90%;
   padding: 16px;
 }
-
 </style>
