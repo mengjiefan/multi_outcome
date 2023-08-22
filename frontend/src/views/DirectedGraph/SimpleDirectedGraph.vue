@@ -48,7 +48,7 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="simplePos.length > 0" class="graph-svg"><g /></svg>
+      <svg v-if="simplePos.nodesList.length > 0" class="graph-svg"><g /></svg>
     </div>
   </div>
 </template>
@@ -228,7 +228,7 @@ export default {
 
       dagre.layout(g);
       if (that.simplePos.length <= 0) {
-        that.simplePos = countSimplePos(g, this.multipleSearchValue.nodesList);
+        that.simplePos = countSimplePos(g, this.multipleSearchValue.nodesList, this.multipleSearchValue.linksList);
         console.log("simplePos", that.simplePos);
         setTimeout(() => {
           that.drawGraph();
@@ -372,16 +372,16 @@ export default {
     },
     checkDirection(source, target) {
       if (this.simplePos.length <= 0) return "DOWN";
-      let sIndex = this.simplePos.findIndex((node) => {
+      let sIndex = this.simplePos.nodesList.findIndex((node) => {
         if (node.id === source) return true;
         else return false;
       });
-      let tIndex = this.simplePos.findIndex((node) => {
+      let tIndex = this.simplePos.linksList.findIndex((node) => {
         if (node.id === target) return true;
         else return false;
       });
       if (sIndex < 0 || tIndex < 0) return "DOWN";
-      if (this.simplePos[sIndex].y <= this.simplePos[tIndex].y) return "DOWN";
+      if (this.simplePos.nodesList[sIndex].y <= this.simplePos.nodesList[tIndex].y) return "DOWN";
       else return "UP";
     },
     drawGraph() {
