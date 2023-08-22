@@ -244,7 +244,9 @@ def get_list(request):
     node_outcome['id'] = outcome
     node_outcome['type'] = 0
     for node_ele in top_correlated_factors:
+        data_col = data[node_ele].to_numpy()
         node_sin = {}
+        node_sin['range'] = data_col.tolist()
         node_sin['id'] = node_ele
         node_sin['type'] = 1
         nodes_variables.append(node_sin)
@@ -306,8 +308,6 @@ def get_list(request):
 
     # 输出所有因果效应值
     print("All causal effect values:", effect_values)
-    print('return value', {'outcome': outcome, 'CovariantNum': num_top,
-                         'nodes':nodes_variables,'links':links})
     return JsonResponse({'outcome': outcome, 'CovariantNum': num_top,
                          'nodes':nodes_variables,'links':links})
 
