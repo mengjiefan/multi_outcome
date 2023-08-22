@@ -16,26 +16,21 @@ const cmap = [
     "#565AA0",
     "#6A4C93",
 ];
-let xGap = 40;
-let yGap = 45;
-const findLink = (links, edge) => {
-    let index = links.findIndex(link => {
-        if (link.source === edge.source && link.target === edge.target) return true;
-        else if (link.source === edge.target && link.target === edge.source) return true;
-        else return false;
-    })
-    return links[index];
-}
+let gap = 1;
+let startX;
+let startY;
 const countXPos = (x) => {
-    let start = 150;
-    return start + x * xGap;
+    return startX + x * gap;
 };
 
 const countYPos = (y) => {
-    let start = 20;
-    return start + y * yGap;
+    return startY + y * gap;
 };
 
+const checkDirection = (source, target) => {
+    if (source.y <= target.y) return "DOWN";
+    else return "UP";
+}
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
     let svgZoom = svgPanZoom("#" + name + " svg", {
@@ -59,34 +54,11 @@ const svgZoom = (name) => {
     svgZoom.setZoomScaleSensitivity(0.5);
 
 };
-export const checkDirection = (source, target) => {
-    if (source.y <= target.y) return "DOWN";
-    else return "UP";
-}
-export const addHighLight = (elementView) => {
-    joint.highlighters.mask.add(
-        elementView,
-        { selector: "root" },
-        "my-element-highlight",
-        {
-            padding: 0,
-            deep: true,
-            attrs: {
-                stroke: "#FF4365",
-                "stroke-width": 3,
-            },
-        }
-    );
-}
-export const removeHighLight = (elementView) => {
-    const highlighter = joint.dia.HighlighterView.get(
-        elementView,
-        "my-element-highlight"
-    );
-    highlighter.remove();
-}
-export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) => {
-    let name = "paper" + (sonindex + 1);
+export const drawSuperGraph = (dom, nodesList, links, scale) => {
+    let name = "paper";
+    startX = scale.startX;
+    startY = scale.startY;
+    gap = scale.gap;
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
         if (link.reverse) return {
@@ -97,10 +69,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
         };
         else return link;
     })
-    xGap = gap.xGap;
-    yGap = gap.yGap;
     let graph = new joint.dia.Graph({});
-
     let paper = new joint.dia.Paper({
         el: dom,
         model: graph,
@@ -111,51 +80,28 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             return null
         }
     });
-    let outRect = new joint.shapes.standard.Rectangle();
-    outRect.position(
-        countXPos(nodesList[0].x) - 16,
-        countYPos(nodesList[0].y) - 16
-    );
-    outRect.resize(32, 32);
-    outRect.attr({
-        body: {
-            fill: cmap[sonindex],
-            strokeWidth: 0,
-            rx: 20,
-            ry: 20,
-        },
-        label: {
-            text: nodesList[0].id,
-            fill: "black",
-            fontSize: 8,
-            y: 0
-        },
-        title: nodesList[0].id
-    });
-    outRect.addTo(graph);
-    nodesList[0]["node"] = outRect;
 
-    for (let nodeI = 1; nodeI < nodesList.length; nodeI++) {
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(32, 32);
+        faRect.resize(24 * gap, 24 * gap);
         faRect.position(
-            countXPos(nodesList[nodeI].x) - 16,
-            countYPos(nodesList[nodeI].y) - 16
+            countXPos(nodesList[nodeI].x) - 12 * gap,
+            countYPos(nodesList[nodeI].y) - 12 * gap
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
             body: {
                 strokeWidth: 0,
-                rx: 20,
-                ry: 20,
+                rx: 20 * gap,
+                ry: 20 * gap,
                 fill: 'transparent'
             },
             label: {
                 text: nodesList[nodeI].id,
                 fill: "black",
                 y: 0,
-                fontSize: 8,
+                fontSize: 8*gap,
             },
             title: nodesList[nodeI].id
         });
@@ -164,17 +110,17 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             let offset = 360 / indexes.length;
             circle.attr({
                 body: {
-                    strokeDasharray: 16 * 3.1415926,
-                    strokeDashoffset: 16 * 3.1415926 / 360 * (offset * i),
+                    strokeDasharray: 12 * gap * 3.1415926,
+                    strokeDashoffset: 12 * gap * 3.1415926 / 360 * (offset * i),
                     fill: "transparent",
                     stroke: cmap[indexes[i]],
-                    strokeWidth: 16
+                    strokeWidth: 12 * gap
                 }
             })
-            circle.resize(16, 16);
+            circle.resize(12 * gap, 12 * gap);
             circle.position(
-                countXPos(nodesList[nodeI].x) - 8,
-                countYPos(nodesList[nodeI].y) - 8
+                countXPos(nodesList[nodeI].x) - 6 * gap,
+                countYPos(nodesList[nodeI].y) - 6 * gap
             );
             circle.addTo(graph);
         }
@@ -184,12 +130,11 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
         faRect.addTo(graph);
     }
     linksList.forEach(link => {
-        let points = findLink(linksPos, link);
         let path = new joint.shapes.standard.Link({
         });
         let vertices = [];
-        for (let i = 0; i < points.points.length; i++) {
-            let point = points.points[i];
+        for (let i = 0; i < link.points.length; i++) {
+            let point = link.points[i];
             vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
         }
         if (link.reverse) vertices.reverse();
@@ -204,7 +149,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
-                strokeWidth: (link.value * 10) + '',
+                strokeWidth: (link.value * 8) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
@@ -215,10 +160,10 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             }
         })
         if (link.value < 0) {
-            path.attr('line/strokeWidth', (-link.value * 10) + '')
+            path.attr('line/strokeWidth', (-link.value * 8) + '')
             path.attr('line/strokeDasharray', "4 4")
         }
-        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y) 
+        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
             path.attr('line/targetMarker', null)
 
         path.source(nodesList[sindex].node);

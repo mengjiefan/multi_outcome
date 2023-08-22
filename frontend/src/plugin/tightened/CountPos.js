@@ -121,27 +121,33 @@ const findLink = (links, edge) => {
     })
     return links[index];
 }
-export const countSimplePos = (g, nodes) => {
-    let y = [];
-    let x = [];
-    g.nodes().forEach((v) => {
-        let pos = g.node(v);
-        if (v !== 'group') {
-            traversal(y, pos.y)
-            traversal(x, pos.x);
-        }
-    });
+export const countSimplePos = (g, nodes, links) => {
 
     let nodesList = [];
     nodes.forEach(factor => {
         let pos = g.node(factor.id);
         nodesList.push({
+            type: factor.type,
             id: factor.id,
-            x: x.indexOf(pos.x),
-            y: y.indexOf(pos.y),
+            x: pos.x,
+            y: pos.y,
         })
     })
-    return nodesList;
+    let linksList = [];
+    g.edges().forEach((v) => {
+        let pos = g.edge(v);
+        let points = pos.points;
+        let index = links.findIndex(link => {
+            if (link.source === v.v && link.target === v.w) return true;
+            else if (link.target === v.w && link.source === v.v) return true;
+            else return false;
+        })
+        let edge = links[index];
+        edge['points'] = points;
+
+        linksList.push(edge)
+    })
+    return { nodesList, linksList };
 }
 const traversal = (list, value) => {
     if (list.includes(value)) return list;

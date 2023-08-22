@@ -29,7 +29,17 @@
         </div>
       </div>
     </div>
-    <div id="paper" class="sum-svg"></div>
+    <div class="sum-svg">
+      <svg v-if="simplePos">
+        <g />
+      </svg>
+    </div>
+    <svg
+      id="gradient-svg"
+      aria-hidden="true"
+      focusable="false"
+      style="width: 0; height: 0; position: absolute"
+    ></svg>
   </div>
 </template>
 
@@ -41,7 +51,7 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import { drawSuperGraph } from "@/plugin/superGraph";
+import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
 import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
 
@@ -148,6 +158,7 @@ export default {
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
+      d3.select("svg").select("g").selectAll("*").remove();
       // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
@@ -161,6 +172,21 @@ export default {
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
       });
+      /*
+      if (this.ifGroup) {
+        console.log("!");
+        g.setNode("group", {
+          label: "",
+          clusterLabelPos: "bottom",
+          style:
+            "stroke-width:5;stroke:red;fill: transparent;stroke-dasharray:4 4",
+        });
+        states.forEach(function (state) {
+          if (state.type === -1) {
+            g.setParent(state.id, "group");
+          }
+        });
+      }*/
       var edges = data.linksList;
       let that = this;
       edges.forEach(function (edge) {
@@ -170,6 +196,7 @@ export default {
         var edgeColor = "stroke: black";
         let completeStyle =
           edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+        let direction = "";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -177,13 +204,28 @@ export default {
             curve: d3.curveBasis,
           });
         } else {
+          if (edge.reverse) {
+            direction = that.checkDirection(edge.target, edge.source);
+            completeStyle = completeStyle + "marker-start:url(#normals);";
+          } else {
+            direction = that.checkDirection(edge.source, edge.target);
+            completeStyle = completeStyle + "marker-end:url(#normale);";
+          }
           if (edge.value < 0) {
             completeStyle = completeStyle + "stroke-dasharray:4 4";
           }
-          g.setEdge(edge.source, edge.target, {
-            style: completeStyle,
-            arrowhead: "undirected",
-          });
+          if (direction === "DOWN") {
+            g.setEdge(edge.source, edge.target, {
+              style: completeStyle,
+              arrowhead: "undirected",
+            });
+          } else {
+            g.setEdge(edge.source, edge.target, {
+              style: completeStyle,
+              curve: d3.curveBasis,
+              arrowhead: "undirected",
+            });
+          }
         }
       });
 
@@ -191,7 +233,11 @@ export default {
       g.nodes().forEach(function (v) {
         var node = g.node(v);
         node.rx = node.ry = 20;
-        node.style = "fill:" + that.cmap[0];
+        let indexes = that.getNodeIndex(v);
+
+        if (indexes.length === 1) node.style = "fill:" + that.cmap[indexes[0]];
+        else if (that.simplePos)
+          node.style = "fill:url(#" + v.replaceAll("_", "") + ")";
       });
       dagre.layout(g);
 
@@ -206,17 +252,14 @@ export default {
         );
         console.log("simplePos", that.simplePos);
         setTimeout(() => {
-          that.redrawGraph();
+          that.setGraph();
         }, 0);
         return;
       }
-    },
-    redrawGraph() {
-      for (let i = 0; i < this.simplePos.nodesList.length; i++) {
-        this.simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
-          this.simplePos.nodesList[i].id
-        );
-      }
+
+      var svg = d3.select("svg");
+      let inner = svg.select("g");
+
       if (this.tooltip) {
         this.tipHidden();
       }
@@ -225,34 +268,121 @@ export default {
       }
       this.tooltip = this.createTooltip(1);
       this.tooltip2 = this.createTooltip(2);
-      let dom = document.getElementById("paper");
-      let minW = 150000;
-      let maxW = 0;
-      let minH = 15000;
-      let maxH = 0;
-      this.simplePos.nodesList.forEach((node) => {
-        if (node.x > maxW) maxW = node.x;
-        if (node.x < minW) minW = node.x;
-        if (node.y > maxH) maxH = node.y;
-        if (node.y < minH) minH = node.y;
-      });
-      this.simplePos.linksList.forEach((link) => {
-        link.points.forEach((node) => {
-          if (node.x > maxW) maxW = node.x;
-          if (node.x < minW) minW = node.x;
-          if (node.y > maxH) maxH = node.y;
-          if (node.y < minH) minH = node.y;
-        });
-      });
-      let gap = 1000 / (maxW - minW);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
-      let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
+      // Set up zoom support
 
-      drawSuperGraph(dom, this.simplePos.nodesList, this.simplePos.linksList, {
-        startX,
-        startY,
-        gap,
+      var zoom = d3.zoom().on("zoom", function (event) {
+        that.transform = event.transform;
+        inner.attr("transform", event.transform);
+        that.tipHidden();
+        that.tip2Hidden();
       });
+      svg.call(zoom);
+
+      // Create the renderer
+      var render = new dagreD3.render();
+      // Run the renderer. This is what draws the final graph.
+      render(inner, g);
+      //add hover effect & hover hint to nodes
+      inner
+        .selectAll("g.node")
+        .on("mouseover", (v) => {
+          //v.fromElement.setAttribute("id", "hover-node");
+        })
+        .on("mouseout", (v) => {
+          v.fromElement.setAttribute("id", "");
+        });
+
+      // add hover effect & click hint to lines
+      // Center the graph
+      if (that.transform) {
+        inner.attr("transform", that.transform);
+      } else {
+        var initialScale = 1;
+        let xOffset = (1200 - g.graph().width * initialScale) / 2;
+        let yOffset = (850 - g.graph().height * initialScale) / 2;
+        svg.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+        );
+
+        svg.attr("height", g.graph().height * initialScale + 40);
+      }
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        inner
+          .append("text")
+          .attr("x", node.x - v.length * 2)
+          .attr("y", node.y)
+          .style("font-weight", 500)
+          .style("font-size", 8)
+          .style("font-family", "Arial")
+          .style("fill", "black")
+          .text(v);
+      });
+      var onmousepath = svg.selectAll(".edgePath");
+      var allpathes = onmousepath.select(".path");
+      const _this = this;
+      singleGraph.addArrowType(svg);
+      allpathes
+        .on("mouseout", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            d3.select(this).style("stroke", "black");
+            if (!_this.isReverse(id)) {
+              d3.select(this).style("marker-end", "url(#normale)"); //Added
+            } else {
+              d3.select(this).style("marker-start", "url(#normals)"); //Added
+            }
+          }
+          _this.tipHidden();
+        })
+        .on("mouseover", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            let router = "";
+            if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
+              d3.select(this).style("marker-end", "url(#activeE)"); //Added
+            } else {
+              router = "(" + id.w + ", " + id.v + ")";
+              d3.select(this).style("marker-start", "url(#activeS)"); //Added
+            }
+            d3.select(this).style("stroke", "#1f77b4");
+
+            let width = d3.select(this).style("stroke-width");
+            let dash = d3.select(this).style("stroke-dasharray");
+            console.log(dash);
+            width.slice(width.length - 2, width.length);
+            if (dash.includes("4")) {
+              width = "-" + width;
+            }
+            if (!_this.tip2Show)
+              _this.tipVisible(
+                router + ": " + (parseFloat(width) / 10).toFixed(2),
+                {
+                  pageX: d.pageX,
+                  pageY: d.pageY,
+                }
+              );
+          }
+        })
+        .on("click", function (d, id) {
+          if (d3.select(this).style("stroke") !== "transparent") {
+            let router = "";
+            if (!_this.isReverse(id)) {
+              router = "(" + id.v + ", " + id.w + ")";
+            } else {
+              router = "(" + id.w + ", " + id.v + ")";
+            }
+            let hintHtml =
+              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
+              <div class='operate-menu'>Delete edge<br/>" +
+              router +
+              "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+            setTimeout(() => {
+              document.addEventListener("click", _this.listener);
+            }, 0);
+          }
+        });
     },
     getNodeIndex(id) {
       let indexes = [];
@@ -262,6 +392,23 @@ export default {
         else if (selection.variable.includes(id)) indexes.push(i);
       }
       return indexes;
+    },
+    checkDirection(source, target) {
+      if (!this.simplePos) return "DOWN";
+      let sIndex = this.simplePos.nodesList.findIndex((node) => {
+        if (node.id === source) return true;
+        else return false;
+      });
+      let tIndex = this.simplePos.nodesList.findIndex((node) => {
+        if (node.id === target) return true;
+        else return false;
+      });
+      if (sIndex < 0 || tIndex < 0) return "DOWN";
+      if (
+        this.simplePos.nodesList[sIndex].y <= this.simplePos.nodesList[tIndex].y
+      )
+        return "DOWN";
+      else return "UP";
     },
     drawGraph() {
       this.ifGroup = false;
@@ -274,6 +421,41 @@ export default {
       setTimeout(() => {
         this.setGraph();
       }, 0);
+    },
+    setGradient() {
+      let nodes = this.multipleSearchValue.nodesList;
+      let gradientSvg = document.getElementById("gradient-svg");
+      let that = this;
+
+      // Set some general styles
+      nodes.forEach(function (node) {
+        let v = node.id;
+        let indexes = that.getNodeIndex(v);
+
+        v = v.replaceAll("_", "");
+        if (indexes.length !== 1) {
+          let gradient = document.getElementById(v);
+
+          if (gradient) gradientSvg.removeChild(gradient);
+
+          gradient = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "linearGradient"
+          );
+          gradient.setAttribute("id", v);
+
+          for (let i = 0; i < indexes.length; i++) {
+            let stop = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "stop"
+            );
+            stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
+            stop.setAttribute("stop-color", that.cmap[indexes[i]]);
+            gradient.appendChild(stop);
+          }
+          gradientSvg.appendChild(gradient);
+        }
+      });
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
@@ -525,6 +707,7 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
+    this.setGradient();
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
       let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
@@ -571,7 +754,6 @@ export default {
 }
 .sum-svg {
   display: flex;
-  width: 100%;
   height: 90%;
   padding: 16px;
 }

@@ -39,12 +39,6 @@
         </div>
       </div>
     </div>
-    <svg
-      id="gradient-svg"
-      aria-hidden="true"
-      focusable="false"
-      style="width: 0; height: 0; position: absolute"
-    ></svg>
   </div>
 </template>
   <script>
@@ -242,41 +236,6 @@ export default {
       }
       return indexes;
     },
-    setGradient() {
-      let nodes = this.multipleSearchValue.nodesList;
-      let gradientSvg = document.getElementById("gradient-svg");
-      let that = this;
-
-      // Set some general styles
-      nodes.forEach(function (node) {
-        let v = node.id;
-        let indexes = that.getNodeIndex(v);
-
-        v = v.replaceAll("_", "");
-        if (indexes.length !== 1) {
-          let gradient = document.getElementById(v);
-
-          if (gradient) gradientSvg.removeChild(gradient);
-
-          gradient = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "linearGradient"
-          );
-          gradient.setAttribute("id", v);
-
-          for (let i = 0; i < indexes.length; i++) {
-            let stop = document.createElementNS(
-              "http://www.w3.org/2000/svg",
-              "stop"
-            );
-            stop.setAttribute("offset", (1 / (indexes.length - 1)) * i);
-            stop.setAttribute("stop-color", that.cmap[indexes[i]]);
-            gradient.appendChild(stop);
-          }
-          gradientSvg.appendChild(gradient);
-        }
-      });
-    },
     drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
       for (let i = 0; i < this.sonGraphs[index].nodes.length; i++)
@@ -341,6 +300,7 @@ export default {
 
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
+        if(linkView.model.attributes.attrs.line.targetMarker)
         linkView.model.attr("line/targetMarker", {
           type: "path",
           stroke: "#1f77b4",
@@ -361,6 +321,7 @@ export default {
       });
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
+        if(linkView.model.attributes.attrs.line.targetMarker)
         linkView.model.attr("line/targetMarker", {
           type: "path",
           stroke: "black",
@@ -604,7 +565,6 @@ export default {
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);
 
-  
       if (this.checkDirection(nodesList[sIndex], nodesList[tIndex]) === "UP") {
         path.connector("rounded");
       }
@@ -621,7 +581,6 @@ export default {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
-    this.setGradient();
     console.log("getItem", this.multipleSearchValue);
     this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
     if (this.multipleSearchValue) {

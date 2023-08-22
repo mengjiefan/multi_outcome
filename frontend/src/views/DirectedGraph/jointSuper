@@ -225,34 +225,11 @@ export default {
       }
       this.tooltip = this.createTooltip(1);
       this.tooltip2 = this.createTooltip(2);
-      let dom = document.getElementById("paper");
-      let minW = 150000;
-      let maxW = 0;
-      let minH = 15000;
-      let maxH = 0;
-      this.simplePos.nodesList.forEach((node) => {
-        if (node.x > maxW) maxW = node.x;
-        if (node.x < minW) minW = node.x;
-        if (node.y > maxH) maxH = node.y;
-        if (node.y < minH) minH = node.y;
-      });
-      this.simplePos.linksList.forEach((link) => {
-        link.points.forEach((node) => {
-          if (node.x > maxW) maxW = node.x;
-          if (node.x < minW) minW = node.x;
-          if (node.y > maxH) maxH = node.y;
-          if (node.y < minH) minH = node.y;
-        });
-      });
-      let gap = 1000 / (maxW - minW);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
-      let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
-
-      drawSuperGraph(dom, this.simplePos.nodesList, this.simplePos.linksList, {
-        startX,
-        startY,
-        gap,
-      });
+      drawSuperGraph(
+        document.getElementById("paper"),
+        this.simplePos.nodesList,
+        this.simplePos.linksList
+      );
     },
     getNodeIndex(id) {
       let indexes = [];
