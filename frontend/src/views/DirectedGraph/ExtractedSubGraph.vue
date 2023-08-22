@@ -59,6 +59,7 @@ export default {
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
+      gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -195,12 +196,14 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
+      this.gaps = [];
       for (let i = 0; i < this.sonNum; i++) {
         let ans = countSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );
         this.sonGraphs.push(ans);
+        this.gaps.push(1);
       }
       for (let i = 0; i < this.sonNum; i++) {
         this.drawSonGraph(i);
@@ -233,6 +236,7 @@ export default {
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
       console.log(gap);
+      this.gaps[index] = gap;
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
@@ -336,7 +340,8 @@ export default {
           _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
-        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+        if (elementView.model.attributes.type === "standard.Rectangle")
+          _this.removeAllHighLight(elementView.model.attributes.attrs.title);
       });
     },
     highLightAllPaper(id) {
@@ -484,14 +489,14 @@ export default {
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(this.sonGraphs[i].nodes, {
+          this.addLink(i,{
             source: selection.linksList[index].target,
             target: selection.linksList[index].source,
             value: selection.linksList[index].value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(this.sonGraphs[i].nodes, selection.linksList[index]);
+          this.addLink(i,selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -501,58 +506,33 @@ export default {
       if (source.y <= target.y) return "DOWN";
       else return "UP";
     },
-    addLink(nodesList, link) {
+    addLink(index,link) {
       var path = new joint.shapes.standard.Link({});
-      let sIndex = nodesList.findIndex((node) => {
-        if (node.id === link.source) return true;
-        else return false;
-      });
-
-      let tIndex = nodesList.findIndex((node) => {
-        if (node.id === link.target) return true;
-        else return false;
-      });
-      if (link.value < 0)
-        path.attr({
-          id: "(" + link.source + ", " + link.target + ")",
-          line: {
-            strokeWidth: -link.value * 10 + "",
-            strokeDasharray: "4 4",
-            targetMarker: {
-              // minute hand
-              type: "path",
-              stroke: "black",
-              "stroke-width": 2,
-              fill: "transparent",
-              d: "M 10 -5 0 0 10 5 ",
-            },
+      let attributes = this.deleteLinkView.model.attributes;
+      const _this = this;
+      path.attr({
+        id: "(" + link.source + ", " + link.target + ")",
+        line: {
+          strokeWidth: attributes.attrs.line.strokeWidth,
+          targetMarker: {
+            type: "path",
+            stroke: "black",
+            "stroke-width": Math.abs(link.value) * 7 * _this.gaps[index],
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
           },
-        });
-      else {
-        path.attr({
-          id: "(" + link.source + ", " + link.target + ")",
-          line: {
-            strokeWidth: link.value * 10 + "",
-            targetMarker: {
-              // minute hand
-              type: "path",
-              stroke: "black",
-              "stroke-width": 2,
-              fill: "transparent",
-              d: "M 10 -5 0 0 10 5 ",
-            },
-          },
-        });
-      }
-      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+        },
+      });
+      if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
+      let source = attributes.target;
+      let target = attributes.source;
+      if (attributes.connector) path.attr("line/targetMarker", null);
+      else path.connector("rounded");
+      let vertices = attributes.vertices.reverse();
       path.vertices(vertices);
-      path.source(nodesList[sIndex].node);
-      path.target(nodesList[tIndex].node);
+      path.source(source);
+      path.target(target);
       path.addTo(this.paper.model);
-
-      if (this.checkDirection(nodesList[sIndex], nodesList[tIndex]) === "UP") {
-        path.connector("rounded");
-      }
     },
     getNodeIndex(id) {
       let indexes = [];
