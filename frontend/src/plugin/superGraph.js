@@ -122,6 +122,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             );
             circle.addTo(graph);
         }
+
         nodesList[nodeI]["node"] = faRect;
         faRect.addTo(graph);
     }
@@ -246,10 +247,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             );
             circle.addTo(graph);
         }
-        if (sonindex === 0)
-            console.log(faRect)
         nodesList[nodeI]["node"] = faRect;
-
         faRect.addTo(graph);
     }
     linksList.forEach(link => {
