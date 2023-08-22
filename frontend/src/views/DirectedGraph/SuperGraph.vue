@@ -38,12 +38,15 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
-import { Loading } from "element-ui";
+import * as joint from "jointjs";
+import "/node_modules/jointjs/dist/joint.css";
+import { g } from "jointjs";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
 import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
+import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 
 export default {
   name: "DirectedGraph",
@@ -53,9 +56,11 @@ export default {
   data() {
     return {
       simplePos: ref(),
+      paper: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
+      deleteLinkView: ref(),
       tooltip: null,
       tooltip2: null,
       sonNum: ref(0),
@@ -248,12 +253,76 @@ export default {
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
 
-      drawSuperGraph(dom, this.simplePos.nodesList, this.simplePos.linksList, {
-        startX,
-        startY,
-        gap,
+      let paper = drawSuperGraph(
+        dom,
+        this.simplePos.nodesList,
+        this.simplePos.linksList,
+        {
+          startX,
+          startY,
+          gap,
+        }
+      );
+      this.setPaper(paper);
+    },
+    setPaper(paper) {
+      const _this = this;
+      paper.on("link:mouseenter", function (linkView, d) {
+        linkView.model.attr("line/stroke", "#1f77b4");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker", {
+            type: "path",
+            stroke: "#1f77b4",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          });
+        let attributes = linkView.model.attributes.attrs;
+        let router = attributes.id;
+        let width = parseFloat(attributes.line.strokeWidth);
+        width = (width / 10).toFixed(2);
+        if (attributes.line.strokeDasharray) width = 0 - width;
+        if (!_this.tip2Show)
+          _this.tipVisible(router + ": " + width, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
+      });
+      paper.on("link:mouseout", function (linkView) {
+        linkView.model.attr("line/stroke", "black");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker", {
+            type: "path",
+            stroke: "black",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          });
+
+        _this.tipHidden();
+      });
+      paper.on("link:pointerclick", function (linkView, d) {
+        let router = linkView.model.attributes.attrs.id;
+        let hintHtml =
+          "<div class='operate-header'><div class='hint-list'>Operate</div><div class='close-button'>x</div></div><hr/>\
+              <div class='operate-menu'>Delete edge<br/>" +
+          router +
+          "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+        _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+        _this.deleteLinkView = linkView;
+        _this.paper = paper;
+        setTimeout(() => {
+          document.addEventListener("click", _this.listener);
+        }, 0);
+      });
+      paper.on("element:mouseover", function (elementView, evt) {
+        addHighLight(elementView);
+      });
+      paper.on("element:mouseout", function (elementView, evt) {
+        removeHighLight(elementView);
       });
     },
+
     getNodeIndex(id) {
       let indexes = [];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -279,21 +348,6 @@ export default {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
-    ifOutCome(node) {
-      let allOut = [];
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) allOut.push(row.id);
-      });
-      if (allOut.includes(node)) return true;
-      else return false;
-    },
-    isVisible(path) {
-      let link = this.multipleSearchValue.linksList.filter(
-        (item) => item.source === path.v && item.target === path.w
-      );
-      if (link[0].hidden) return false;
-      else return true;
-    },
     saveData() {
       localStorage.setItem(
         "GET_JSON_RESULT",
@@ -311,7 +365,8 @@ export default {
         clickDOM !== "hint-menu" &&
         clickDOM !== "hint-list" &&
         clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header"
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
       ) {
         document.removeEventListener("click", _this.listener);
       } else if (clickDOM === "operate-menu") {
@@ -323,17 +378,47 @@ export default {
         }
       }
     },
-
-    isReverse(edge) {
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (row.source === edge.v && row.target === edge.w && !row.hidden) {
-          return true;
-        } else return false;
+    addLink(nodesList, link) {
+      var path = new joint.shapes.standard.Link({});
+      let sIndex = nodesList.findIndex((node) => {
+        if (node.id === link.source) return true;
+        else return false;
       });
-      if (index < 0) return false;
-      return this.multipleSearchValue.linksList[index].reverse === true;
-    },
 
+      let tIndex = nodesList.findIndex((node) => {
+        if (node.id === link.target) return true;
+        else return false;
+      });
+      path.attr({
+        id: "(" + link.source + ", " + link.target + ")",
+        line: {
+          strokeWidth: link.value * 8 + "",
+          targetMarker: {
+            // minute hand
+            type: "path",
+            stroke: "black",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          },
+        },
+      });
+      if (link.value < 0) {
+        path.attr("line/strokeWidth", -link.value * 8 + "");
+        path.attr("line/strokeDasharray", "4 4");
+      }
+      if (
+        nodesList[sIndex].node.attributes.position.y <
+        nodesList[tIndex].node.attributes.position.y
+      )
+        path.attr("line/targetMarker", null);
+      else path.connector("rounded");
+      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      path.vertices(vertices);
+      path.source(nodesList[sIndex].node);
+      path.target(nodesList[tIndex].node);
+      path.addTo(this.paper.model);
+    },
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -351,6 +436,8 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        this.deleteLinkView.model.remove({ ui: true });
+
         let history = {
           source: nodes[0],
           target: nodes[1],
@@ -358,8 +445,17 @@ export default {
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
           this.hasNoHidden = false;
+          this.addLink(this.simplePos.nodesList, {
+            source: this.multipleSearchValue.linksList[index].target,
+            target: this.multipleSearchValue.linksList[index].source,
+            value: this.multipleSearchValue.linksList[index].value,
+          });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
+          this.addLink(
+            this.simplePos.nodesList,
+            this.multipleSearchValue.linksList[index]
+          );
         }
         //所有子图都改变，都要增加操作历史
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -389,7 +485,6 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
-        this.drawGraph();
       }
     },
     deleteEdge(edge) {
@@ -441,7 +536,7 @@ export default {
         this.saveData();
         this.hasNoHidden = false;
         this.tip2Hidden();
-        this.drawGraph();
+        this.deleteLinkView.model.remove({ ui: true });
       }
     },
     // create tooltip but not show it
@@ -576,15 +671,4 @@ export default {
   padding: 16px;
 }
 
-.sum-svg svg {
-  width: 100%;
-  height: 100%;
-}
-</style>
-<style >
-.super-graph .label-container:hover {
-  stroke: #ff4365;
-  stroke-width: 2.5px;
-  display: block;
-}
 </style>

@@ -1,7 +1,5 @@
 import * as joint from "jointjs";
-import { ref } from "vue";
 import "/node_modules/jointjs/dist/joint.css";
-import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
 import { g } from "jointjs";
 const cmap = [
@@ -65,6 +63,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             source: link.target,
             target: link.source,
             value: link.value,
+            points: link.points,
             reverse: true
         };
         else return link;
@@ -101,7 +100,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
                 text: nodesList[nodeI].id,
                 fill: "black",
                 y: 0,
-                fontSize: 8*gap,
+                fontSize: 8 * gap,
             },
             title: nodesList[nodeI].id
         });
