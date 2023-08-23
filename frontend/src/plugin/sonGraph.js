@@ -16,8 +16,6 @@ const cmap = [
     "#565AA0",
     "#6A4C93",
 ];
-let xGap = 40;
-let yGap = 45;
 const findLink = (links, edge) => {
     let index = links.findIndex(link => {
         if (link.source === edge.source && link.target === edge.target) return true;
@@ -26,15 +24,16 @@ const findLink = (links, edge) => {
     })
     return links[index];
 }
+let gap = 1;
+let startX;
+let startY;
 const countXPos = (x) => {
-    let start = 150;
-    return start + x * xGap;
+    return startX + x * gap;
+};
+const countYPos = (y) => {
+    return startY + y * gap;
 };
 
-const countYPos = (y) => {
-    let start = 20;
-    return start + y * yGap;
-};
 
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
@@ -83,9 +82,10 @@ export const removeHighLight = (elementView) => {
         elementView,
         "my-element-highlight"
     );
-    highlighter.remove();
+    if (highlighter)
+        highlighter.remove();
 }
-export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) => {
+export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) => {
     let name = "paper" + (sonindex + 1);
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
@@ -97,8 +97,9 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
         };
         else return link;
     })
-    xGap = gap.xGap;
-    yGap = gap.yGap;
+    gap = scale.gap;
+    startX = scale.startX;
+    startY = scale.startY;
     let graph = new joint.dia.Graph({});
 
     let paper = new joint.dia.Paper({
@@ -111,37 +112,14 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             return null
         }
     });
-    let outRect = new joint.shapes.standard.Rectangle();
-    outRect.position(
-        countXPos(nodesList[0].x) - 16,
-        countYPos(nodesList[0].y) - 16
-    );
-    outRect.resize(32, 32);
-    outRect.attr({
-        body: {
-            fill: cmap[sonindex],
-            strokeWidth: 0,
-            rx: 20,
-            ry: 20,
-        },
-        label: {
-            text: nodesList[0].id,
-            fill: "black",
-            fontSize: 8,
-            y: 0
-        },
-        title: nodesList[0].id
-    });
-    outRect.addTo(graph);
-    nodesList[0]["node"] = outRect;
 
-    for (let nodeI = 1; nodeI < nodesList.length; nodeI++) {
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(32, 32);
+        faRect.resize(40, 40);
         faRect.position(
-            countXPos(nodesList[nodeI].x) - 16,
-            countYPos(nodesList[nodeI].y) - 16
+            countXPos(nodesList[nodeI].x) - 20,
+            countYPos(nodesList[nodeI].y) - 20
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
@@ -155,7 +133,7 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
                 text: nodesList[nodeI].id,
                 fill: "black",
                 y: 0,
-                fontSize: 8,
+                fontSize: 10,
             },
             title: nodesList[nodeI].id
         });
@@ -164,17 +142,17 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             let offset = 360 / indexes.length;
             circle.attr({
                 body: {
-                    strokeDasharray: 16 * 3.1415926,
-                    strokeDashoffset: 16 * 3.1415926 / 360 * (offset * i),
+                    strokeDasharray: 20 * 3.1415926,
+                    strokeDashoffset: 20 * 3.1415926 / 360 * (offset * i),
                     fill: "transparent",
                     stroke: cmap[indexes[i]],
-                    strokeWidth: 16
+                    strokeWidth: 20
                 }
             })
-            circle.resize(16, 16);
+            circle.resize(20, 20);
             circle.position(
-                countXPos(nodesList[nodeI].x) - 8,
-                countYPos(nodesList[nodeI].y) - 8
+                countXPos(nodesList[nodeI].x) - 10,
+                countYPos(nodesList[nodeI].y) - 10
             );
             circle.addTo(graph);
         }
@@ -218,16 +196,14 @@ export const drawSonCharts = (dom, nodesList, links, gap, sonindex, linksPos) =>
             path.attr('line/strokeWidth', (-link.value * 10) + '')
             path.attr('line/strokeDasharray', "4 4")
         }
-        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y) 
+        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
             path.attr('line/targetMarker', null)
 
         path.source(nodesList[sindex].node);
         path.target(nodesList[tindex].node);
         path.addTo(graph);
         path.vertices(vertices);
-        if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
-            path.connector("rounded");
-        }
+        path.connector("rounded");
     })
 
     if (nodesList) {

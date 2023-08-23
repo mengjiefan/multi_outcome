@@ -60,7 +60,6 @@ export default {
     return {
       papers: ref([]),
       paper: ref(),
-      gap: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
       ifGroup: ref(false),
@@ -198,10 +197,7 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
-      let gap = {
-        xGap: 66,
-        yGap: 80,
-      };
+
       for (let i = 1; i <= this.sonNum; i++) {
         let ans = countSonPos(
           this.finalPos[i],
@@ -211,18 +207,7 @@ export default {
           nodes: ans.sonPos,
           links: ans.linksPos,
         });
-        if (this.sonNum > 4) ans.gap.xGap = ans.gap.xGap / 4;
-        else ans.gap.xGap = ans.gap.xGap / this.sonNum;
-        if (ans.gap.xGap < gap.xGap) {
-          gap.xGap = ans.gap.xGap;
-        }
-        if (this.sonNum > 8) ans.gap.yGap = ans.gap.yGap / 3;
-        else if (this.sonNum > 4) ans.gap.yGap = ans.gap.yGap / 2;
-        if (ans.gap.yGap < gap.yGap) {
-          gap.yGap = ans.gap.yGap;
-        }
       }
-      this.gap = gap;
       for (let i = 1; i <= this.sonNum; i++) {
         this.drawSonGraph(i - 1);
       }
@@ -242,11 +227,41 @@ export default {
         this.sonGraphs[index].nodes[i]["indexes"] = this.getNodeIndex(
           this.sonGraphs[index].nodes[i].id
         );
+
+      let minW = 150000;
+      let maxW = 0;
+      let minH = 15000;
+      let maxH = 0;
+      this.sonGraphs[index].nodes.forEach((node) => {
+        if (node.x > maxW) maxW = node.x;
+        if (node.x < minW) minW = node.x;
+        if (node.y > maxH) maxH = node.y;
+        if (node.y < minH) minH = node.y;
+      });
+      this.sonGraphs[index].links.forEach((link) => {
+        link.points.forEach((node) => {
+          if (node.x > maxW) maxW = node.x;
+          if (node.x < minW) minW = node.x;
+          if (node.y > maxH) maxH = node.y;
+          if (node.y < minH) minH = node.y;
+        });
+      });
+      let gap = (dom.clientWidth - 40) / (maxW - minW);
+      if ((dom.clientHeight - 160) / (maxH - minH) < gap)
+        gap = (dom.clientHeight - 160) / (maxH - minH);
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
+      let startY =
+        (dom.clientHeight - 120 - gap * (maxH - minH)) / 2 - minH * gap;
+
       let paper = drawSonCharts(
         dom,
         this.sonGraphs[index].nodes,
         this.multipleSearchValue.selections[index].linksList,
-        this.gap,
+        {
+          gap,
+          startX,
+          startY,
+        },
         index,
         this.sonGraphs[index].links
       );
@@ -300,14 +315,14 @@ export default {
 
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
-        if(linkView.model.attributes.attrs.line.targetMarker)
-        linkView.model.attr("line/targetMarker", {
-          type: "path",
-          stroke: "#1f77b4",
-          "stroke-width": 2,
-          fill: "transparent",
-          d: "M 10 -5 0 0 10 5 ",
-        });
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker", {
+            type: "path",
+            stroke: "#1f77b4",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          });
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
         let width = parseFloat(attributes.line.strokeWidth);
@@ -321,14 +336,14 @@ export default {
       });
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
-        if(linkView.model.attributes.attrs.line.targetMarker)
-        linkView.model.attr("line/targetMarker", {
-          type: "path",
-          stroke: "black",
-          "stroke-width": 2,
-          fill: "transparent",
-          d: "M 10 -5 0 0 10 5 ",
-        });
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker", {
+            type: "path",
+            stroke: "black",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          });
         _this.tipHidden();
       });
       paper.on("link:pointerclick", function (linkView, d) {
@@ -349,7 +364,7 @@ export default {
       });
       paper.on("element:mouseover", function (elementView, evt) {
         if (elementView.model.attributes.type === "standard.Rectangle")
-        _this.highLightAllPaper(elementView.model.attributes.attrs.title);
+          _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
         _this.removeAllHighLight(elementView.model.attributes.attrs.title);
@@ -500,14 +515,14 @@ export default {
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(this.sonGraphs[i].nodes, {
+          this.addLink({
             source: selection.linksList[index].target,
             target: selection.linksList[index].source,
             value: selection.linksList[index].value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(this.sonGraphs[i].nodes, selection.linksList[index]);
+          this.addLink(selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -517,58 +532,34 @@ export default {
       if (source.y <= target.y) return "DOWN";
       else return "UP";
     },
-    addLink(nodesList, link) {
+    addLink(link) {
       var path = new joint.shapes.standard.Link({});
-      let sIndex = nodesList.findIndex((node) => {
-        if (node.id === link.source) return true;
-        else return false;
+      let attributes = this.deleteLinkView.model.attributes;
+      path.attr({
+        id: "(" + link.source + ", " + link.target + ")",
+        line: {
+          strokeWidth: attributes.attrs.line.strokeWidth,
+          targetMarker: {
+            type: "path",
+            stroke: "black",
+            "stroke-width": 2,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          },
+        },
       });
+      if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
 
-      let tIndex = nodesList.findIndex((node) => {
-        if (node.id === link.target) return true;
-        else return false;
-      });
-      if (link.value < 0)
-        path.attr({
-          id: "(" + link.source + ", " + link.target + ")",
-          line: {
-            strokeWidth: -link.value * 10 + "",
-            strokeDasharray: "4 4",
-            targetMarker: {
-              // minute hand
-              type: "path",
-              stroke: "black",
-              "stroke-width": 2,
-              fill: "transparent",
-              d: "M 10 -5 0 0 10 5 ",
-            },
-          },
-        });
-      else {
-        path.attr({
-          id: "(" + link.source + ", " + link.target + ")",
-          line: {
-            strokeWidth: link.value * 10 + "",
-            targetMarker: {
-              // minute hand
-              type: "path",
-              stroke: "black",
-              "stroke-width": 2,
-              fill: "transparent",
-              d: "M 10 -5 0 0 10 5 ",
-            },
-          },
-        });
-      }
-      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      let source = attributes.target;
+      let target = attributes.source;
+      let vertices = attributes.vertices.reverse();
+      if (attributes.attrs.line.targetMarker)
+        path.attr("line/targetMarker", null);
       path.vertices(vertices);
-      path.source(nodesList[sIndex].node);
-      path.target(nodesList[tIndex].node);
+      path.source(source);
+      path.target(target);
       path.addTo(this.paper.model);
-
-      if (this.checkDirection(nodesList[sIndex], nodesList[tIndex]) === "UP") {
-        path.connector("rounded");
-      }
+      path.connector("rounded");
     },
     saveData() {
       localStorage.setItem(

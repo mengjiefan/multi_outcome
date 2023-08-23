@@ -167,9 +167,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         path.target(nodesList[tindex].node);
         path.addTo(graph);
         path.vertices(vertices);
-        if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
-            path.connector("rounded");
-        }
+        path.connector("rounded");
     })
 
     if (nodesList) {
@@ -272,7 +270,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
                 stroke: 'black',
-                strokeWidth: (link.value * 8 * gap) + '',
+                strokeWidth: (Math.abs(link.value) * 8 * gap) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
@@ -283,19 +281,16 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             }
         })
         if (link.value < 0) {
-            path.attr('line/strokeWidth', (-link.value * 8 * gap) + '')
             path.attr('line/strokeDasharray', "4 4")
         }
         if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
             path.attr('line/targetMarker', null)
-
         path.source(nodesList[sindex].node);
         path.target(nodesList[tindex].node);
         path.addTo(graph);
         path.vertices(vertices);
-        if (checkDirection(nodesList[sindex], nodesList[tindex]) === 'UP') {
-            path.connector("rounded");
-        }
+        path.connector("rounded");
+        
     })
 
     if (nodesList) {

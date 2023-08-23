@@ -235,8 +235,8 @@ export default {
         gap = dom.clientHeight / (maxH - minH + 24);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
-      console.log(gap);
       this.gaps[index] = gap;
+      
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
@@ -502,10 +502,6 @@ export default {
         this.saveData();
       }
     },
-    checkDirection(source, target) {
-      if (source.y <= target.y) return "DOWN";
-      else return "UP";
-    },
     addLink(index,link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
@@ -526,8 +522,9 @@ export default {
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
       let source = attributes.target;
       let target = attributes.source;
-      if (attributes.connector) path.attr("line/targetMarker", null);
-      else path.connector("rounded");
+
+      if (attributes.attrs.line.targetMarker) path.attr("line/targetMarker", null);
+      path.connector("rounded");
       let vertices = attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(source);

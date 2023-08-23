@@ -237,6 +237,10 @@ export const countSonPos = (son, commonPos, linksList) => {
                 if (xIndex < 0) xIndex = 0;
                 else if (xIndex > rX.length) xIndex = rX.length;
                 traversal(rxGroups[xIndex], pos.x)
+            } else if (pos.x < minPosX) {
+                traversal(lxGroups, pos.x);
+            } else if (pos.x > maxPosX) {
+                traversal(rxGroups, pos.x)
             }
 
             if (pos.y < minPosY && lY.length > 1) {
@@ -249,6 +253,10 @@ export const countSonPos = (son, commonPos, linksList) => {
                 if (yIndex < 0) yIndex = 0;
                 else if (yIndex > rY.length) yIndex = rY.length;
                 traversal(ryGroups[yIndex], pos.y)
+            } else if (pos.y < minPosY) {
+                traversal(lyGroups, pos.y);
+            } else if (pos.y > maxPosY) {
+                traversal(ryGroups, pos.y)
             }
         })
     }
@@ -277,6 +285,10 @@ export const countSonPos = (son, commonPos, linksList) => {
                     point.x = maxPosX + rX.indexOf(pos.x)
                 } else
                     point.x = maxPosX + xIndex - 1 + 1 / (rxGroups[xIndex].length + 1) * (rxGroups[xIndex].indexOf(pos.x) + 1)
+            } else if (pos.x > maxPosX) {
+                point.x = maxPosX + (pos.x - maxPosX) / (rxGroups[rxGroups.length - 1] - maxPosX);
+            } else if (pos.x < minPosX) {
+                point.x = minPosX - (minPosX - point.x) / (minPosX - lxGroups[0]);
             }
             if (pos.y < minPosY && lY.length > 1) {
                 let yIndex = Math.ceil(evenValue(lY, pos.y));
@@ -294,6 +306,10 @@ export const countSonPos = (son, commonPos, linksList) => {
                     point.y = maxPosY + rY.indexOf(pos.y)
                 } else
                     point.y = maxPosY + yIndex - 1 + 1 / (ryGroups[yIndex].length + 1) * (ryGroups[yIndex].indexOf(pos.y) + 1)
+            } else if (pos.y > maxPosY) {
+                point.y = maxPosY + (pos.y - maxPosY) / (ryGroups[ryGroups.length - 1] - maxPosY);
+            } else if (pos.y < minPosY) {
+                point.y = minPosY - (minPosY - pos.y) / (minPosY - lyGroups[0]);
             }
             points.push(point);
         })
