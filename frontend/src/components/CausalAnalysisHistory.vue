@@ -426,6 +426,9 @@ export default {
         const newRow = JSON.parse(saveData);
         this.getDifferentRows(newRow);
       }
+      this.$router.push({
+        path: this.$route.path,
+      });
     },
     saveRow(outcome, linksList, history) {
       let nextNodes = [];
@@ -450,7 +453,7 @@ export default {
       }
 
       nextNodes.splice(0, 1);
-      if(!this.tableData) this.tableData = [];
+      if (!this.tableData) this.tableData = [];
       this.tableData.push({
         CovariantNum: nextNodes.length,
         outcome: outcome,
@@ -466,7 +469,7 @@ export default {
         if (state.type === 0) sonNum++;
       });
       let _this = this;
-      if (sonNum > 1) {      
+      if (sonNum > 1) {
         for (let index = 0; index < newRow.selections.length; index++) {
           let row = newRow.selections[index];
           _this.saveRow(row.outcome, row.linksList, row.history);

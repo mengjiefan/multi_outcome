@@ -116,10 +116,10 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(40, 40);
+        faRect.resize(32, 32);
         faRect.position(
-            countXPos(nodesList[nodeI].x) - 20,
-            countYPos(nodesList[nodeI].y) - 20
+            countXPos(nodesList[nodeI].x) - 16,
+            countYPos(nodesList[nodeI].y) - 16
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
@@ -142,17 +142,17 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
             let offset = 360 / indexes.length;
             circle.attr({
                 body: {
-                    strokeDasharray: 20 * 3.1415926,
-                    strokeDashoffset: 20 * 3.1415926 / 360 * (offset * i),
+                    strokeDasharray: 16 * 3.1415926,
+                    strokeDashoffset: 16 * 3.1415926 / 360 * (offset * i),
                     fill: "transparent",
                     stroke: cmap[indexes[i]],
-                    strokeWidth: 20
+                    strokeWidth: 16
                 }
             })
-            circle.resize(20, 20);
+            circle.resize(16, 16);
             circle.position(
-                countXPos(nodesList[nodeI].x) - 10,
-                countYPos(nodesList[nodeI].y) - 10
+                countXPos(nodesList[nodeI].x) - 8,
+                countYPos(nodesList[nodeI].y) - 8
             );
             circle.addTo(graph);
         }

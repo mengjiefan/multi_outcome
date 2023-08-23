@@ -48,7 +48,7 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="simplePos.nodesList.length > 0" class="graph-svg"><g /></svg>
+      <svg v-if="simplePos && simplePos.nodesList.length > 0" class="graph-svg"><g /></svg>
     </div>
   </div>
 </template>
@@ -100,7 +100,7 @@ export default {
       hasNoHidden: ref(true),
       tip2Show: ref(false),
       transform: ref(),
-      simplePos: ref([]),
+      simplePos: ref(),
       multipleSearchValue: ref({
         nodesList: [],
         linksList: [],
@@ -124,7 +124,7 @@ export default {
 
     truelyDelete() {
       console.log("delete edge");
-      this.simplePos = [];
+      this.simplePos = null;
       let linksList = this.multipleSearchValue.linksList.filter(
         (link) => !link.hidden
       );
@@ -152,7 +152,6 @@ export default {
       this.saveData();
       this.drawGraph();
     },
-    getDown() {},
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
@@ -203,33 +202,32 @@ export default {
         } else {
           if (edge.reverse) {
             direction = that.checkDirection(edge.target, edge.source);
-            completeStyle = completeStyle + "marker-start:url(#normals);";
+            if (direction !== "DOWN")
+              completeStyle = completeStyle + "marker-start:url(#normals);";
           } else {
-            completeStyle = completeStyle + "marker-end:url(#normale);";
             direction = that.checkDirection(edge.source, edge.target);
+            if (direction !== "DOWN")
+              completeStyle = completeStyle + "marker-end:url(#normale);";
           }
           if (edge.value < 0) {
             completeStyle = completeStyle + "stroke-dasharray:4 4";
           }
-          if (direction === "DOWN") {
-            g.setEdge(edge.source, edge.target, {
-              style: completeStyle,
-              arrowhead: "undirected",
-            });
-          } else {
-            g.setEdge(edge.source, edge.target, {
-              style: completeStyle,
-              curve: d3.curveBasis,
-              arrowhead: "undirected",
-            });
-          }
+
+          g.setEdge(edge.source, edge.target, {
+            style: completeStyle,
+            curve: d3.curveBasis,
+            arrowhead: "undirected",
+          });
         }
       });
 
       dagre.layout(g);
-      if (that.simplePos.length <= 0) {
-        that.simplePos = countSimplePos(g, this.multipleSearchValue.nodesList, this.multipleSearchValue.linksList);
-        console.log("simplePos", that.simplePos);
+      if (!that.simplePos || that.simplePos.nodesList <= 0) {
+        that.simplePos = countSimplePos(
+          g,
+          this.multipleSearchValue.nodesList,
+          this.multipleSearchValue.linksList
+        );
         setTimeout(() => {
           that.drawGraph();
         }, 0);
@@ -237,7 +235,6 @@ export default {
 
       var svg = d3.select("svg");
       let inner = svg.select("g");
-      console.log(svg.selectAll(".edgePath").select(".path"));
       //正直反曲
       if (this.tooltip) {
         this.tipHidden();
@@ -315,9 +312,11 @@ export default {
           if (d3.select(this).style("stroke") !== "transparent") {
             d3.select(this).style("stroke", "black");
             if (!_this.isReverse(id)) {
-              d3.select(this).style("marker-end", "url(#normale)"); //Added
+              if (_this.checkDirection(id.v, id.w) === "UP")
+                d3.select(this).style("marker-end", "url(#normale)"); //Added
             } else {
-              d3.select(this).style("marker-start", "url(#normals)"); //Added
+              if (_this.checkDirection(id.w, id.v) === "UP")
+                d3.select(this).style("marker-start", "url(#normals)"); //Added
             }
           }
           _this.tipHidden();
@@ -327,10 +326,12 @@ export default {
           if (d3.select(this).style("stroke") !== "transparent") {
             if (!_this.isReverse(id)) {
               router = "(" + id.v + ", " + id.w + ")";
-              d3.select(this).style("marker-end", "url(#activeE)"); //Added
+              if (_this.checkDirection(id.v, id.w) === "UP")
+                d3.select(this).style("marker-end", "url(#activeE)"); //Added
             } else {
               router = "(" + id.w + ", " + id.v + ")";
-              d3.select(this).style("marker-start", "url(#activeS)"); //Added
+              if (_this.checkDirection(id.w, id.v) === "UP")
+                d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
             let width = d3.select(this).style("stroke-width");
@@ -371,17 +372,21 @@ export default {
         });
     },
     checkDirection(source, target) {
-      if (this.simplePos.length <= 0) return "DOWN";
+      if (!this.simplePos || this.simplePos.nodesList.length <= 0)
+        return "DOWN";
       let sIndex = this.simplePos.nodesList.findIndex((node) => {
         if (node.id === source) return true;
         else return false;
       });
-      let tIndex = this.simplePos.linksList.findIndex((node) => {
+      let tIndex = this.simplePos.nodesList.findIndex((node) => {
         if (node.id === target) return true;
         else return false;
       });
       if (sIndex < 0 || tIndex < 0) return "DOWN";
-      if (this.simplePos.nodesList[sIndex].y <= this.simplePos.nodesList[tIndex].y) return "DOWN";
+      if (
+        this.simplePos.nodesList[sIndex].y <= this.simplePos.nodesList[tIndex].y
+      )
+        return "DOWN";
       else return "UP";
     },
     drawGraph() {
@@ -426,12 +431,12 @@ export default {
     getLinks() {
       this.hasNoHidden = true;
       let newFac = [];
-      let newOut = [];
+      let newOut;
       this.multipleSearchValue.nodesList.forEach((row) => {
         if (row.type !== 0) newFac.push(row.id);
       });
       this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) newOut.push(row.id);
+        if (row.type === 0) newOut = row.id;
       });
       this.countingGraph = true;
       this.showLoading();
@@ -443,12 +448,12 @@ export default {
         url: "http://localhost:8000/api/getLink",
         //参数
         params: {
-          outcomes: newOut.join(),
+          outcome: newOut,
           factors: newFac.join(),
         },
       })
         .then((response) => {
-          this.simplePos = [];
+          this.simplePos = null;
           console.log("new links", response.data);
           this.multipleSearchValue = {
             linksList: response.data.links,
@@ -617,7 +622,6 @@ export default {
           return true;
         } else return false;
       });
-      console.log(index);
       if (index > -1) {
         this.multipleSearchValue.linksList[index] = {
           source: this.multipleSearchValue.linksList[index].source,
@@ -845,4 +849,3 @@ export default {
   line-height: 32px;
 }
 </style>
-
