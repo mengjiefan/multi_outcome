@@ -89,6 +89,13 @@ export default new VueRouter({
 									component: () => import(
 										"../views/DirectedGraph/OptimalSubGraph.vue"
 									),
+								},
+								{
+									name: 'OriginalSubGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/original-sub-graph',
+									component: () => import(
+										"../views/DirectedGraph/OriginalSubGraph.vue"
+									),
 								}
 							]
 						},

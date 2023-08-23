@@ -77,7 +77,6 @@ export const countSonPos = (son, linksList) => {
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
         let points = [];
-        console.log(link.source, link.target)
         vertice.points.forEach(pos => {
             let point = {
                 x: pos.x,
@@ -115,7 +114,6 @@ export const countSonPos = (son, linksList) => {
             id: pos.id
         }
     });
-    console.log(x, 'optimal pos')
     let gap = {
         xGap: 50,
         yGap: 50,

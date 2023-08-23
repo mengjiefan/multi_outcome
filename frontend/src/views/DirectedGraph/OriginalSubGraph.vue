@@ -50,7 +50,7 @@ import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/extracted/CountPos";
+import { countSonPos } from "@/plugin/original/CountPos";
 
 export default {
   data() {
@@ -58,7 +58,6 @@ export default {
       papers: ref([]),
       paper: ref(),
       sonGraphs: ref([]),
-      finalPos: ref(),
       gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
@@ -198,9 +197,11 @@ export default {
       this.sonGraphs = [];
       this.gaps = [];
       for (let i = 0; i < this.sonNum; i++) {
+        let selection = this.multipleSearchValue.selections[i];
         let ans = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
+          selection.outcome,
+          selection.variable,
+          selection.linksList
         );
         this.sonGraphs.push(ans);
         this.gaps.push(1);
@@ -209,7 +210,20 @@ export default {
         this.drawSonGraph(i);
       }
     },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
+    },
     drawSonGraph(index) {
+      for (let i = 0; i < this.sonGraphs[index].nodesList.length; i++)
+        this.sonGraphs[index].nodesList[i]["indexes"] = this.getNodeIndex(
+          this.sonGraphs[index].nodesList[i].id
+        );
       let dom = document.getElementById("paper" + (index + 1));
 
       let minW = 150000;
@@ -236,7 +250,7 @@ export default {
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
       this.gaps[index] = gap;
-      
+
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
@@ -489,20 +503,20 @@ export default {
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(i,{
+          this.addLink(i, {
             source: selection.linksList[index].target,
             target: selection.linksList[index].source,
             value: selection.linksList[index].value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(i,selection.linksList[index]);
+          this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
       }
     },
-    addLink(index,link) {
+    addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
       const _this = this;
@@ -523,7 +537,8 @@ export default {
       let source = attributes.target;
       let target = attributes.source;
 
-      if (attributes.attrs.line.targetMarker) path.attr("line/targetMarker", null);
+      if (attributes.attrs.line.targetMarker)
+        path.attr("line/targetMarker", null);
       path.connector("rounded");
       let vertices = attributes.vertices.reverse();
       path.vertices(vertices);
@@ -544,7 +559,6 @@ export default {
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }

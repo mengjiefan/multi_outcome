@@ -68,7 +68,7 @@ import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
 import historyManage from "@/plugin/history";
-import { countSimplePos } from "@/plugin/tightened/CountPos";
+import { countSimplePos } from "@/plugin/extracted/CountPos";
 
 var cmap = [
   "#1f77b4",
@@ -282,12 +282,6 @@ export default {
             }, 0);
           }
         })
-        .attr("title", function (v) {
-          return v;
-        })
-        .each(function (v) {
-          $(this).tipsy({ gravity: "n", opacity: 1, html: true });
-        });
 
       // add hover effect & click hint to lines
       // Center the graph

@@ -40,12 +40,12 @@ import axios from "axios";
 import { ref } from "vue";
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
-import { g } from "jointjs";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
-import { countPos, countSimplePos } from "@/plugin/tightened/CountPos";
+import { countPos } from "@/plugin/tightened/CountPos";
+import { countSimplePos } from "@/plugin/extracted/CountPos";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 
 export default {

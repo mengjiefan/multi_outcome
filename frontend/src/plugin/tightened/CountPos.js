@@ -121,33 +121,6 @@ const findLink = (links, edge) => {
     })
     return links[index];
 }
-export const countSimplePos = (g, nodes, links) => {
-
-    let nodesList = [];
-    nodes.forEach(factor => {
-        let pos = g.node(factor.id);
-        nodesList.push({
-            type: factor.type,
-            id: factor.id,
-            x: pos.x,
-            y: pos.y,
-        })
-    })
-    let linksList = [];
-    g.edges().forEach((v) => {
-        let pos = g.edge(v);
-        let points = pos.points;
-        let index = links.findIndex(link => {
-            if (link.source === v.v && link.target === v.w) return true;
-            else if (link.target === v.w && link.source === v.v) return true;
-            else return false;
-        })
-        let edge = links[index];
-        edge['points'] = points;
-        linksList.push(edge)
-    })
-    return { nodesList, linksList };
-}
 const traversal = (list, value) => {
     if (list.includes(value)) return list;
     let i;
@@ -344,7 +317,6 @@ export const countSonPos = (son, commonPos, linksList) => {
         xGap: 50,
         yGap: 50,
     }
-    console.log(lX.length, maxPosX - minPosX, rX.length, 'tightened pos')
     if (maxPosX + rX.length > 0) {
         gap.xGap = 1500 / (maxPosX - minPosX + rX.length + lX.length);
     }

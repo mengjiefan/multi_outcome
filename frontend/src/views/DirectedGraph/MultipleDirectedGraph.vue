@@ -25,6 +25,12 @@
       >
         Optimal Subgraphs
       </div>
+      <div
+        :class="name === 'OriginalSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('OriginalSubGraph')"
+      >
+        Original Subgraphs
+      </div>
     </div>
     <router-view></router-view>
   </div>
