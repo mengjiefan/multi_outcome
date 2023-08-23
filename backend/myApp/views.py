@@ -50,103 +50,6 @@ def test11(request):
 
 #根据outcome和factor获取所有节点和边
 # 实际中，不需要再次计算此步，直接拿第一步中的经过交互完成之后的经专家确认的多个子图中的节点和边（去重后），交给dagre绘制即可
-def get_causal_edges(request):
-    filename = "./myApp/MissingValue_fill_data_all.xlsx"
-
-    factors = request.GET.get("factors").split(",")
-    print("所有因素为{}",factors)
-    outcomes = request.GET.get("outcomes").split(",")
-
-    dataset = pd.read_excel(filename, index_col=0)
-
-    df = dataset.drop(columns=list(set(results) - set(outcomes)))
-    df.dropna(inplace=True)
-    labels = list(dataset.columns.values)
-    otherFactors = list(set(labels) - set(results)- set(factors))
-    df.drop(columns=list(otherFactors), inplace=True)
-
-    top_factors_list = list(factors)
-
-    nodes_list = list(outcomes)
-
-    nodes_list_all = top_factors_list + nodes_list
-
-    df = df[nodes_list_all]  # 保证后续使用PC算法时，nodes_pc[i]和GraphNode(nodes_list_all[i]))是匹配的
-
-    data = df.to_numpy()
-
-
-    cg_without_background_knowledge = pc(data, 0.05, fisherz, True, 0,
-                                         3)  # Run PC and obtain the estimated graph (CausalGraph object)
-    nodes_pc = cg_without_background_knowledge.G.get_nodes()
-
-
-    replace_dict = {}
-    # node = nodes_list_all
-    for i in range(len(nodes_list_all)):
-        print('节点为：{}---{}'.format(nodes_pc[i], GraphNode(nodes_list_all[i])))
-
-        replace_dict_single = {str(nodes_pc[i]): str(GraphNode(nodes_list_all[i]))}
-        print(replace_dict_single)
-        # 向字典中添加元素
-        replace_dict[str(nodes_pc[i])] = str(GraphNode(nodes_list_all[i]))
-        print('---------')
-    print('节点对应标签replace_dict为:\n', replace_dict)
-
-    result_data = str(cg_without_background_knowledge.G)
-    print(result_data)
-
-    origin_edges = re.findall('X\d --> X\d', result_data)
-    print('origin_edges:\n', origin_edges)
-
-    new_edges = []
-    for ele in origin_edges:
-        ele_sin = ele.split(' --> ')
-        new_ele_sin = [replace_dict[j] if j in replace_dict else j for j in ele_sin]
-        # print(new_ele_sin)
-        X1 = new_ele_sin[0]
-        X2 = new_ele_sin[1]
-
-        data_corr = df[X1].corr(df[X2])
-        print("变量{}和{}的回归系数为{}".format(X1, X2, "%.3f" % data_corr))
-        new_ele_sin.append(float("%.3f" % data_corr))
-        print(new_ele_sin)
-        new_edges.append(new_ele_sin)
-
-    print('替换后的边new_edges为:\n', new_edges)
-
-    # 获取特定结局的PC因果算法所得的边
-    links = []
-    for link_ele in new_edges:
-        link_sin = {}
-        link_sin['source'] = link_ele[0]
-        link_sin['target'] = link_ele[1]
-        link_sin['value'] = link_ele[2]
-
-        links.append(link_sin)
-    print('因果图的有向边为：\n', links)
-
-    # 获取特定结局的PC因果算法所得的节点
-    nodes_variables = []
-    for outcome in outcomes:
-        node_outcome = {}  # TypeError: list indices must be integers or slices, not str --- 设成对象而非数组
-        node_outcome['id'] = outcome
-        node_outcome['type'] = 0
-        nodes_variables.append(node_outcome)
-    print(node_outcome)
-    for node_ele in top_factors_list:
-        node_sin = {}
-        node_sin['id'] = node_ele
-        node_sin['type'] = 1
-        nodes_variables.append(node_sin)
-    print(nodes_variables)
-    print('因果图的节点为：\n', nodes_variables)
-
-
-    return JsonResponse({'outcome': outcomes,
-                         'nodes_list_all': nodes_list_all,
-                         'nodes': nodes_variables, 'links': links})
-
 
 ukb_outcomes = ['Hypertension', 'Diabetes', 'BreastMalignancy', 'ProstateMalignancy',
            'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
@@ -300,7 +203,8 @@ def get_list(request):
             estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
             if estimate is not None:
                 effect_values[(source, target)] = estimate.value
-                link["effect_value"] = estimate.value
+                #link["effect_value"] = estimate.value
+                link["value"] = estimate.value
             else:
                 print(f"Causal effect estimation failed for {source} to {target}")
         else:
@@ -309,6 +213,155 @@ def get_list(request):
     # 输出所有因果效应值
     print("All causal effect values:", effect_values)
     return JsonResponse({'outcome': outcome, 'CovariantNum': num_top,
+                         'nodes':nodes_variables,'links':links})
+
+def get_causal_edges(request):
+    outcome = request.GET.get("outcome")
+    dataset = request.GET.get('dataset')
+    fileName = "./myApp/MissingValue_fill_data_all.csv"
+    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
+           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
+    if dataset == 'ukb':
+        fileName = ukb_file
+        outcomes =ukb_outcomes
+    elif dataset == 'clhls':
+        fileName = clhls_file
+        outcomes = clhls_outcomes
+
+    factors = request.GET.get("factors").split(",")
+    print("所有因素为{}", factors)
+
+    # 读取CSV文件
+    data = pd.read_csv(fileName)
+
+    # 计算因素变量的大小
+    factor_size = len(factors)
+    # 打印结果
+    print("因素变量的大小：", factor_size)
+
+    outcome_corr = data[factors].corrwith(data[outcome])
+    top_correlated_factors = outcome_corr.index.tolist()
+    # 所有的节点（包括结局变量和与结局变量相关的前top变量）
+    outcome_vars = top_correlated_factors + [outcome]
+
+    outcome_data_df = data[outcome_vars]
+
+    # 将DataFrame转换为NumPy数组
+    data_array = outcome_data_df.to_numpy()
+
+    # 使用转换后的NumPy数组运行PC算法
+    cg = pc(data_array, 0.05, fisherz, True, 0, 3, outcome_vars)
+    # Retrieving the graph nodes with labels
+    nodes_pc = cg.G.get_nodes()
+    node_labels = outcome_vars  # Use variable names as labels
+
+    replace_dict = {}
+    # node = nodes_list_all
+    for i in range(len(outcome_vars)):
+        # 使用字典修改多个词语
+        replace_dict_single = {str(nodes_pc[i]): str(GraphNode(outcome_vars[i]))}
+        replace_dict[str(nodes_pc[i])] = str(GraphNode(outcome_vars[i]))
+    result_data = str(cg.G)
+
+    origin_edges = re.findall('X\d --> X\d', result_data)
+
+    # 使用字典修改多个词语
+    new_edges = []
+    effect_values = {}  # 存储效应值的字典
+    for ele in origin_edges:
+        ele_sin = ele.split(' --> ')
+        new_ele_sin = [replace_dict[j] if j in replace_dict else j for j in ele_sin]
+        # print(new_ele_sin)
+        X1 = new_ele_sin[0]
+        X2 = new_ele_sin[1]
+        # 计算线性回归系数
+        data_corr = outcome_data_df[X1].corr(outcome_data_df[X2])
+        new_ele_sin.append(float("%.3f" % data_corr))
+        new_edges.append(new_ele_sin)
+
+    print('替换后的边new_edges为:\n', new_edges)
+
+    # 获取特定结局的PC因果算法所得的边
+    links = []
+    for link_ele in new_edges:
+        link_sin = {}
+        link_sin['source'] = link_ele[0]
+        link_sin['target'] = link_ele[1]
+        link_sin['corr'] = link_ele[2]
+        links.append(link_sin)
+    print('因果图的有向边为：\n', links)
+
+    # 获取特定结局的PC因果算法所得的节点
+    nodes_variables = []
+    node_outcome = {}  # TypeError: list indices must be integers or slices, not str --- 设成对象而非数组
+    node_outcome['id'] = outcome
+    node_outcome['type'] = 0
+    for node_ele in top_correlated_factors:
+        data_col = data[node_ele].to_numpy()
+        node_sin = {}
+        node_sin['range'] = data_col.tolist()
+        node_sin['id'] = node_ele
+        node_sin['type'] = 1
+        nodes_variables.append(node_sin)
+    nodes_variables.append(node_outcome)
+    print('因果图的节点为：\n', nodes_variables)
+
+    # 构建有向图
+    G = nx.DiGraph()
+
+    # 添加节点
+    for node in nodes_variables:
+        G.add_node(node['id'])
+
+    # 添加边
+    for link in links:
+        source = link['source']
+        target = link['target']
+        G.add_edge(source, target)
+
+    # 检查是否为有向无环图（DAG）
+    if nx.is_directed_acyclic_graph(G):
+        print(
+            "The causal graph is a Directed Acyclic Graph (DAG).")  # The causal graph is a Directed Acyclic Graph (DAG).
+    else:
+        print(
+            "The causal graph contains cycles and is not a Directed Acyclic Graph (DAG). Please ensure your causal graph is acyclic.")
+    print("---------------------")
+
+    # 计算links中每一个source到target的效应量
+    # Step 1: 构建因果图
+
+    # Step 2: 循环计算因果效应
+    effect_values = {}
+
+    for link in links:
+        source = link['source']
+        target = link['target']
+        # Step 3: 定义因果模型
+        # 不对以下model提供 graph=graph_gml 时，可以得到想要的effect，否则总是报错
+        model = CausalModel(
+            data=outcome_data_df,
+            treatment=source,
+            outcome=target,
+        )
+        # print("model为\n", model)
+
+        # Step 4: 识别因果效应
+        identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+        if identified_estimand is not None:
+            # Step 5: 估计因果效应
+            estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
+            if estimate is not None:
+                effect_values[(source, target)] = estimate.value
+                link["value"] = estimate.value
+            else:
+                print(f"Causal effect estimation failed for {source} to {target}")
+        else:
+            print(f"Causal identification failed for {source} to {target}")
+
+    # 输出所有因果效应值
+    print("All causal effect values:", effect_values)
+    return JsonResponse({'outcome': outcome,
                          'nodes':nodes_variables,'links':links})
 
 def select_factor(request):
