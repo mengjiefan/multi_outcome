@@ -99,14 +99,28 @@ export default {
   },
   name: "OutcomeSelector",
   setup() {
-    const options = defaultResults.map((result) => {
+    let options = [];
+    let datasetType = localStorage.getItem("DATATYPE");
+    if (!datasetType) datasetType = "default";
+    switch (datasetType) {
+      case "default":
+        options = defaultResults;
+        break;
+      case "clhls":
+        options = clhlsResults;
+        break;
+      case "ukb":
+        options = ukbResults;
+        break;
+      default:
+        break;
+    }
+    options = options.map((result) => {
       return {
         label: result,
         value: result,
       };
     });
-    let datasetType = localStorage.getItem("DATATYPE");
-    if (!datasetType) datasetType = "default";
     return {
       nowType: ref(datasetType),
       CovariantNum: ref(""),

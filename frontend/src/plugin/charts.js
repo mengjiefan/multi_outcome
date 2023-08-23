@@ -163,7 +163,7 @@ export const creatAllRangeChart = (dom, data) => {
         createChart4(myChart, data);
 }
 const traversal = (list, number, value) => {
-    if (list.includes(value)) return list;
+    if (list.includes(value)) return;
     let i;
     for (i = 0; i < list.length; i++) {
         if (value < list[i]) {
@@ -191,7 +191,7 @@ const createChart1 = (myChart, data) => {
             traversal(axis, value, one)
         } else {
             let index = axis.indexOf(one);
-            value[index] = value[index]++;
+            value[index] = value[index] + 1;
         }
     });
     const option = {
@@ -249,7 +249,7 @@ const createChart2 = (myChart, data) => {
         },
         series: [
             {
-                barWidth: 200/axis.length,
+                barWidth: 200 / axis.length,
                 data: number,
                 type: 'bar'
             }
@@ -266,6 +266,8 @@ const createChart3 = (myChart, data) => {
     });
     max = Math.ceil(max / 0.02);
     min = Math.floor(min / 0.02);
+    max = parseFloat(max.toFixed(2));
+    min = parseFloat(min.toFixed(2));
     min = min * 0.02;
     max = max * 0.02;
     let axis = [];
@@ -309,18 +311,24 @@ const createChart4 = (myChart, data) => {
     min = Math.floor(min / 0.05);
     min = min * 0.05;
     max = max * 0.05;
+
+    min = parseFloat(min.toFixed(2))
+    max = parseFloat(max.toFixed(2));
     let gap = (max - min) / 5;
     let axis = [];
     let number = [];
     while (min < max) {
-        axis.push(min + '~' + (min + gap - 0.01));
+        let high = (min + gap - 0.01);
+        high = high.toFixed(2);
+        axis.push(min + '~' + high);
         let ans = data.filter(one => one < min + gap && one >= min);
         number.push(ans.length)
         min = min + gap;
+        min = parseFloat(min.toFixed(2))
     }
     let more = data.filter(one => one === max);
     number[number.length - 1] = number[number.length - 1] + more.length;
-    axis[axis.length - 1] = (max - gap) + '~' + max;
+    axis[axis.length - 1] = ((max - gap)).toFixed(2) + '~' + max;
     const option = {
         tooltip,
         grid,
