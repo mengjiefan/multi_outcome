@@ -2,10 +2,7 @@
 <template>
   <div class="navbar">
     <el-card class="box-card">
-      <el-radio-group
-        v-model="dataset"
-        style="margin-bottom: 30px"
-      >
+      <el-radio-group v-model="dataset" style="margin-bottom: 30px">
         <el-radio-button label="default">default</el-radio-button>
         <el-radio-button label="clhls">clhls</el-radio-button>
         <el-radio-button label="ukb">ukb</el-radio-button>
@@ -17,7 +14,9 @@
         ></el-tab-pane>
         <el-tab-pane label="Multiple Outcomes" name="second">
           <div class="AnalysisHistory">
-            <CausalAnalysisHistory :dataset="dataset"></CausalAnalysisHistory></div
+            <CausalAnalysisHistory
+              :dataset="dataset"
+            ></CausalAnalysisHistory></div
         ></el-tab-pane>
       </el-tabs>
     </el-card>
@@ -35,24 +34,22 @@ export default {
   name: "AppNavbar",
   components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory },
   setup() {
+    let datasetType = localStorage.getItem("DATATYPE");
+    if (!datasetType) datasetType = "default";
     return {
-      oldChoice: ref("default"),
-      dataset: ref("default"),
+      dataset: ref(datasetType),
       activeName: ref("single"),
     };
   },
   watch: {
     $route: {
       handler: function (route) {
-        console.log(route);
         if (route.query.mode === "save") {
           this.activeName = "second";
         }
       },
       immediate: true,
     },
-  },
-  methods: {
   },
 };
 </script>

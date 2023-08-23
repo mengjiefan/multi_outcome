@@ -105,8 +105,10 @@ export default {
         value: result,
       };
     });
+    let datasetType = localStorage.getItem("DATATYPE");
+    if (!datasetType) datasetType = "default";
     return {
-      nowType: ref("default"),
+      nowType: ref(datasetType),
       CovariantNum: ref(""),
       value: ref(""),
       SelectedVariables: ref([]),
@@ -255,6 +257,7 @@ export default {
       });
     },
     getTag(dataset) {
+      this.value = null;
       let options = [];
       switch (dataset) {
         case "default":
@@ -277,8 +280,9 @@ export default {
             label: option,
           };
         });
-        localStorage.setItem("GET_JSON_RESULT", "");
-        localStorage.setItem("GET_SAVE_DATA", "");
+        localStorage.setItem("GET_JSON_RESULT", ""); //the data of graph
+        localStorage.setItem("GET_SAVE_DATA", ""); //the data to be saved
+        localStorage.setItem("DATATYPE", dataset);
         if (this.$route.name !== "DirectedGraphView")
           this.$router.push({
             path: "/AppMainPlot/redirect",
@@ -290,8 +294,8 @@ export default {
   watch: {
     dataset: {
       handler: function (dataset) {
+        console.log("dataset changes");
         this.getTag(dataset);
-        this.value = null;
       },
       immediate: true,
     },

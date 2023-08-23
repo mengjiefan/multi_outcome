@@ -48,7 +48,9 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="simplePos && simplePos.nodesList.length > 0" class="graph-svg"><g /></svg>
+      <svg v-if="simplePos && simplePos.nodesList.length > 0" class="graph-svg">
+        <g />
+      </svg>
     </div>
   </div>
 </template>
@@ -61,7 +63,7 @@ import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import { VariablesOptions } from "@/plugin/variable";
+import { defaultFactors, ukbFactors, clhlsFactors } from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import singleGraph from "@/plugin/singleGraph";
@@ -95,7 +97,7 @@ export default {
       tooltip2: null,
       menuShow: ref(false),
       checkAll: ref(false),
-      VariablesOptions,
+      VariablesOptions: ref(defaultFactors),
       checkedVariables: ref([]),
       hasNoHidden: ref(true),
       tip2Show: ref(false),
@@ -717,6 +719,10 @@ export default {
 
   mounted() {
     let result = localStorage.getItem("GET_JSON_RESULT");
+    let datasetType = localStorage.getItem("DATATYPE");
+    if (datasetType === "default") this.VariablesOptions = defaultFactors;
+    else if (datasetType === "ukb") this.VariablesOptions = ukbFactors;
+    else this.VariablesOptions = clhlsFactors;
     if (result) this.multipleSearchValue = JSON.parse(result);
     else this.multipleSearchValue = null;
     console.log("getItem", this.multipleSearchValue);

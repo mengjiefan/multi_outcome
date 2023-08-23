@@ -119,7 +119,6 @@ export default {
   watch: {
     dataset: {
       handler: function (dataset) {
-        console.log("dataset changes");
         this.changeTableData(dataset);
       },
       immediate: true,
@@ -345,7 +344,6 @@ export default {
               if (link.source !== linksList[index].source) {
                 link.source = linksList[index].source;
                 link.target = linksList[index].target;
-                console.log("differ", link);
                 if (!link.reverse) {
                   link["reverse"] = true;
                 }
