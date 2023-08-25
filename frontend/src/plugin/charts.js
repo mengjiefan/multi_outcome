@@ -102,6 +102,15 @@ export const createCharts = (id, dom, data) => {
         createChartWithIBound(myChart, data, [60, 80, 85, 90, 100, 110], true, true, 'mmHg');
     else if (id === 'g71_hr')
         createChartWithIBound(myChart, data, [55, 67, 74, 80, 88, 100], false, true, 'bpm');
+    else if (id === 'age_group_decade')
+        createChartOfInter(myChart, data, ['', '65-79', '80-89', '90-99', '>=100'])
+    else if (id === 'follow_dura') {
+        let max = 0;
+        data.forEach(one => {
+            if (one > max) max = one;
+        })
+        createChartOfIGap(myChart, data, 30, 0, Math.ceil(max / 30));
+    }
     else {
         creatAllRangeChart(myChart, data);
     }
