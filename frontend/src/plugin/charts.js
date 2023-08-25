@@ -82,7 +82,7 @@ export const createCharts = (id, dom, data) => {
     } else if (id === 'BMI')
         createBMIChart(myChart, data)
     else if (id === 'BMI_cate')
-        createChartOfInter(myChart, data, ['18.5-23.9', '<18.5', '24-27.9', '>=28'])
+        createChartOfInter(myChart, data, ['18.5-23.9', '<18.5', '24-27.9', '≥28'])
     else if (id === 'frailty_base_tri')
         createChartOfInter(myChart, data, ['no frailty', 'pre-frailty', 'frailty'])
     else if (id === 'residenc_byte')
@@ -103,14 +103,14 @@ export const createCharts = (id, dom, data) => {
     else if (id === 'g71_hr')
         createChartWithIBound(myChart, data, [55, 67, 74, 80, 88, 100], false, true, 'bpm');
     else if (id === 'age_group_decade')
-        createChartOfInter(myChart, data, ['', '65-79', '80-89', '90-99', '>=100'])
-    else if (id === 'follow_dura') {
+        createChartOfInter(myChart, data, ['', '65-79', '80-89', '≥90'])
+    /*else if (id === 'follow_dura') {
         let max = 0;
         data.forEach(one => {
             if (one > max) max = one;
         })
         createChartOfIGap(myChart, data, 30, 0, Math.ceil(max / 30));
-    }
+    }*/
     else {
         creatAllRangeChart(myChart, data);
     }
