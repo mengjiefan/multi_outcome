@@ -362,6 +362,83 @@ def get_causal_edges(request):
     return JsonResponse({'outcome': outcome,
                          'nodes':nodes_variables,'links':links})
 
+#modify graph and recaculate effect_value
+def get_value_of_graph(request):
+    G = nx.DiGraph()
+    nodes_variables = request.GET.get("variables").split(",")
+    linkslist = request.GET.get('linkslist').split(",")
+    outcome = request.GET.get('outcome')
+    dataset = request.GET.get('dataset')
+
+    if dataset == 'ukb':
+        fileName = ukb_file
+    elif dataset == 'clhls':
+        fileName = clhls_file
+
+    # 读取CSV文件
+    data = pd.read_csv(fileName)
+
+    outcome_vars = nodes_variables + [outcome]
+    outcome_data_df = data[outcome_vars]
+
+    links = []
+    for i in range(len(links)/2-1):
+        links.append({
+            'source': linkslist[i*2],
+            'target': linkslist[i*2+1]
+        })
+    # 添加节点
+    for node in nodes_variables:
+        G.add_node(node['id'])
+
+    # 添加边
+    for link in links:
+        source = link['source']
+        target = link['target']
+        G.add_edge(source, target)
+
+    # 检查是否为有向无环图（DAG）
+    if nx.is_directed_acyclic_graph(G):
+        print(
+            "The causal graph is a Directed Acyclic Graph (DAG).")  # The causal graph is a Directed Acyclic Graph (DAG).
+    else:
+        print(
+            "The causal graph contains cycles and is not a Directed Acyclic Graph (DAG). Please ensure your causal graph is acyclic.")
+    print("---------------------")
+
+    # 计算links中每一个source到target的效应量
+    # Step 1: 构建因果图
+
+    # Step 2: 循环计算因果效应
+    effect_values = {}
+
+    for link in links:
+        source = link['source']
+        target = link['target']
+        # Step 3: 定义因果模型
+        # 不对以下model提供 graph=graph_gml 时，可以得到想要的effect，否则总是报错
+        model = CausalModel(
+            data=outcome_data_df,
+            treatment=source,
+            outcome=target,
+        )
+        # print("model为\n", model)
+
+        # Step 4: 识别因果效应
+        identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+        if identified_estimand is not None:
+            # Step 5: 估计因果效应
+            estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
+            if estimate is not None:
+                effect_values[(source, target)] = estimate.value
+                # link["effect_value"] = estimate.value
+                link["value"] = estimate.value
+            else:
+                print(f"Causal effect estimation failed for {source} to {target}")
+        else:
+            print(f"Causal identification failed for {source} to {target}")
+
+    return JsonResponse({'links': links})
 def select_factor(request):
     # 数据文件的路径，需要为excel表格;Django读取失败时，需 install openpyxl，Excel文件路径前的r是为了Windows转义用
     # filename = r"C:\MyProjects_yuxi\ComparativeVis\Django+vue前后端交互\django_vue\multiOutcomeInter\myApp\MissingValue_fill_data_all.xlsx"
