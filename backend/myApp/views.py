@@ -154,7 +154,6 @@ def get_list(request):
         node_sin['type'] = 1
         nodes_variables.append(node_sin)
     nodes_variables.append(node_outcome)
-    print('因果图的节点为：\n', nodes_variables)
 
     # 构建有向图
     G = nx.DiGraph()
@@ -229,15 +228,15 @@ def get_causal_edges(request):
         outcomes = clhls_outcomes
 
     factors = request.GET.get("factors").split(",")
-    print("所有因素为{}", factors)
 
     # 读取CSV文件
     data = pd.read_csv(fileName)
-
     # 计算因素变量的大小
     factor_size = len(factors)
     # 打印结果
     print("因素变量的大小：", factor_size)
+    print("所有因素为{}", factors)
+    print(dataset)
 
     outcome_corr = data[factors].corrwith(data[outcome])
     top_correlated_factors = outcome_corr.index.tolist()
@@ -304,7 +303,6 @@ def get_causal_edges(request):
         node_sin['type'] = 1
         nodes_variables.append(node_sin)
     nodes_variables.append(node_outcome)
-    print('因果图的节点为：\n', nodes_variables)
 
     # 构建有向图
     G = nx.DiGraph()
