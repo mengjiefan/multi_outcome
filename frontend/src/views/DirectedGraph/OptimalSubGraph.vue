@@ -247,11 +247,11 @@ export default {
         });
       });
       let gap = (dom.clientWidth - 40) / (maxW - minW);
-      if ((dom.clientHeight - 160) / (maxH - minH) < gap)
-        gap = (dom.clientHeight - 160) / (maxH - minH);
+      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+        gap = (dom.clientHeight - 120) / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
-        (dom.clientHeight - 120 - gap * (maxH - minH)) / 2 - minH * gap;
+        (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
 
       let paper = drawSonCharts(
         dom,

@@ -231,12 +231,13 @@ export default {
         });
       });
       let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-      if ((dom.clientHeight - 32) / (maxH - minH + 24) < gap)
-        gap = dom.clientHeight / (maxH - minH + 24);
+      if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
+        gap = (dom.clientHeight - 96) / (maxH - minH + 24);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
+      let startY =
+        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
       this.gaps[index] = gap;
-      
+
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
@@ -489,20 +490,20 @@ export default {
         });
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(i,{
+          this.addLink(i, {
             source: selection.linksList[index].target,
             target: selection.linksList[index].source,
             value: selection.linksList[index].value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(i,selection.linksList[index]);
+          this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
       }
     },
-    addLink(index,link) {
+    addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
       const _this = this;
@@ -523,7 +524,8 @@ export default {
       let source = attributes.target;
       let target = attributes.source;
 
-      if (attributes.attrs.line.targetMarker) path.attr("line/targetMarker", null);
+      if (attributes.attrs.line.targetMarker)
+        path.attr("line/targetMarker", null);
       path.connector("rounded");
       let vertices = attributes.vertices.reverse();
       path.vertices(vertices);

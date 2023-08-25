@@ -44,10 +44,9 @@
   <script>
 import * as d3 from "d3";
 import { ref } from "vue";
-import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawExtractedGraph } from "@/plugin/superGraph";
+import { drawOriginalGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/original/CountPos";
@@ -244,14 +243,15 @@ export default {
           if (node.y < minH) minH = node.y;
         });
       });
-      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-      if ((dom.clientHeight - 32) / (maxH - minH + 24) < gap)
-        gap = dom.clientHeight / (maxH - minH + 24);
+      let gap = (dom.clientWidth - 40) / (maxW - minW);
+      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+        gap = (dom.clientHeight - 120) / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY = (dom.clientHeight - gap * (maxH - minH)) / 2 - minH * gap;
+      let startY =
+        (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
       this.gaps[index] = gap;
 
-      let paper = drawExtractedGraph(
+      let paper = drawOriginalGraph(
         dom,
         this.sonGraphs[index].nodesList,
         this.sonGraphs[index].linksList,

@@ -87,9 +87,7 @@ import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
 import {
-  createSexRangeChart,
-  createAgeRangeChart,
-  creatAllRangeChart,
+  createCharts
 } from "@/plugin/charts";
 
 export default {
@@ -215,13 +213,7 @@ export default {
       for (let i = 0; i < this.SelectedVariables.length; i++) {
         let dom = document.getElementsByClassName("variable-chart")[i];
         let id = this.SelectedVariables[i];
-        if (id === "Sex" || id === "a1_sex") {
-          createSexRangeChart(dom, this.Variables_result.nodes[i].range);
-        } else if (id === "Age" || id === "trueage") {
-          createAgeRangeChart(dom, this.Variables_result.nodes[i].range);
-        } else {
-          creatAllRangeChart(dom, this.Variables_result.nodes[i].range);
-        }
+        createCharts(id, dom, this.Variables_result.nodes[i].range)
       }
     },
     showErrorMsg(msg) {

@@ -186,7 +186,7 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': 2,
+                    'stroke-width': Math.abs(link.value) * 7,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }

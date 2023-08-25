@@ -90,6 +90,7 @@ export default {
   },
   data() {
     return {
+      dataset: ref(),
       chartVisible: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -444,6 +445,7 @@ export default {
         url: "http://localhost:8000/api/getLink",
         //参数
         params: {
+          dataset: this.dataset,
           outcome: newOut,
           factors: newFac.join(),
         },
@@ -717,6 +719,7 @@ export default {
     if (datasetType === "default") this.VariablesOptions = defaultFactors;
     else if (datasetType === "ukb") this.VariablesOptions = ukbFactors;
     else this.VariablesOptions = clhlsFactors;
+    this.dataset = datasetType;
     if (result) this.multipleSearchValue = JSON.parse(result);
     else this.multipleSearchValue = null;
     console.log("getItem", this.multipleSearchValue);

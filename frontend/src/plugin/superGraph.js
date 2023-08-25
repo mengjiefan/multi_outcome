@@ -290,7 +290,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         path.addTo(graph);
         path.vertices(vertices);
         path.connector("rounded");
-        
+
     })
 
     if (nodesList) {
@@ -298,3 +298,128 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
     }
     return paper;
 };
+export const drawOriginalGraph = (dom, nodesList, links, scale, sonindex) => {
+    let name = "paper" + (sonindex + 1);
+    let linksList = links.filter(link => !link.hidden);
+    linksList = linksList.map(link => {
+        if (link.reverse) return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+            points: link.points,
+            reverse: true
+        };
+        else return link;
+    })
+    let graph = new joint.dia.Graph({});
+    gap = scale.gap;
+    startX = scale.startX;
+    startY = scale.startY;
+    let paper = new joint.dia.Paper({
+        el: dom,
+        model: graph,
+        width: "100%",
+        height: "100%",
+        gridSize: 1,
+        interactive: function (cellView, method) {
+            return null
+        }
+    });
+
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+        let faRect = new joint.shapes.standard.Rectangle();
+
+        faRect.resize(32, 32);
+        faRect.position(
+            countXPos(nodesList[nodeI].x) - 16,
+            countYPos(nodesList[nodeI].y) - 16
+        );
+        let indexes = nodesList[nodeI].indexes;
+        faRect.attr({
+            body: {
+                strokeWidth: 0,
+                rx: 20,
+                ry: 20,
+                fill: 'transparent'
+            },
+            label: {
+                text: nodesList[nodeI].id,
+                fill: "black",
+                y: 0,
+                fontSize: 10,
+            },
+            title: nodesList[nodeI].id
+        });
+        for (let i = 0; i < indexes.length; i++) {
+            let circle = new joint.shapes.standard.Circle();
+            let offset = 360 / indexes.length;
+            circle.attr({
+                body: {
+                    strokeDasharray: 16 * 3.1415926,
+                    strokeDashoffset: 16 * 3.1415926 / 360 * (offset * i),
+                    fill: "transparent",
+                    stroke: cmap[indexes[i]],
+                    strokeWidth: 16
+                }
+            })
+            circle.resize(16, 16);
+            circle.position(
+                countXPos(nodesList[nodeI].x) - 8,
+                countYPos(nodesList[nodeI].y) - 8,
+            );
+            circle.addTo(graph);
+        }
+        nodesList[nodeI]["node"] = faRect;
+        faRect.addTo(graph);
+    }
+    linksList.forEach(link => {
+        let points = link.points;
+        let path = new joint.shapes.standard.Link({
+        });
+        let vertices = [];
+        for (let i = 0; i < points.length; i++) {
+            let point = points[i];
+            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
+        }
+        if (link.reverse) vertices.reverse();
+        let sindex = nodesList.findIndex(item => {
+            if (item.id === link.source) return true;
+            else return false;
+        })
+        let tindex = nodesList.findIndex(item => {
+            if (item.id === link.target) return true;
+            else return false;
+        })
+        path.attr({
+            id: '(' + link.source + ', ' + link.target + ')',
+            line: {
+                stroke: 'black',
+                strokeWidth: (Math.abs(link.value) * 10) + '',
+                targetMarker: { // minute hand
+                    'type': 'path',
+                    'stroke': 'black',
+                    'stroke-width': Math.abs(link.value) * 7,
+                    'fill': 'transparent',
+                    'd': 'M 10 -5 0 0 10 5 '
+                }
+            }
+        })
+        if (link.value < 0) {
+            path.attr('line/strokeDasharray', "4 4")
+        }
+        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
+            path.attr('line/targetMarker', null)
+        path.source(nodesList[sindex].node);
+        path.target(nodesList[tindex].node);
+        path.addTo(graph);
+        path.vertices(vertices);
+        path.connector("rounded");
+
+    })
+
+    if (nodesList) {
+        svgZoom(name);
+    }
+    return paper;
+};
+
