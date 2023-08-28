@@ -143,21 +143,22 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             if (item.id === link.target) return true;
             else return false;
         })
+        let value = Math.abs(link.value);
+        if (value > 1.5) value = 1.5
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
-                strokeWidth: (link.value * 8) + '',
+                strokeWidth: (value * 8) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': 2,
+                    'stroke-width': value * 8,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }
             }
         })
         if (link.value < 0) {
-            path.attr('line/strokeWidth', (-link.value * 8) + '')
             path.attr('line/strokeDasharray', "4 4")
         }
         if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
@@ -266,15 +267,17 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             if (item.id === link.target) return true;
             else return false;
         })
+        let value = Math.abs(link.value);
+        if (value > 1) value = 1;
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
                 stroke: 'black',
-                strokeWidth: (Math.abs(link.value) * 8 * gap) + '',
+                strokeWidth: (value * 8 * gap) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': Math.abs(link.value) * 7 * gap,
+                    'stroke-width': value * 7 * gap,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }
@@ -390,15 +393,17 @@ export const drawOriginalGraph = (dom, nodesList, links, scale, sonindex) => {
             if (item.id === link.target) return true;
             else return false;
         })
+        let value = Math.abs(link.value);
+        if (value > 1.5) value = 1.5;
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
                 stroke: 'black',
-                strokeWidth: (Math.abs(link.value) * 10) + '',
+                strokeWidth: (value * 7) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': Math.abs(link.value) * 7,
+                    'stroke-width': value * 7,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }

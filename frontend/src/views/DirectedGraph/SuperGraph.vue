@@ -266,23 +266,29 @@ export default {
       );
       this.setPaper(paper);
     },
+    getWidth(router) {
+      let nodes = router.split(", ");
+      nodes[0] = nodes[0].slice(1, nodes[0].length);
+      nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
+      let value = 0;
+      this.multipleSearchValue.linksList.forEach((link) => {
+        if (link.source === nodes[0] && link.target === nodes[1])
+          value = link.value;
+        else if (link.target === nodes[0] && link.source === nodes[1])
+          value = link.value;
+      });
+      return value.toFixed(2);
+    },
     setPaper(paper) {
       const _this = this;
       paper.on("link:mouseenter", function (linkView, d) {
-        linkView.model.attr("line/stroke", "#1f77b4");
-        if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker", {
-            type: "path",
-            stroke: "#1f77b4",
-            "stroke-width": 2,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          });
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
-        let width = parseFloat(attributes.line.strokeWidth);
-        width = (width / 10).toFixed(2);
-        if (attributes.line.strokeDasharray) width = 0 - width;
+        linkView.model.attr("line/stroke", "#1f77b4");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
+
+        let width = _this.getWidth(router);
         if (!_this.tip2Show)
           _this.tipVisible(router + ": " + width, {
             pageX: d.pageX,
@@ -292,13 +298,7 @@ export default {
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
         if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker", {
-            type: "path",
-            stroke: "black",
-            "stroke-width": 2,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          });
+          linkView.model.attr("line/targetMarker/stroke", "black");
 
         _this.tipHidden();
       });
@@ -390,15 +390,17 @@ export default {
         if (node.id === link.target) return true;
         else return false;
       });
+      let value = Math.abs(link.value);
+      if (value > 1.5) value = 1.5;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: link.value * 8 + "",
+          strokeWidth: value * 8 + "",
           targetMarker: {
             // minute hand
             type: "path",
             stroke: "black",
-            "stroke-width": 2,
+            "stroke-width": value * 8,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
@@ -420,16 +422,37 @@ export default {
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);
     },
-    reverseDirection(edge) {
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+    getEdgeValue(source, target) {
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/recaculate_Links",
+        //参数
+        params: {
+          dataset: localStorage.getItem("DATATYPE"),
+          source: target,
+          target: source,
+        },
+      })
+        .then((response) => {
+          console.log("value", response.data.value);
+          let value = response.data.value;
+          this.changeEdge(source, target, value);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
+    changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] &&
-            row.target === nodes[1] &&
+          (row.source === source &&
+            row.target === target &&
             !row.hidden &&
             !row.reverse) ||
-          (row.target === nodes[0] &&
-            row.source === nodes[1] &&
+          (row.target === source &&
+            row.source === target &&
             !row.hidden &&
             row.reverse)
         ) {
@@ -440,16 +463,18 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
 
         let history = {
-          source: nodes[0],
-          target: nodes[1],
+          source,
+          target,
+          value, //the true value after reversing
         };
+        this.multipleSearchValue.linksList[index].value = value;
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
           this.hasNoHidden = false;
           this.addLink(this.simplePos.nodesList, {
-            source: this.multipleSearchValue.linksList[index].target,
-            target: this.multipleSearchValue.linksList[index].source,
-            value: this.multipleSearchValue.linksList[index].value,
+            source: target,
+            target: source,
+            value: value,
           });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
@@ -464,29 +489,34 @@ export default {
           historyManage.reverseEdge(selection.history, history);
           let index = selection.linksList.findIndex((link) => {
             if (
-              link.source === history.source &&
-              link.target === history.target &&
+              link.source === source &&
+              link.target === target &&
               !link.hidden
             )
               return true;
             else if (
-              link.source === history.target &&
-              link.target === history.source &&
+              link.source === target &&
+              link.target === source &&
               !link.hidden
             )
               return true;
           });
           if (index < 0) continue;
           let link = selection.linksList[index];
-          if (link.source === history.source && !link.reverse) {
+          link.value = value;
+          if (link.source === source && !link.reverse) {
             link["reverse"] = true;
-          } else if (link.source === history.target && link.reverse) {
+          } else if (link.source === target && link.reverse) {
             link.reverse = false;
           }
         }
         this.saveData();
         this.tip2Hidden();
       }
+    },
+    reverseDirection(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      this.getEdgeValue(nodes[0], nodes[1]);
     },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");

@@ -42,6 +42,7 @@
   </div>
 </template>
   <script>
+import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
 import { Loading } from "element-ui";
@@ -127,9 +128,13 @@ export default {
           } else if (mapLink.hidden) {
             item.history = historyManage.deleteEdge(item.history, link);
           } else if (mapLink.reverse && !link.reverse) {
-            historyManage.reverseEdge(item.history, link);
-          } else if (link.reverse && !mapLink.reverse) {
             historyManage.reverseEdge(item.history, mapLink);
+          } else if (link.reverse && !mapLink.reverse) {
+            historyManage.reverseEdge(item.history, {
+              target: link.source,
+              source: link.target,
+              value: mapLink.value
+            });
           }
         }
         item.linksList[i] = mapLink;
@@ -303,6 +308,19 @@ export default {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
+    getWidth(index, router) {
+      let nodes = router.split(", ");
+      nodes[0] = nodes[0].slice(1, nodes[0].length);
+      nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
+      let value = 0;
+      this.multipleSearchValue.selections[index].linksList.forEach((link) => {
+        if (link.source === nodes[0] && link.target === nodes[1])
+          value = link.value;
+        else if (link.target === nodes[0] && link.source === nodes[1])
+          value = link.value;
+      });
+      return value.toFixed(2);
+    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
@@ -310,18 +328,10 @@ export default {
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
         if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker", {
-            type: "path",
-            stroke: "#1f77b4",
-            "stroke-width": 2,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          });
+          linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
-        let width = parseFloat(attributes.line.strokeWidth);
-        width = (width / 10).toFixed(2);
-        if (attributes.line.strokeDasharray) width = 0 - width;
+        let width = _this.getWidth(index, router);
         if (!_this.tip2Show)
           _this.tipVisible(router + ": " + width, {
             pageX: d.pageX,
@@ -331,13 +341,7 @@ export default {
       paper.on("link:mouseout", function (linkView) {
         linkView.model.attr("line/stroke", "black");
         if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker", {
-            type: "path",
-            stroke: "black",
-            "stroke-width": 2,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          });
+          linkView.model.attr("line/targetMarker/stroke", "black");
 
         _this.tipHidden();
       });
@@ -473,28 +477,38 @@ export default {
         this.saveData();
       }
     },
-    reverseSonEdge(outcome, edge) {
-      for (let i = outcome.length - 1; i >= 0; i--) {
-        if (!outcome[i]) {
-          outcome = outcome.substr(0, i - 1);
-        }
-      }
-      let i = this.multipleSearchValue.selections.findIndex((selection) => {
-        if (selection.outcome === outcome) return true;
-        else return false;
-      });
-
+    getEdgeValue(i, source, target) {
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/recaculate_Links",
+        //参数
+        params: {
+          dataset: localStorage.getItem("DATATYPE"),
+          source: target,
+          target: source,
+        },
+      })
+        .then((response) => {
+          console.log("value", response.data.value);
+          let value = response.data.value;
+          this.changeEdge(i, source, target, value);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
+    changeEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
       let index = selection.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] &&
-            row.target === nodes[1] &&
+          (row.source === source &&
+            row.target === target &&
             !row.hidden &&
             !row.reverse) ||
-          (row.source === nodes[1] &&
-            row.target === nodes[0] &&
+          (row.source === target &&
+            row.target === source &&
             !row.hidden &&
             row.reverse)
         ) {
@@ -505,15 +519,17 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
 
         historyManage.reverseEdge(selection.history, {
-          source: nodes[0],
-          target: nodes[1],
+          source,
+          target,
+          value,
         });
+        selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
           this.addLink({
-            source: selection.linksList[index].target,
-            target: selection.linksList[index].source,
-            value: selection.linksList[index].value,
+            source: target,
+            target: source,
+            value,
           });
         } else {
           selection.linksList[index].reverse = false;
@@ -523,21 +539,37 @@ export default {
         this.saveData();
       }
     },
+    reverseSonEdge(outcome, edge) {
+      for (let i = outcome.length - 1; i >= 0; i--) {
+        if (!outcome[i]) {
+          outcome = outcome.substr(0, i - 1);
+        }
+      }
+      let i = this.multipleSearchValue.selections.findIndex((selection) => {
+        if (selection.outcome === outcome) return true;
+        else return false;
+      });
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      this.getEdgeValue(i, nodes[0], nodes[1]);
+    },
     checkDirection(source, target) {
       if (source.y <= target.y) return "DOWN";
       else return "UP";
     },
     addLink(link) {
+      console.log(link, "link");
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
+      let value = Math.abs(link.value);
+      if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: attributes.attrs.line.strokeWidth,
+          strokeWidth: value * 8 + "",
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": 2,
+            "stroke-width": value * 7,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },

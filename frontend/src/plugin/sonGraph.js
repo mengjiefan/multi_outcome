@@ -179,21 +179,22 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
             if (item.id === link.target) return true;
             else return false;
         })
+        let value = Math.abs(link.value);
+        if (value > 1) value = 1;
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
-                strokeWidth: (link.value * 10) + '',
+                strokeWidth: (value * 8) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': Math.abs(link.value) * 7,
+                    'stroke-width': value * 7,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }
             }
         })
         if (link.value < 0) {
-            path.attr('line/strokeWidth', (-link.value * 10) + '')
             path.attr('line/strokeDasharray', "4 4")
         }
         if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)

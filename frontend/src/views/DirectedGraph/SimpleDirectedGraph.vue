@@ -187,9 +187,12 @@ export default {
         }
       });
       edges.forEach(function (edge) {
-        var valString = (edge.value * 10).toString() + "px";
+        let value = Math.abs(edge.value);
+        if (value > 1.5) value = 1.5;
+        value = value * 10;
+        var valString = value.toString() + "px";
         if (edge.value < 0) {
-          valString = (-edge.value * 10).toString() + "px";
+          valString = value.toString() + "px";
         }
         var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
@@ -282,7 +285,7 @@ export default {
               document.addEventListener("click", _this.listener2);
             }, 0);
           }
-        })
+        });
 
       // add hover effect & click hint to lines
       // Center the graph
@@ -331,21 +334,12 @@ export default {
                 d3.select(this).style("marker-start", "url(#activeS)"); //Added
             }
             d3.select(this).style("stroke", "#1f77b4");
-            let width = d3.select(this).style("stroke-width");
-            let dash = d3.select(this).style("stroke-dasharray");
 
-            width.slice(width.length - 2, width.length);
-            if (dash.includes("4")) {
-              width = "-" + width;
-            }
             if (!_this.tip2Show)
-              _this.tipVisible(
-                router + ": " + (parseFloat(width) / 10).toFixed(2),
-                {
-                  pageX: d.pageX,
-                  pageY: d.pageY,
-                }
-              );
+              _this.tipVisible(router + ": " + _this.getWidth(router), {
+                pageX: d.pageX,
+                pageY: d.pageY,
+              });
           }
         })
         .on("click", function (d, id) {
@@ -367,6 +361,19 @@ export default {
             }, 0);
           }
         });
+    },
+    getWidth(router) {
+      let nodes = router.split(", ");
+      nodes[0] = nodes[0].slice(1, nodes[0].length);
+      nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
+      let value = 0;
+      this.multipleSearchValue.linksList.forEach((link) => {
+        if (link.source === nodes[0] && link.target === nodes[1])
+          value = link.value;
+        else if (link.target === nodes[0] && link.source === nodes[1])
+          value = link.value;
+      });
+      return value.toFixed(3);
     },
     checkDirection(source, target) {
       if (!this.simplePos || this.simplePos.nodesList.length <= 0)
@@ -577,17 +584,37 @@ export default {
       if (index < 0) return false;
       return this.multipleSearchValue.linksList[index].reverse === true;
     },
-
-    reverseDirection(edge) {
-      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+    getEdgeValue(source, target) {
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/recaculate_Links",
+        //参数
+        params: {
+          dataset: localStorage.getItem("DATATYPE"),
+          source: target,
+          target: source,
+        },
+      })
+        .then((response) => {
+          console.log("value", response.data.value);
+          let value = response.data.value;
+          this.changeEdge(source, target, value);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
+    changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
-          (row.source === nodes[0] &&
-            row.target === nodes[1] &&
+          (row.source === source &&
+            row.target === target &&
             !row.reverse &&
             !row.hidden) ||
-          (row.target === nodes[0] &&
-            row.source === nodes[1] &&
+          (row.target === source &&
+            row.source === target &&
             row.reverse &&
             !row.hidden)
         ) {
@@ -595,6 +622,7 @@ export default {
         } else return false;
       });
       if (index > -1) {
+        this.multipleSearchValue.linksList[index].value = value;
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
           this.hasNoHidden = false;
@@ -602,13 +630,17 @@ export default {
           this.multipleSearchValue.linksList[index].reverse = false;
         }
         historyManage.reverseEdge(this.multipleSearchValue.history, {
-          source: nodes[0],
-          target: nodes[1],
+          source: source,
+          target: target,
         });
         this.saveData();
         this.tip2Hidden();
         this.drawGraph();
       }
+    },
+    reverseDirection(edge) {
+      let nodes = edge.split("(")[1].split(")")[0].split(", ");
+      this.getEdgeValue(nodes[0], nodes[1]);
     },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");

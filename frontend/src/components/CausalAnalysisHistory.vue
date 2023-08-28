@@ -344,9 +344,9 @@ export default {
               if (link.source !== linksList[index].source) {
                 link.source = linksList[index].source;
                 link.target = linksList[index].target;
-                if (!link.reverse) {
+                if (!link.reverse)
                   link["reverse"] = true;
-                }
+                else link.reverse = false;//这个可以不要，因为Redo的时候去除了所有的reverse
               }
             }
           }

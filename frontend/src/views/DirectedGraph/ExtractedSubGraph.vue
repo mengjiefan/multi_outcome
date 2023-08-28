@@ -42,6 +42,7 @@
   </div>
 </template>
   <script>
+import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
 import { Loading } from "element-ui";
@@ -164,7 +165,6 @@ export default {
     },
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
-      console.log(tooltips.length, number, "tooltip");
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -290,6 +290,19 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
+    getWidth(index, router) {
+      let nodes = router.split(", ");
+      nodes[0] = nodes[0].slice(1, nodes[0].length);
+      nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
+      let value = 0;
+      this.multipleSearchValue.selections[index].linksList.forEach((link) => {
+        if (link.source === nodes[0] && link.target === nodes[1])
+          value = link.value;
+        else if (link.target === nodes[0] && link.source === nodes[1])
+          value = link.value;
+      });
+      return value.toFixed(2);
+    },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
@@ -304,9 +317,7 @@ export default {
           linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
-        let width = parseFloat(attributes.line.strokeWidth);
-        width = (width / 10).toFixed(2);
-        if (attributes.line.strokeDasharray) width = 0 - width;
+        let width = _this.getWidth(index, router);
         if (!_this.tip2Show)
           _this.tipVisible(router + ": " + width, {
             pageX: d.pageX,
@@ -453,6 +464,68 @@ export default {
         this.saveData();
       }
     },
+    getEdgeValue(i, source, target) {
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/recaculate_Links",
+        //参数
+        params: {
+          dataset: localStorage.getItem("DATATYPE"),
+          source: target,
+          target: source,
+        },
+      })
+        .then((response) => {
+          console.log("value", response.data.value);
+          let value = response.data.value;
+          this.changeEdge(i, source, target, value);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
+    },
+    changeEdge(i, source, target, value) {
+      let selection = this.multipleSearchValue.selections[i];
+      let index = selection.linksList.findIndex(function (row) {
+        if (
+          (row.source === source &&
+            row.target === target &&
+            !row.hidden &&
+            !row.reverse) ||
+          (row.source === target &&
+            row.target === source &&
+            !row.hidden &&
+            row.reverse)
+        ) {
+          return true;
+        } else return false;
+      });
+      if (index > -1) {
+        this.deleteLinkView.model.remove({ ui: true });
+
+        historyManage.reverseEdge(selection.history, {
+          source,
+          target,
+          value
+        });
+        selection.linksList[index].value = value;
+        if (!selection.linksList[index].reverse) {
+          selection.linksList[index]["reverse"] = true;
+          this.addLink(i, {
+            source: selection.linksList[index].target,
+            target: selection.linksList[index].source,
+            value,
+          });
+        } else {
+          selection.linksList[index].reverse = false;
+          this.addLink(i, selection.linksList[index]);
+        }
+        this.tip2Hidden();
+        this.saveData();
+      }
+    },
     reverseSonEdge(outcome, edge) {
       for (let i = outcome.length - 1; i >= 0; i--) {
         if (!outcome[i]) {
@@ -464,57 +537,23 @@ export default {
         else return false;
       });
 
-      let selection = this.multipleSearchValue.selections[i];
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
-      let index = selection.linksList.findIndex(function (row) {
-        if (
-          (row.source === nodes[0] &&
-            row.target === nodes[1] &&
-            !row.hidden &&
-            !row.reverse) ||
-          (row.source === nodes[1] &&
-            row.target === nodes[0] &&
-            !row.hidden &&
-            row.reverse)
-        ) {
-          return true;
-        } else return false;
-      });
-      if (index > -1) {
-        this.deleteLinkView.model.remove({ ui: true });
-
-        historyManage.reverseEdge(selection.history, {
-          source: nodes[0],
-          target: nodes[1],
-        });
-        if (!selection.linksList[index].reverse) {
-          selection.linksList[index]["reverse"] = true;
-          this.addLink(i, {
-            source: selection.linksList[index].target,
-            target: selection.linksList[index].source,
-            value: selection.linksList[index].value,
-          });
-        } else {
-          selection.linksList[index].reverse = false;
-          this.addLink(i, selection.linksList[index]);
-        }
-        this.tip2Hidden();
-        this.saveData();
-      }
+      this.getEdgeValue(i, nodes[0], nodes[1]);
     },
     addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
       const _this = this;
+      let value = Math.abs(link.value);
+      if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: attributes.attrs.line.strokeWidth,
+          strokeWidth: value * 8 * _this.gaps[index],
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": Math.abs(link.value) * 7 * _this.gaps[index],
+            "stroke-width": value * 7 * _this.gaps[index],
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },

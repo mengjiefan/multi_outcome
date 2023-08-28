@@ -6,7 +6,7 @@ export default {
                 return true;
             } else return false;
         })
-        if (index > -1) return;//不要重复reverse记录
+        if (index > -1) return;//不重复添加
         index = record.findIndex(history => {
             if (history.source === operation.target && history.target === operation.source && history.reverse) {
                 return true;
@@ -17,6 +17,7 @@ export default {
             record.push({
                 source: operation.source,
                 target: operation.target,
+                value: operation.value,
                 reverse: true
             });
         }
@@ -52,11 +53,10 @@ export default {
             })
             if (index > -1) {
                 if (history.reverse) {
-                    let value = data.linksList[index].value;
                     data.linksList.splice(index, 1, {
                         source: history.target,
                         target: history.source,
-                        value: value
+                        value: history.value
                     });
                 } else {
                     data.linksList.splice(index, 1);

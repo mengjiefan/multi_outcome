@@ -237,14 +237,7 @@ export default {
         this.showErrorMsg("Please confirm first!");
         return;
       }
-      let linksList = this.Variables_result.links.map((link) => {
-        return {
-          source: link.source,
-          target: link.target,
-          value: link.corr,
-          effect: link.effect,
-        };
-      });
+      let linksList = this.Variables_result.links;
       localStorage.setItem(
         "GET_JSON_RESULT",
         JSON.stringify({
