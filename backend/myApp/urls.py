@@ -8,7 +8,7 @@ urlpatterns = [
     path("covariant/",views.get_list,name='get_list'),
     path("linksnodes/",views.list_dict_duplicate_removal,name='list_dict_duplicate_removal'),
     path("getLink/",views.get_causal_edges,name='get_causal_edges'),
-    path('recaculateLinks', views.get_value_of_graph, name='get_value_of_graph'),
+    path('recaculate_Links/', views.get_value_of_graph, name='get_value_of_graph'),
     path("test11/",views.test11),
     path("test22/",views.variable_show),
     # path("find/<int:sid>",views.find),
