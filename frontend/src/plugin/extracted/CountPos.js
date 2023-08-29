@@ -14,13 +14,7 @@ export const countSimplePos = (g, nodes, links) => {
     let linksList = [];
     g.edges().forEach((v) => {
         let pos = g.edge(v);
-        let points = pos.points;
-        points.splice(0, 1);
-        points.splice(points.length - 1, 1);
-        points.forEach(p => {
-            if (isNaN(p.x) || isNaN(p.y))
-                console.log(v, 'NaN');
-        })
+        let points = pos.points.slice(1, pos.points.length-1);
         let index = links.findIndex(link => {
             if (link.source === v.v && link.target === v.w) return true;
             else if (link.target === v.w && link.source === v.v) return true;
