@@ -630,8 +630,9 @@ export default {
           this.multipleSearchValue.linksList[index].reverse = false;
         }
         historyManage.reverseEdge(this.multipleSearchValue.history, {
-          source: source,
-          target: target,
+          source,
+          target,
+          value
         });
         this.saveData();
         this.tip2Hidden();

@@ -142,9 +142,14 @@ export default {
           historyManage.reverseEdge(son.history, {
             source: link.target,
             target: link.source,
+            value: all[index].value
           });
         } else if (link.source !== all[index].source && !link.reverse) {
-          historyManage.reverseEdge(son.history, link);
+          historyManage.reverseEdge(son.history, {
+            source: link.source,
+            target: link.target,
+            value: all[index].value
+          });
         }
       }
       son.linksList = linksList;

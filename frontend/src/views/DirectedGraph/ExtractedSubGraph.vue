@@ -130,9 +130,13 @@ export default {
           } else if (mapLink.hidden) {
             item.history = historyManage.deleteEdge(item.history, link);
           } else if (mapLink.reverse && !link.reverse) {
-            historyManage.reverseEdge(item.history, link);
+            historyManage.reverseEdge(item.history,mapLink);
           } else if (link.reverse && !mapLink.reverse) {
-            historyManage.reverseEdge(item.history, mapLink);
+            historyManage.reverseEdge(item.history, {
+              target: link.source,
+              source: link.target,
+              value: mapLink.value
+            });
           }
         }
         item.linksList[i] = mapLink;
