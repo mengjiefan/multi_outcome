@@ -98,6 +98,38 @@ export default {
         },
       });
     },
+    findparent(idGroups, i) {
+      let group = idGroups[i];
+      let index;
+      for (index = i + 1; index < idGroups.length; index++) {
+        let nowGroup = idGroups[index];
+        let flag = true;
+        group.forEach((number) => {
+          if (!nowGroup.includes(number)) flag = false;
+        });
+        if (flag) break;
+      }
+      if (index >= idGroups.length) return "";
+      else return idGroups[index].join();
+    },
+    manageGroupId(groupsId, idGroups, indexes) {
+      let index = indexes.join();
+      if (groupsId.includes(index)) return;
+      let i;
+      for (i = 0; i < idGroups.length; i++) {
+        if (idGroups[i].length >= indexes.length) break;
+      }
+      if (i === idGroups.length) {
+        idGroups.push(indexes);
+        groupsId.push(index);
+      } else if (i === 0) {
+        idGroups.unshift(indexes);
+        groupsId.unshift(index);
+      } else {
+        idGroups.splice(i, 0, indexes);
+        groupsId.splice(i, 0, index);
+      }
+    },
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
@@ -142,18 +174,45 @@ export default {
           historyManage.reverseEdge(son.history, {
             source: link.target,
             target: link.source,
-            value: all[index].value
+            value: all[index].value,
           });
         } else if (link.source !== all[index].source && !link.reverse) {
           historyManage.reverseEdge(son.history, {
             source: link.source,
             target: link.target,
-            value: all[index].value
+            value: all[index].value,
           });
         }
       }
       son.linksList = linksList;
       return son;
+    },
+    getAnchoredGraph(g) {
+      console.log("anchor");
+      var data = this.multipleSearchValue;
+      var states = data.nodesList;
+
+      let that = this;
+      let groupsId = []; //string
+      let idGroups = []; //series
+
+      states.forEach(function (state) {
+        let indexes = that.getNodeIndex(state.id);
+        let index = indexes.join();
+        that.manageGroupId(groupsId, idGroups, indexes);
+        g.setParent(state.id, "group" + index);
+      });
+      for (let i = 0; i < groupsId.length; i++) {
+        g.setNode("group" + groupsId[i], {
+          label: "",
+          clusterLabelPos: "bottom",
+          style:
+            "stroke-width:0;stroke:transparent;fill: transparent;opacity: 0;",
+        });
+        let parent = that.findparent(idGroups, i);
+        if (parent) g.setParent("group" + groupsId[i], "group" + parent);
+      }
+      dagre.layout(g);
     },
     setGraph() {
       var data = this.multipleSearchValue;
@@ -171,8 +230,10 @@ export default {
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
       });
-      var edges = data.linksList;
       let that = this;
+
+      var edges = data.linksList;
+
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -206,20 +267,21 @@ export default {
       dagre.layout(g);
 
       //save positon and redraw, which need to know the direction of edges
+      const simpleG = g;
+
+      that.simplePos = countSimplePos(
+        simpleG,
+        this.multipleSearchValue.nodesList,
+        this.multipleSearchValue.linksList
+      );
+      console.log("simplePos", that.simplePos);
+
+      this.getAnchoredGraph(g);
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
-      if (!that.simplePos) {
-        that.simplePos = countSimplePos(
-          g,
-          this.multipleSearchValue.nodesList,
-          this.multipleSearchValue.linksList
-        );
-        console.log("simplePos", that.simplePos);
-        setTimeout(() => {
-          that.redrawGraph();
-        }, 0);
-        return;
-      }
+      setTimeout(() => {
+        that.redrawGraph();
+      }, 0);
     },
     redrawGraph() {
       for (let i = 0; i < this.simplePos.nodesList.length; i++) {

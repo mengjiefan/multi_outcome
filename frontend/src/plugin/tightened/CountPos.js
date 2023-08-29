@@ -6,7 +6,7 @@ export const countPos = (g, childNodes) => {
     let finalPos = [];
     g.nodes().forEach((v) => {
         let pos = g.node(v);
-        if (v !== 'group') {
+        if (!v.includes('group')) {
             traversal(y, pos.y)
             traversal(x, pos.x);
         }
