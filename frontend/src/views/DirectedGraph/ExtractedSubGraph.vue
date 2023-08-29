@@ -95,6 +95,10 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+        this.sonGraphs[i] = countSonPos(
+          this.finalPos,
+          this.multipleSearchValue.selections[i]
+        );;
         this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
@@ -508,7 +512,7 @@ export default {
         historyManage.reverseEdge(selection.history, {
           source,
           target,
-          value
+          value,
         });
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {

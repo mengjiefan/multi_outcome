@@ -93,6 +93,11 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+        this.sonGraphs[i] = countSonPos(
+          item.outcome,
+          item.variable,
+          item.linksList
+        );
         this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
