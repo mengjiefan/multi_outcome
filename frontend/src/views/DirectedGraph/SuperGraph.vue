@@ -265,7 +265,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-     
+      
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
 
@@ -275,6 +275,7 @@ export default {
         this.multipleSearchValue.linksList
       );
       console.log("simplePos", that.simplePos);
+      
       this.getAnchoredGraph(g);
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
@@ -728,7 +729,7 @@ export default {
   },
 };
 </script>
-  
+
 
 <style scoped>
 .super-graph {

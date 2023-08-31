@@ -612,7 +612,7 @@ export default {
   },
 };
 </script>
-    
+
   <style scoped>
 .sub-graph {
   display: flex;

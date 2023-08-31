@@ -78,7 +78,6 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             return null
         }
     });
-
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 

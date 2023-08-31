@@ -133,7 +133,7 @@ export default {
             historyManage.reverseEdge(item.history, {
               target: link.source,
               source: link.target,
-              value: mapLink.value
+              value: mapLink.value,
             });
           }
         }
@@ -263,7 +263,6 @@ export default {
         index,
         this.sonGraphs[index].links
       );
-
       if (!this.papers[index]) {
         this.papers.push(paper);
       } else this.papers[index] = paper;

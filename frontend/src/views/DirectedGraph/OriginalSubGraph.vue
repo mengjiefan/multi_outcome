@@ -134,7 +134,7 @@ export default {
             historyManage.reverseEdge(item.history, {
               target: link.source,
               source: link.target,
-              value: mapLink.value
+              value: mapLink.value,
             });
           }
         }
@@ -614,7 +614,7 @@ export default {
   },
 };
 </script>
-    
+
   <style scoped>
 .sub-graph {
   display: flex;

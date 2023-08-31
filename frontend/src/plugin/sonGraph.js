@@ -63,6 +63,7 @@ export const checkDirection = (source, target) => {
     else return "UP";
 }
 export const addHighLight = (elementView) => {
+    /*
     joint.highlighters.mask.add(
         elementView,
         { selector: "root" },
@@ -75,15 +76,23 @@ export const addHighLight = (elementView) => {
                 "stroke-width": 3,
             },
         }
-    );
+    );*/
+    if (elementView.model.attributes.attrs.label.fontWeight !== 'bold') {
+        elementView.model.attr('label/fontWeight', 'bold');
+        elementView.model.attr('label/fontSize', elementView.model.attributes.attrs.label.fontSize + 1);
+    }
 }
 export const removeHighLight = (elementView) => {
+    /*
     const highlighter = joint.dia.HighlighterView.get(
         elementView,
         "my-element-highlight"
     );
     if (highlighter)
         highlighter.remove();
+        */
+    elementView.model.attr('label/fontWeight', 'normal');
+    elementView.model.attr('label/fontSize', elementView.model.attributes.attrs.label.fontSize - 1);
 }
 export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) => {
     let name = "paper" + (sonindex + 1);
@@ -107,12 +116,12 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         model: graph,
         width: "100%",
         height: "100%",
-        gridSize: 1,
+        drawGrid: true,
+        gridSize: 12,
         interactive: function (cellView, method) {
             return null
         }
     });
-
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 

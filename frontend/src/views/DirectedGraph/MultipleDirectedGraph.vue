@@ -67,7 +67,14 @@ export default {
 };
 </script>
 
-
+<style>
+rect {
+  cursor: pointer;
+}
+g text {
+  cursor: pointer;
+}
+</style>
 <style scoped>
 .drawing-canvas {
   display: flex;

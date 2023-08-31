@@ -98,7 +98,7 @@ export default {
         this.sonGraphs[i] = countSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
-        );;
+        );
         this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
@@ -130,12 +130,12 @@ export default {
           } else if (mapLink.hidden) {
             item.history = historyManage.deleteEdge(item.history, link);
           } else if (mapLink.reverse && !link.reverse) {
-            historyManage.reverseEdge(item.history,mapLink);
+            historyManage.reverseEdge(item.history, mapLink);
           } else if (link.reverse && !mapLink.reverse) {
             historyManage.reverseEdge(item.history, {
               target: link.source,
               source: link.target,
-              value: mapLink.value
+              value: mapLink.value,
             });
           }
         }
@@ -600,8 +600,8 @@ export default {
   },
 };
 </script>
-    
-  <style scoped>
+
+<style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
