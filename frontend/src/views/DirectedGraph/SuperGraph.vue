@@ -265,7 +265,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-
+     
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
 
@@ -343,7 +343,7 @@ export default {
         else if (link.target === nodes[0] && link.source === nodes[1])
           value = link.value;
       });
-      return value.toFixed(2);
+      return value.toFixed(3);
     },
     setPaper(paper) {
       const _this = this;
@@ -457,7 +457,7 @@ export default {
         else return false;
       });
       let value = Math.abs(link.value);
-      if (value > 1.5) value = 1.5;
+      if (value > 1.2) value = 1.2;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {

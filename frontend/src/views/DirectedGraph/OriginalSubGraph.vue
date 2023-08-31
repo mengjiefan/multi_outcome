@@ -324,7 +324,7 @@ export default {
         else if (link.target === nodes[0] && link.source === nodes[1])
           value = link.value;
       });
-      return value.toFixed(2);
+      return value.toFixed(3);
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];

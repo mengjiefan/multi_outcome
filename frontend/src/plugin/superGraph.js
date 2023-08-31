@@ -144,7 +144,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             else return false;
         })
         let value = Math.abs(link.value);
-        if (value > 1.5) value = 1.5
+        if (value > 1.2) value = 1.2
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
