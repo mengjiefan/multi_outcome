@@ -275,7 +275,6 @@ export default {
         this.multipleSearchValue.linksList
       );
       console.log("simplePos", that.simplePos);
-
       this.getAnchoredGraph(g);
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
