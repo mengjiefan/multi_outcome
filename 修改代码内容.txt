@@ -324,4 +324,25 @@ function translateGraph(g, fixedNodes) {
   graphLabel.height = maxY - minY + marginY;
 }
 
+（6）修改 intersectRect 函数为 intersectCircle，以适配圆形节点，而非矩形节点
+
+修改后的函数命名为 intersectCircle，它使用圆心坐标 (cx, cy) 和半径 r 来定义一个圆。然后，它计算给定点与圆心的偏移量 dx 和 dy。接着，使用 Math.atan2 函数计算出点与圆心之间的角度 angle。最后，通过三角函数计算得到交点的横纵坐标 sx 和 sy。
+这样，修改后的 intersectCircle 函数可以根据给定的圆和点的相对位置，计算出点与圆的交点坐标。
+需注意，circle 参数需要包含圆心坐标 (cx, cy) 和半径 radius。
+
+function intersectCircle(circle, point) {
+  var cx = circle.cx;
+  var cy = circle.cy;
+  var r = circle.radius;
+
+  var dx = point.x - cx;
+  var dy = point.y - cy;
+
+  var angle = Math.atan2(dy, dx);
+  var sx = cx + Math.cos(angle) * r;
+  var sy = cy + Math.sin(angle) * r;
+
+  return { x: sx, y: sy };
+}
+
 
