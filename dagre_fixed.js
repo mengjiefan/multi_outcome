@@ -722,8 +722,8 @@
           p1 = edge.points[0];
           p2 = edge.points[edge.points.length - 1];
         }
-        edge.points.unshift(util.intersectRect(nodeV, p1));
-        edge.points.push(util.intersectRect(nodeW, p2));
+        edge.points.unshift(util.intersectCircle(nodeV, p1));
+        edge.points.push(util.intersectCircle(nodeW, p2));
       });
     }
     
@@ -2706,7 +2706,7 @@
       addDummyNode,
       asNonCompoundGraph,
       buildLayerMatrix,
-      intersectRect,
+      intersectCircle,
       mapValues,
       maxRank,
       normalizeRanks,
@@ -2794,39 +2794,19 @@
      * Finds where a line starting at point ({x, y}) would intersect a rectangle
      * ({x, y, width, height}) if it were pointing at the rectangle's center.
      */
-    function intersectRect(rect, point) {
-      var x = rect.x;
-      var y = rect.y;
+    function intersectCircle(circle, point) {
+      var cx = circle.cx;
+      var cy = circle.cy;
+      var r = circle.radius;
     
-      // Rectangle intersection algorithm from:
-      // http://math.stackexchange.com/questions/108113/find-edge-between-two-boxes
-      var dx = point.x - x;
-      var dy = point.y - y;
-      var w = rect.width / 2;
-      var h = rect.height / 2;
+      var dx = point.x - cx;
+      var dy = point.y - cy;
     
-      if (!dx && !dy) {
-        throw new Error("Not possible to find intersection inside of the rectangle");
-      }
+      var angle = Math.atan2(dy, dx);
+      var sx = cx + Math.cos(angle) * r;
+      var sy = cy + Math.sin(angle) * r;
     
-      var sx, sy;
-      if (Math.abs(dy) * w > Math.abs(dx) * h) {
-        // Intersection is top or bottom of rect.
-        if (dy < 0) {
-          h = -h;
-        }
-        sx = h * dx / dy;
-        sy = h;
-      } else {
-        // Intersection is left or right of rect.
-        if (dx < 0) {
-          w = -w;
-        }
-        sx = w;
-        sy = w * dy / dx;
-      }
-    
-      return { x: x + sx, y: y + sy };
+      return { x: sx, y: sy };
     }
     
     /*
