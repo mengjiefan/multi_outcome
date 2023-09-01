@@ -84,7 +84,73 @@ const countYPos = (y) => {
     return y * gap;
 };
 
-
+const addIndexOfGrid = (graph, maxX, maxY) => {
+    console.log(maxX, maxY);
+    for (let i = 1; i <= maxX; i++) {
+        let numberRect = new joint.shapes.standard.Rectangle();
+        numberRect.attr({
+            body: {
+                strokeWidth: 0,
+                fill: 'transparent'
+            },
+            label: {
+                text: i,
+                fill: "black",
+                y: -maxY * gap / 2 - 8,
+                fontSize: 10,
+            },
+            title: 'x' + i
+        });
+        numberRect.resize(2, maxY * gap);
+        numberRect.position(
+            countXPos(i),
+            countYPos(0)
+        );
+        numberRect.addTo(graph)
+    }
+    let zeroRect = new joint.shapes.standard.Rectangle();
+    zeroRect.attr({
+        body: {
+            strokeWidth: 0,
+            fill: 'transparent'
+        },
+        label: {
+            text: 0,
+            fill: "black",
+            y: 0,
+            fontSize: 10,
+        },
+        title: 0
+    });
+    zeroRect.position(
+        countXPos(0) - 8,
+        countYPos(0) - 8
+    );
+    zeroRect.addTo(graph)
+    for (let i = 1; i <= maxY; i++) {
+        let numberRect = new joint.shapes.standard.Rectangle();
+        numberRect.attr({
+            body: {
+                strokeWidth: 0,
+                fill: 'transparent'
+            },
+            label: {
+                text: i,
+                fill: "black",
+                y: 0,
+                x: -maxX * gap / 2 - 8,
+                fontSize: 10,
+            },
+            title: 'y' + i
+        });
+        numberRect.resize(maxX * gap, 2);
+        numberRect.position(
+            countXPos(0),
+            countYPos(i)
+        );
+        numberRect.addTo(graph)
+    }
+}
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
     let svgZoom = svgPanZoom("#" + name + " svg", {
@@ -126,9 +192,14 @@ export const addHighLight = (elementView) => {
             },
         }
     );*/
-    if (elementView.model.attributes.attrs.label.fontWeight !== 'bold') {
+    let attributes = elementView.model.attributes;
+    if (attributes.attrs.label.fontWeight !== 'bold') {
         elementView.model.attr('label/fontWeight', 'bold');
         elementView.model.attr('label/fontSize', elementView.model.attributes.attrs.label.fontSize + 1);
+    }
+
+    if (!isNaN(parseFloat(attributes.attrs.label.text))) {
+        elementView.model.attr("body/fill", '#1f77b4')
     }
 }
 export const removeHighLight = (elementView) => {
@@ -140,11 +211,17 @@ export const removeHighLight = (elementView) => {
     if (highlighter)
         highlighter.remove();
         */
+    let attributes = elementView.model.attributes;
     elementView.model.attr('label/fontWeight', 'normal');
     elementView.model.attr('label/fontSize', elementView.model.attributes.attrs.label.fontSize - 1);
+    if (!isNaN(parseFloat(attributes.attrs.label.text))) {
+        elementView.model.attr("body/fill", 'transparent')
+    }
 }
 export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) => {
     let name = "paper" + (sonindex + 1);
+    let maxX = 0;
+    let maxY = 0;
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
         if (link.reverse) return {
@@ -172,6 +249,13 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
             return null
         }
     });
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+        if (nodesList[nodeI].x > maxX)
+            maxX = nodesList[nodeI].x;
+        if (nodesList[nodeI].y > maxY)
+            maxY = nodesList[nodeI].y
+    }
+    addIndexOfGrid(graph, maxX, maxY);
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
@@ -265,6 +349,7 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         path.vertices(vertices);
         path.connector("rounded");
     })
+
     paper.scale(paperScale);
     paper.translate(startX, startY)
 
