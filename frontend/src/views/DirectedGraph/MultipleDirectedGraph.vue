@@ -19,12 +19,13 @@
       >
         Tightened Subgraphs
       </div>
+      <!--
       <div
         :class="name === 'OptimalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OptimalSubGraph')"
       >
         Optimal Subgraphs
-      </div>
+      </div>-->
       <div
         :class="name === 'OriginalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OriginalSubGraph')"

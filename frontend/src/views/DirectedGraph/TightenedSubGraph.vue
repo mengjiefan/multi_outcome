@@ -260,7 +260,6 @@ export default {
           startX,
           startY,
         },
-        index,
         this.sonGraphs[index].links
       );
       if (!this.papers[index]) {

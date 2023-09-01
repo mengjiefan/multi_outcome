@@ -218,8 +218,7 @@ export const removeHighLight = (elementView) => {
         elementView.model.attr("body/fill", 'transparent')
     }
 }
-export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) => {
-    let name = "paper" + (sonindex + 1);
+export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
     let maxX = 0;
     let maxY = 0;
     let linksList = links.filter(link => !link.hidden);
@@ -255,6 +254,14 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         if (nodesList[nodeI].y > maxY)
             maxY = nodesList[nodeI].y
     }
+    linksList.forEach(link => {
+        let points = findLink(linksPos, link);
+        for (let i = 0; i < points.points.length; i++) {
+            let point = points.points[i];
+            if (point.x > maxX) maxX = point.x;
+            if (point.y > maxY) maxY = point.y;
+        }
+    })
     addIndexOfGrid(graph, maxX, maxY);
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
