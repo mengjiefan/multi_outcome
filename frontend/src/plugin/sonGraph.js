@@ -1,5 +1,5 @@
 import * as joint from "jointjs";
-import { ref } from "vue";
+import { del, ref } from "vue";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
@@ -24,14 +24,70 @@ const findLink = (links, edge) => {
     })
     return links[index];
 }
-let gap = 1;
-let startX;
-let startY;
+
+const handleCellMouseWheel = (paper, x, y, delta) => {
+    const oldScale = paper.scale().sx;
+    const newScale = oldScale + delta * .1;
+    scaleToPoint(newScale, x, y, paper);
+};
+let targetSvg = null;
+let originalX = NaN;
+let originalY = NaN;
+const handleMouseMove = (paper, e, x, y) => {
+    const translate = paper.translate();
+    const nextTx = translate.tx + e.clientX - originalX;
+    const nextTy = translate.ty + e.clientY - originalY;
+
+
+    originalX = e.clientX;
+    originalY = e.clientY;
+
+    if (!targetSvg) targetSvg = e.target;
+    if (targetSvg !== e.target) {
+        return;
+    }
+    if (!isNaN(nextTx)) {
+        paper.translate(nextTx, nextTy);
+    }
+
+}
+const handleMouseUp = () => {
+    originalX = NaN;
+    originalY = NaN;
+    targetSvg = null;
+};
+const scaleToPoint = (nextScale, x, y, paper) => {
+    if (nextScale >= 0.3 && nextScale <= 5) {
+        const currentScale = paper.scale().sx;
+
+        const beta = currentScale / nextScale;
+
+        const ax = x - (x * beta);
+        const ay = y - (y * beta);
+
+        const translate = paper.translate();
+
+        const nextTx = translate.tx - ax * nextScale;
+        const nextTy = translate.ty - ay * nextScale;
+
+        paper.translate(nextTx, nextTy);
+
+        const ctm = paper.matrix();
+
+        ctm.a = nextScale;
+        ctm.d = nextScale;
+
+        paper.matrix(ctm);
+    }
+};
+
+
+let gap = 72;
 const countXPos = (x) => {
-    return startX + x * gap;
+    return x * gap;
 };
 const countYPos = (y) => {
-    return startY + y * gap;
+    return y * gap;
 };
 
 
@@ -56,7 +112,6 @@ const svgZoom = (name) => {
     });
     /** 手动设置缩放敏感度 */
     svgZoom.setZoomScaleSensitivity(0.5);
-
 };
 export const checkDirection = (source, target) => {
     if (source.y <= target.y) return "DOWN";
@@ -106,9 +161,10 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         };
         else return link;
     })
-    gap = scale.gap;
-    startX = scale.startX;
-    startY = scale.startY;
+    let paperScale = scale.gap / gap;
+
+    let startX = scale.startX;
+    let startY = scale.startY;
     let graph = new joint.dia.Graph({});
 
     let paper = new joint.dia.Paper({
@@ -215,9 +271,43 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         path.vertices(vertices);
         path.connector("rounded");
     })
+    paper.scale(paperScale);
+    paper.translate(startX, startY)
 
+    paper.on('cell:mousewheel', function (cellView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('link:mousewheel', function (linkView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('element:mousewheel', function (elementView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('blank:mousewheel', function (evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+
+    paper.on("blank:pointermove", function (evt, x, y) {
+        handleMouseMove(paper, evt, x, y);
+    })
+    paper.on("cell:pointermove", function (cellView, evt, x, y) {
+        handleMouseMove(paper, evt, x, y);
+    })
+
+    paper.on("blank:pointerup", function (evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("link:pointerup", function (linkView, evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("cell:pointerup", function (cellView, evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("element:pointerup", function (elementView, evt, x, y) {
+        handleMouseUp();
+    })
     if (nodesList) {
-        svgZoom(name);
+        //svgZoom(name);
     }
     return paper;
 };

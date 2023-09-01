@@ -14,7 +14,7 @@ export const countPos = (g, childNodes) => {
     });
     g.edges().forEach((v) => {
         let pos = g.edge(v);
-        let points = pos.points.slice(1, pos.points.length-1);
+        let points = pos.points.slice(1, pos.points.length - 1);
         edges.push({
             source: v.v,
             target: v.w,

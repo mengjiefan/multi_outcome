@@ -265,7 +265,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-      
+     
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
 
