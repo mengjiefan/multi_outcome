@@ -71,18 +71,12 @@ const scaleToPoint = (nextScale, x, y, paper) => {
         const nextTy = translate.ty - ay * nextScale;
 
         paper.translate(nextTx, nextTy);
-
-        const ctm = paper.matrix();
-
-        ctm.a = nextScale;
-        ctm.d = nextScale;
-
-        paper.matrix(ctm);
+        paper.scale(nextScale)
     }
 };
 
 
-let gap = 72;
+let gap = 80;
 const countXPos = (x) => {
     return x * gap;
 };
@@ -172,8 +166,8 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
         model: graph,
         width: "100%",
         height: "100%",
-        drawGrid: true,
-        gridSize: 12,
+        drawGrid: { name: 'mesh', args: { color: '#bbbbbb' } },
+        gridSize: 16,
         interactive: function (cellView, method) {
             return null
         }
@@ -306,8 +300,9 @@ export const drawSonCharts = (dom, nodesList, links, scale, sonindex, linksPos) 
     paper.on("element:pointerup", function (elementView, evt, x, y) {
         handleMouseUp();
     })
+    /* scale  SVG
     if (nodesList) {
-        //svgZoom(name);
-    }
+        svgZoom(name);
+    }*/
     return paper;
 };
