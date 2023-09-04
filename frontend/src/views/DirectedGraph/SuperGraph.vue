@@ -36,11 +36,11 @@
 <script>
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
+import dagre from "dagre";
 import axios from "axios";
 import { ref } from "vue";
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
-import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
 import { drawSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";

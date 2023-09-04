@@ -44,17 +44,16 @@
   <script>
 import axios from "axios";
 import * as d3 from "d3";
+import * as dagreD3 from "dagre-d3";
+import dagre from "dagre-master";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
-import {
-  drawSonCharts,
-  addHighLight,
-  removeHighLight,
-} from "@/plugin/sonGraph";
+import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
+import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/optimal/CountPos";
+import { countSonPos } from "@/plugin/extracted/CountPos";
 
 export default {
   data() {
@@ -63,6 +62,7 @@ export default {
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
+      gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -97,6 +97,10 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+        this.sonGraphs[i] = countSonPos(
+          this.finalPos,
+          this.multipleSearchValue.selections[i]
+        );
         this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
@@ -131,8 +135,8 @@ export default {
             historyManage.reverseEdge(item.history, mapLink);
           } else if (link.reverse && !mapLink.reverse) {
             historyManage.reverseEdge(item.history, {
-              source: link.target,
               target: link.source,
+              source: link.target,
               value: mapLink.value,
             });
           }
@@ -202,48 +206,82 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
-
-      for (let i = 1; i <= this.sonNum; i++) {
+      this.gaps = [];
+      for (let i = 0; i < this.sonNum; i++) {
         let ans = countSonPos(
-          this.finalPos[i],
-          this.multipleSearchValue.selections[i - 1].linksList
+          this.finalPos,
+          this.multipleSearchValue.selections[i]
         );
-        this.sonGraphs.push({
-          nodes: ans.sonPos,
-          links: ans.linksPos,
-        });
+        this.sonGraphs.push(ans);
+        this.gaps.push(1);
       }
-      for (let i = 1; i <= this.sonNum; i++) {
-        this.drawSonGraph(i - 1);
+      for (let i = 0; i < this.sonNum; i++) {
+        this.setSonGraph(i);
+        this.drawSonGraph(i);
       }
     },
-    getNodeIndex(id) {
-      let indexes = [];
-      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        if (selection.outcome === id) indexes.push(i);
-        else if (selection.variable.includes(id)) indexes.push(i);
-      }
-      return indexes;
+    setSonGraph(index) {
+      var data = this.sonGraphs[index];
+      var states = data.nodesList;
+      // {
+      let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({});
+
+      states.forEach(function (state) {
+        console.log(state);
+        g.setNode(state.id, {
+          x: state.x,
+          y: state.y,
+          fixed: state.indexes.length > 1,
+          type: state.type,
+        });
+      });
+      let that = this;
+
+      var edges = data.linksList;
+
+      edges.forEach(function (edge) {
+        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
+        var valString = edgeValue.toString() + "px";
+        var widthStr = "stroke-width: " + valString;
+        var edgeColor = "stroke: black";
+        let completeStyle =
+          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+        if (edge.hidden) {
+          g.setEdge(edge.source, edge.target, {
+            style:
+              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
+            curve: d3.curveBasis,
+          });
+        } else {
+          g.setEdge(edge.source, edge.target, {
+            style: completeStyle,
+            arrowhead: "undirected",
+          });
+        }
+      });
+
+      // Set some general styles
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        node.rx = node.ry = 20;
+        node.style = "fill:" + that.cmap[0];
+      });
+      dagre.layout(g);
     },
     drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
-      for (let i = 0; i < this.sonGraphs[index].nodes.length; i++)
-        this.sonGraphs[index].nodes[i]["indexes"] = this.getNodeIndex(
-          this.sonGraphs[index].nodes[i].id
-        );
 
       let minW = 150000;
       let maxW = 0;
       let minH = 15000;
       let maxH = 0;
-      this.sonGraphs[index].nodes.forEach((node) => {
+      this.sonGraphs[index].nodesList.forEach((node) => {
         if (node.x > maxW) maxW = node.x;
         if (node.x < minW) minW = node.x;
         if (node.y > maxH) maxH = node.y;
         if (node.y < minH) minH = node.y;
       });
-      this.sonGraphs[index].links.forEach((link) => {
+      this.sonGraphs[index].linksList.forEach((link) => {
         link.points.forEach((node) => {
           if (node.x > maxW) maxW = node.x;
           if (node.x < minW) minW = node.x;
@@ -251,24 +289,26 @@ export default {
           if (node.y < minH) minH = node.y;
         });
       });
-      let gap = (dom.clientWidth - 40) / (maxW - minW);
-      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
-        gap = (dom.clientHeight - 120) / (maxH - minH);
+      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
+      if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
+        gap = (dom.clientHeight - 96) / (maxH - minH + 24);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
-        (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
+        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
+      this.gaps[index] = gap;
 
-      let paper = drawSonCharts(
+      let paper = drawExtractedGraph(
         dom,
-        this.sonGraphs[index].nodes,
-        this.multipleSearchValue.selections[index].linksList,
+        this.sonGraphs[index].nodesList,
+        this.sonGraphs[index].linksList,
         {
           gap,
           startX,
           startY,
         },
-        this.sonGraphs[index].links
+        index
       );
+
       if (!this.papers[index]) {
         this.papers.push(paper);
       } else this.papers[index] = paper;
@@ -309,10 +349,6 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
-    plotChart(line) {
-      let dom = document.getElementsByClassName(line)[0];
-      createChart(dom, line);
-    },
     getWidth(index, router) {
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
@@ -325,6 +361,10 @@ export default {
           value = link.value;
       });
       return value.toFixed(3);
+    },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
     },
     setPaper(index, paper) {
       const _this = this;
@@ -347,6 +387,7 @@ export default {
         linkView.model.attr("line/stroke", "black");
         if (linkView.model.attributes.attrs.line.targetMarker)
           linkView.model.attr("line/targetMarker/stroke", "black");
+
         _this.tipHidden();
       });
       paper.on("link:pointerclick", function (linkView, d) {
@@ -370,7 +411,8 @@ export default {
           _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
-        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+        if (elementView.model.attributes.type === "standard.Rectangle")
+          _this.removeAllHighLight(elementView.model.attributes.attrs.title);
       });
     },
     highLightAllPaper(id) {
@@ -530,14 +572,14 @@ export default {
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink({
-            source: target,
-            target: source,
+          this.addLink(i, {
+            source: selection.linksList[index].target,
+            target: selection.linksList[index].source,
             value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(selection.linksList[index]);
+          this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -553,43 +595,41 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
+
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       this.getEdgeValue(i, nodes[0], nodes[1]);
     },
-    checkDirection(source, target) {
-      if (source.y <= target.y) return "DOWN";
-      else return "UP";
-    },
-    addLink(link) {
+    addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
+      const _this = this;
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 + "",
+          strokeWidth: value * 8 * _this.gaps[index],
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7,
+            "stroke-width": value * 7 * _this.gaps[index],
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-
       let source = attributes.target;
       let target = attributes.source;
-      let vertices = attributes.vertices.reverse();
+
       if (attributes.attrs.line.targetMarker)
         path.attr("line/targetMarker", null);
+      path.connector("rounded");
+      let vertices = attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
-      path.connector("rounded");
     },
     saveData() {
       localStorage.setItem(
@@ -604,7 +644,7 @@ export default {
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
+    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
@@ -612,7 +652,7 @@ export default {
 };
 </script>
 
-  <style scoped>
+<style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
