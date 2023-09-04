@@ -35,7 +35,9 @@
               >
             </div>
           </div>
-          <div :id="'paper' + index" class="svg-content"></div>
+          <div :id="'paper' + index" class="svg-content">
+            <svg></svg>
+          </div>
         </div>
       </div>
     </div>
@@ -45,7 +47,7 @@
 import axios from "axios";
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import dagre from "dagre-master";
+import dagre from "@/plugin/dagre/dagre_fixed";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
@@ -53,7 +55,7 @@ import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/extracted/CountPos";
+import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
 
 export default {
   data() {
@@ -101,7 +103,7 @@ export default {
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );
-        this.drawSonGraph(i);
+        this.setSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
         let link = this.multipleSearchValue.linksList[i];
@@ -217,7 +219,6 @@ export default {
       }
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
-        this.drawSonGraph(i);
       }
     },
     setSonGraph(index) {
@@ -225,9 +226,10 @@ export default {
       var states = data.nodesList;
       // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({});
-
+      let that = this;
       states.forEach(function (state) {
-        console.log(state);
+        console.log(state.indexes.length > 1);
+        console.log(state.x);
         g.setNode(state.id, {
           x: state.x,
           y: state.y,
@@ -235,7 +237,6 @@ export default {
           type: state.type,
         });
       });
-      let that = this;
 
       var edges = data.linksList;
 
@@ -267,27 +268,46 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
+      let simplePos = countSimplePos(g, data.nodesList, data.linksList);
+      this.drawSonGraph(index, simplePos);
+      /*
+      if (index === 0) {
+        let render = new dagreD3.render();
+        // 选择 svg 并添加一个g元素作为绘图容器.
+        let svgGroup = d3.select("svg").append("g");
+        // 在绘图容器上运行渲染器生成流程图.
+        render(svgGroup, g);
+      }*/
     },
-    drawSonGraph(index) {
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
+    },
+    drawSonGraph(index, simplePos) {
       let dom = document.getElementById("paper" + (index + 1));
-
+      for (let i = 0; i < simplePos.nodesList.length; i++) {
+        simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
+          simplePos.nodesList[i].id
+        );
+      }
       let minW = 150000;
       let maxW = 0;
       let minH = 15000;
       let maxH = 0;
-      this.sonGraphs[index].nodesList.forEach((node) => {
+      simplePos.nodesList.forEach((node) => {
         if (node.x > maxW) maxW = node.x;
         if (node.x < minW) minW = node.x;
         if (node.y > maxH) maxH = node.y;
         if (node.y < minH) minH = node.y;
       });
-      this.sonGraphs[index].linksList.forEach((link) => {
-        link.points.forEach((node) => {
-          if (node.x > maxW) maxW = node.x;
-          if (node.x < minW) minW = node.x;
-          if (node.y > maxH) maxH = node.y;
-          if (node.y < minH) minH = node.y;
-        });
+      simplePos.linksList = simplePos.linksList.map((link) => {
+        link.points = [];
+        return link;
       });
       let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
       if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
@@ -299,8 +319,8 @@ export default {
 
       let paper = drawExtractedGraph(
         dom,
-        this.sonGraphs[index].nodesList,
-        this.sonGraphs[index].linksList,
+        simplePos.nodesList,
+        simplePos.linksList,
         {
           gap,
           startX,
@@ -710,6 +730,10 @@ export default {
 .svg-content {
   width: 100%;
   height: 90% !important;
+}
+.svg-content svg{
+  width: 100%;
+  height: 100%;
 }
 .one-line-operator {
   height: 10%;

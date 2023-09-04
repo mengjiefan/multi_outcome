@@ -276,7 +276,7 @@ export default {
       );
       console.log("simplePos", that.simplePos);
       
-      this.getAnchoredGraph(g);
+      //this.getAnchoredGraph(g);
       let finalPos = countPos(g, this.multipleSearchValue.selections);
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
       setTimeout(() => {
