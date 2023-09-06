@@ -17,10 +17,10 @@ function runLayout(g, time) {
   time("    injectEdgeLabelProxies", function () { injectEdgeLabelProxies(g); });
   time("    removeEmptyRanks", function () { removeEmptyRanks(g); });
   time("    nestingGraph.cleanup", function () { nestingGraph.cleanup(g); });
-  //
   time("    normalizeRanks", function () { normalizeRanks(g); });
   time("    assignRankMinMax", function () { assignRankMinMax(g); });
   time("    removeEdgeLabelProxies", function () { removeEdgeLabelProxies(g); });
+
   time("    normalize.run", function () { normalize.run(g); });
   time("    parentDummyChains", function () { parentDummyChains(g); });
   time("    addBorderSegments", function () { addBorderSegments(g); });
@@ -44,71 +44,75 @@ function networkSimplex(g) {
   var t = feasibleTree(g);
   initLowLimValues(t);
   initCutValues(t, g);
-
   var e, f;
   while ((e = leaveEdge(t))) {
     f = enterEdge(t, g, e);
     exchangeEdges(t, g, e, f);
   }
 }
-function simplify(g) {
-  var simplified = new Graph().setGraph(g.graph());
-  g.nodes().forEach(v => simplified.setNode(v, g.node(v)));
-  g.edges().forEach(e => {
-    var simpleLabel = simplified.edge(e.v, e.w) || { weight: 0, minlen: 1 };
-    var label = g.edge(e);
-    simplified.setEdge(e.v, e.w, {
-      weight: simpleLabel.weight + label.weight,
-      minlen: Math.max(simpleLabel.minlen, label.minlen)
-    });
-  });
-  return simplified;
+function leaveEdge(tree) {
+  return tree.edges().find(e => tree.edge(e).cutvalue < 0);
 }
-/*
- * Initializes ranks for the input graph using the longest path algorithm. This
- * algorithm scales well and is fast in practice, it yields rather poor
- * solutions. Nodes are pushed to the lowest layer possible, leaving the bottom
- * ranks wide and leaving edges longer than necessary. However, due to its
- * speed, this algorithm is good for getting an initial ranking that can be fed
- * into other algorithms.
- *
- * This algorithm does not normalize layers because it will be used by other
- * algorithms in most cases. If using this algorithm directly, be sure to
- * run normalize at the end.
- *
- * Pre-conditions:
- *
- *    1. Input graph is a DAG.
- *    2. Input graph node labels can be assigned properties.
- *
- * Post-conditions:
- *
- *    1. Each node will be assign an (unnormalized) "rank" property.
- */
-function longestPath(g) {
-  var visited = {};
+function enterEdge(t, g, edge) {
+  var v = edge.v;
+  var w = edge.w;
 
-  function dfs(v) {
-    var label = g.node(v);
-    if (visited.hasOwnProperty(v)) {
-      return label.rank;
-    }
-    visited[v] = true;
-
-    var rank = Math.min(...g.outEdges(v).map(e => {
-      if (e == null) {
-        return Number.POSITIVE_INFINITY;
-      }
-
-      return dfs(e.w) - g.edge(e).minlen;
-    }));
-
-    if (rank === Number.POSITIVE_INFINITY) {
-      rank = 0;
-    }
-
-    return (label.rank = rank);
+  // For the rest of this function we assume that v is the tail and w is the
+  // head, so if we don't have this edge in the graph we should flip it to
+  // match the correct orientation.
+  if (!g.hasEdge(v, w)) {
+      v = edge.w;
+      w = edge.v;
   }
 
-  g.sources().forEach(dfs);
+  var vLabel = t.node(v);
+  var wLabel = t.node(w);
+  var tailLabel = vLabel;
+  var flip = false;
+
+  // If the root is in the tail of the edge then we need to flip the logic that
+  // checks for the head and tail nodes in the candidates function below.
+  if (vLabel.lim > wLabel.lim) {
+      tailLabel = wLabel;
+      flip = true;
+  }
+
+  var candidates = g.edges().filter(function (edge) {
+      return flip === isDescendant(t, t.node(edge.v), tailLabel) &&
+          flip !== isDescendant(t, t.node(edge.w), tailLabel);
+  });
+
+  return candidates.reduce((acc, edge) => {
+      if (slack(g, edge) < slack(g, acc)) {
+          return edge;
+      }
+
+      return acc;
+  });
+}
+function exchangeEdges(t, g, e, f) {
+  var v = e.v;
+  var w = e.w;
+  t.removeEdge(v, w);
+  t.setEdge(f.v, f.w, {});
+  initLowLimValues(t);
+  initCutValues(t, g);
+  updateRanks(t, g);
+}
+function updateRanks(t, g) {
+  var root = t.nodes().find(v => !g.node(v).parent);
+  var vs = preorder(t, root);
+  vs = vs.slice(1);
+  vs.forEach(function (v) {
+      var parent = t.node(v).parent,
+          edge = g.edge(v, parent),
+          flipped = false;
+
+      if (!edge) {
+          edge = g.edge(parent, v);
+          flipped = true;
+      }
+
+      g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
+  });
 }

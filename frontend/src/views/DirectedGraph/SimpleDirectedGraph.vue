@@ -71,16 +71,16 @@ import historyManage from "@/plugin/history";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
 
 var cmap = [
-  "#1f77b4",
-  "#ff7f0e",
-  "#2ca02c",
-  "#d62728",
-  "#9467bd",
-  "#8c564b",
-  "#e377c2",
-  "#7f7f7f",
-  "#bcbd22",
-  "#17becf",
+    "#FF595E",
+    "#FF924C",
+    "#FFCA3A",
+    "#C5CA30",
+    "#8AC926",
+    "#36949D",
+    "#1982C4",
+    "#4267AC",
+    "#565AA0",
+    "#6A4C93",
 ];
 
 export default {

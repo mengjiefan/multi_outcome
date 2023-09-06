@@ -251,11 +251,9 @@ export default {
       });
 
       states.forEach(function (state) {
-        console.log(state.indexes.length > 1);
-        console.log(y.indexOf(state.y))
         g.setNode(state.id, {
           x: state.x,
-          orank: y.indexOf(state.y),
+          orank: y.indexOf(state.y) * 2,
           fixed: state.indexes.length === that.sonNum,
           type: state.type,
         });

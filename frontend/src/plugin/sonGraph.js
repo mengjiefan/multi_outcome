@@ -15,7 +15,7 @@ const cmap = [
     "#4267AC",
     "#565AA0",
     "#6A4C93",
-];
+]
 const findLink = (links, edge) => {
     let index = links.findIndex(link => {
         if (link.source === edge.source && link.target === edge.target) return true;

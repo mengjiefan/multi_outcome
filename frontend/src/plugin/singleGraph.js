@@ -13,7 +13,7 @@ const cmap = [
     "#4267AC",
     "#565AA0",
     "#6A4C93",
-];
+]
 
 const exist = (links, link) => {
     let index = links.findIndex(path => {

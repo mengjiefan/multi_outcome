@@ -569,7 +569,6 @@
                     newNode['fixed'] = node.fixed;
                     newNode['x'] = node.x;
                     newNode['orank'] = node.orank;
-                    console.log(newNode, 'newNode')
                     g.setNode(v, newNode);
                 });
 
@@ -688,6 +687,7 @@
 
                 g.edges().forEach(e => {
                     var edge = g.edge(e);
+                   if(edge.points)
                     edge.points.forEach(p => {
                         p.x -= minX;
                         p.y -= minY;
@@ -2234,12 +2234,24 @@
              */
             function feasibleTree(g) {
                 var t = new Graph({ directed: false });
-                console.log(g.nodes(), 'feasible')
+                //console.log(g.nodes(), 'feasible')
                 // Choose arbitrary node from which to start our tree
-                var start = g.nodes()[0];
-                var size = g.nodeCount();
-                t.setNode(start, {});
 
+                //var start = g.nodes()[0];
+                var size = g.nodeCount();
+                //t.setNode(start, {});
+                g.nodes().forEach(v => {
+                    let node = g.node(v);
+                    if (node.fixed) t.setNode(v, {});
+                })
+                g.edges().forEach(e => {
+                    let source = g.node(e.v);
+                    let target = g.node(e.w);
+                    if (source.fixed && target.fixed) {
+                        t.setEdge(e.v, e.w, {});
+                    }
+                })
+                //把fixed的点和边都先加入紧致树
                 var edge, delta;
                 while (tightTree(t, g) < size) {
                     edge = findMinSlackEdge(t, g);
@@ -2403,10 +2415,15 @@
                 g = simplify(g);
                 initRank(g);
                 var t = feasibleTree(g);
+                console.log('after')
+                g.nodes().forEach(v => {
+                    const node = g.node(v);
+                    console.log(v, node.rank)
+                })
                 initLowLimValues(t);
                 initCutValues(t, g);
-
                 var e, f;
+                
                 while ((e = leaveEdge(t))) {
                     f = enterEdge(t, g, e);
                     exchangeEdges(t, g, e, f);
@@ -2425,6 +2442,7 @@
             function assignCutValue(t, g, child) {
                 var childLab = t.node(child);
                 var parent = childLab.parent;
+                if (!parent) return;
                 t.edge(child, parent).cutvalue = calcCutValue(t, g, child);
             }
 
@@ -2446,7 +2464,6 @@
                     childIsTail = false;
                     graphEdge = g.edge(parent, child);
                 }
-
                 cutValue = graphEdge.weight;
 
                 g.nodeEdges(child).forEach(function (e) {
@@ -2621,7 +2638,6 @@
                         return label.rank;
                     }
                     visited[v] = true;
-                    console.log(label)
                     var rank = Math.min(...g.outEdges(v).map(e => {
                         if (e == null) {
                             return Number.POSITIVE_INFINITY;
@@ -2633,15 +2649,14 @@
                     if (rank === Number.POSITIVE_INFINITY) {
                         rank = 0;
                     }
-                    g.nodes().forEach(function (oldV) {
-                        const node = g.node(oldV);
-                        if (node.rank && node.fixed && label.fixed) {
-                            rank = node.rank + (label.orank - node.orank)
-                            console.log(node.rank, node.orank, label.orank)
-                        }
+                    if (label.fixed)
+                        g.nodes().forEach(function (oldV) {
+                            const node = g.node(oldV);
+                            if (!isNaN(parseInt(node.rank)) && node.fixed) {
+                                rank = node.rank + (label.orank - node.orank)
+                            }
 
-                    });
-                    console.log(v, rank)
+                        });
                     return (label.rank = rank);
                 }
 
@@ -2862,7 +2877,6 @@
                 var nodeRankFactor = g.graph().nodeRankFactor;
 
                 Array.from(layers).forEach((vs, i) => {
-                    console.log(vs, i)
                     if (vs === undefined && i % nodeRankFactor !== 0) {
                         --delta;
                     } else if (vs !== undefined && delta) {
