@@ -10,7 +10,7 @@ eye_base
 g15j1_prostate	
 multimorbidity_base
 
-2、数据集 ukb_8_outcomes_data 【98530 * 76】的8个结局变量：
+2、数据集 ukb_8_outcomes_data_nolab_his 【98530 * 76】的8个结局变量：
 Hypertension	
 Diabetes	
 BreastMalignancy	
