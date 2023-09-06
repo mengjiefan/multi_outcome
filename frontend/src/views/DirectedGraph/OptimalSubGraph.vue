@@ -47,7 +47,7 @@
 import axios from "axios";
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import dagre from "@/plugin/dagre/dagre_fixed";
+import dagre from "@/plugin/dagre/dagre";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
@@ -221,19 +221,42 @@ export default {
         this.setSonGraph(i);
       }
     },
+    traversal(list, value) {
+      if (list.includes(value)) return list;
+      let i;
+      for (i = 0; i < list.length; i++) {
+        if (value < list[i]) {
+          if (i === 0) {
+            list.unshift(value);
+            break;
+          } else {
+            list.splice(i, 0, value);
+            break;
+          }
+        }
+      }
+      if (i === list.length) {
+        list.push(value);
+      }
+    },
     setSonGraph(index) {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
       // {
-      let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({});
+      let g = new dagreD3.graphlib.Graph({}).setGraph({});
+      let y = [];
       let that = this;
       states.forEach(function (state) {
+        that.traversal(y, state.y);
+      });
+
+      states.forEach(function (state) {
         console.log(state.indexes.length > 1);
-        console.log(state.x);
+        console.log(y.indexOf(state.y))
         g.setNode(state.id, {
           x: state.x,
-          y: state.y,
-          fixed: state.indexes.length > 1,
+          orank: y.indexOf(state.y),
+          fixed: state.indexes.length === that.sonNum,
           type: state.type,
         });
       });
@@ -304,10 +327,6 @@ export default {
         if (node.x < minW) minW = node.x;
         if (node.y > maxH) maxH = node.y;
         if (node.y < minH) minH = node.y;
-      });
-      simplePos.linksList = simplePos.linksList.map((link) => {
-        link.points = [];
-        return link;
       });
       let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
       if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
@@ -731,7 +750,7 @@ export default {
   width: 100%;
   height: 90% !important;
 }
-.svg-content svg{
+.svg-content svg {
   width: 100%;
   height: 100%;
 }

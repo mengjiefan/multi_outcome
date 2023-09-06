@@ -645,7 +645,7 @@
     });
   }
   
-  function translateGraph(g) {
+  function translateGraph(g, fixedNodes) {
     var minX = Number.POSITIVE_INFINITY;
     var maxX = 0;
     var minY = Number.POSITIVE_INFINITY;
@@ -665,7 +665,12 @@
       maxY = Math.max(maxY, y + h / 2);
     }
   
-    g.nodes().forEach(v => getExtremes(g.node(v)));
+    g.nodes().forEach(v => {
+      if (fixedNodes.indexOf(v) === -1) {
+        getExtremes(g.node(v));
+      }
+    });
+  
     g.edges().forEach(e => {
       var edge = g.edge(e);
       if (edge.hasOwnProperty("x")) {
@@ -677,9 +682,11 @@
     minY -= marginY;
   
     g.nodes().forEach(v => {
-      var node = g.node(v);
-      node.x -= minX;
-      node.y -= minY;
+      if (fixedNodes.indexOf(v) === -1) {
+        var node = g.node(v);
+        node.x -= minX;
+        node.y -= minY;
+      }
     });
   
     g.edges().forEach(e => {
@@ -688,13 +695,18 @@
         p.x -= minX;
         p.y -= minY;
       });
-      if (edge.hasOwnProperty("x")) { edge.x -= minX; }
-      if (edge.hasOwnProperty("y")) { edge.y -= minY; }
+      if (edge.hasOwnProperty("x")) {
+        edge.x -= minX;
+      }
+      if (edge.hasOwnProperty("y")) {
+        edge.y -= minY;
+      }
     });
   
     graphLabel.width = maxX - minX + marginX;
     graphLabel.height = maxY - minY + marginY;
   }
+  
   
   function assignNodeIntersects(g) {
     g.edges().forEach(e => {
@@ -710,8 +722,8 @@
         p1 = edge.points[0];
         p2 = edge.points[edge.points.length - 1];
       }
-      edge.points.unshift(util.intersectRect(nodeV, p1));
-      edge.points.push(util.intersectRect(nodeW, p2));
+      edge.points.unshift(util.intersectCircle(nodeV, p1));
+      edge.points.push(util.intersectCircle(nodeW, p2));
     });
   }
   
@@ -739,9 +751,9 @@
     });
   }
   
-  function removeBorderNodes(g) {
+  function removeBorderNodes(g, fixedNodes) {
     g.nodes().forEach(v => {
-      if (g.children(v).length) {
+      if (g.children(v).length && fixedNodes.indexOf(v) === -1) {
         var node = g.node(v);
         var t = g.node(node.borderTop);
         var b = g.node(node.borderBottom);
@@ -761,6 +773,7 @@
       }
     });
   }
+  
   
   function removeSelfEdges(g) {
     g.edges().forEach(e => {
@@ -1313,14 +1326,21 @@
    */
   function order(g) {
     var maxRank = util.maxRank(g),
-      downLayerGraphs = buildLayerGraphs(g, util.range(1, maxRank + 1), "inEdges"),
-      upLayerGraphs = buildLayerGraphs(g, util.range(maxRank - 1, -1, -1), "outEdges");
+        downLayerGraphs = buildLayerGraphs(g, util.range(1, maxRank + 1), "inEdges"),
+        upLayerGraphs = buildLayerGraphs(g, util.range(maxRank - 1, -1, -1), "outEdges");
+  
+    // Collect fixed node coordinates
+    var fixedNodes = {};
+    g.nodes().forEach(function(v) {
+      if (g.node(v).fixed) {
+        fixedNodes[v] = { x: g.node(v).x, y: g.node(v).y };
+      }
+    });
   
     var layering = initOrder(g);
-    assignOrder(g, layering);
   
     var bestCC = Number.POSITIVE_INFINITY,
-      best;
+        best;
   
     for (var i = 0, lastBest = 0; lastBest < 4; ++i, ++lastBest) {
       sweepLayerGraphs(i % 2 ? downLayerGraphs : upLayerGraphs, i % 4 >= 2);
@@ -1334,8 +1354,21 @@
       }
     }
   
-    assignOrder(g, best);
+    // Apply best layout to non-fixed nodes
+    g.nodes().forEach(function(v) {
+      if (!g.node(v).fixed) {
+        g.node(v).x = best[v].x;
+        g.node(v).y = best[v].y;
+      }
+    });
+  
+    // Set fixed node coordinates
+    Object.keys(fixedNodes).forEach(function(v) {
+      g.node(v).x = fixedNodes[v].x;
+      g.node(v).y = fixedNodes[v].y;
+    });
   }
+  
   
   function buildLayerGraphs(g, ranks, relationship) {
     return ranks.map(function(rank) {
@@ -1938,7 +1971,7 @@
     return { root: root, align: align };
   }
   
-  function horizontalCompaction(g, layering, root, align, reverseSep) {
+  function horizontalCompaction(g, layering, root, align, reverseSep, fixedNodes) {
     // This portion of the algorithm differs from BK due to a number of problems.
     // Instead of their algorithm we construct a new block graph and do two
     // sweeps. The first sweep places blocks with the smallest possible
@@ -1967,20 +2000,24 @@
   
     // First pass, assign smallest coordinates
     function pass1(elem) {
-      xs[elem] = blockG.inEdges(elem).reduce(function(acc, e) {
-        return Math.max(acc, xs[e.v] + blockG.edge(e));
-      }, 0);
+      if (!fixedNodes.includes(elem)) { // Check if node is not a fixed node
+        xs[elem] = blockG.inEdges(elem).reduce(function(acc, e) {
+          return Math.max(acc, xs[e.v] + blockG.edge(e));
+        }, 0);
+      }
     }
   
     // Second pass, assign greatest coordinates
     function pass2(elem) {
-      var min = blockG.outEdges(elem).reduce(function(acc, e) {
-        return Math.min(acc, xs[e.w] - blockG.edge(e));
-      }, Number.POSITIVE_INFINITY);
+      if (!fixedNodes.includes(elem)) { // Check if node is not a fixed node
+        var min = blockG.outEdges(elem).reduce(function(acc, e) {
+          return Math.min(acc, xs[e.w] - blockG.edge(e));
+        }, Number.POSITIVE_INFINITY);
   
-      var node = g.node(elem);
-      if (min !== Number.POSITIVE_INFINITY && node.borderType !== borderType) {
-        xs[elem] = Math.max(xs[elem], min);
+        var node = g.node(elem);
+        if (min !== Number.POSITIVE_INFINITY && node.borderType !== borderType) {
+          xs[elem] = Math.max(xs[elem], min);
+        }
       }
     }
   
@@ -2103,6 +2140,14 @@
         var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
         var xs = horizontalCompaction(g, adjustedLayering,
           align.root, align.align, horiz === "r");
+  
+        // Set fixed node coordinates
+        g.nodes().forEach(function(v) {
+          if (g.node(v).fixed) {
+            xs[v] = g.node(v).x;
+          }
+        });
+  
         if (horiz === "r") {
           xs = util.mapValues(xs, x => -x);
         }
@@ -2110,11 +2155,11 @@
       });
     });
   
-  
     var smallestWidth = findSmallestWidthAlignment(g, xss);
     alignCoordinates(xss, smallestWidth);
     return balance(xss, g.graph().align);
   }
+  
   
   function sep(nodeSep, edgeSep, reverseSep) {
     return function(g, v, w) {
@@ -2177,6 +2222,7 @@
     var layering = util.buildLayerMatrix(g);
     var rankSep = g.graph().ranksep;
     var prevY = 0;
+  
     layering.forEach(function(layer) {
       const maxHeight = layer.reduce((acc, v) => {
         const height = g.node(v).height;
@@ -2186,10 +2232,17 @@
           return height;
         }
       }, 0);
-      layer.forEach(v => g.node(v).y = prevY + maxHeight / 2);
+  
+      layer.forEach(v => {
+        if (!g.node(v).fixed) { // Check if the node is not fixed
+          g.node(v).y = prevY + maxHeight / 2;
+        }
+      });
+  
       prevY += maxHeight + rankSep;
     });
   }
+  
   
   
   },{"../util":27,"./bk":21}],23:[function(require,module,exports){
@@ -2653,7 +2706,7 @@
     addDummyNode,
     asNonCompoundGraph,
     buildLayerMatrix,
-    intersectRect,
+    intersectCircle,
     mapValues,
     maxRank,
     normalizeRanks,
@@ -2741,39 +2794,19 @@
    * Finds where a line starting at point ({x, y}) would intersect a rectangle
    * ({x, y, width, height}) if it were pointing at the rectangle's center.
    */
-  function intersectRect(rect, point) {
-    var x = rect.x;
-    var y = rect.y;
+  function intersectCircle(circle, point) {
+    var cx = circle.cx;
+    var cy = circle.cy;
+    var r = circle.radius;
   
-    // Rectangle intersection algorithm from:
-    // http://math.stackexchange.com/questions/108113/find-edge-between-two-boxes
-    var dx = point.x - x;
-    var dy = point.y - y;
-    var w = rect.width / 2;
-    var h = rect.height / 2;
+    var dx = point.x - cx;
+    var dy = point.y - cy;
   
-    if (!dx && !dy) {
-      throw new Error("Not possible to find intersection inside of the rectangle");
-    }
+    var angle = Math.atan2(dy, dx);
+    var sx = cx + Math.cos(angle) * r;
+    var sy = cy + Math.sin(angle) * r;
   
-    var sx, sy;
-    if (Math.abs(dy) * w > Math.abs(dx) * h) {
-      // Intersection is top or bottom of rect.
-      if (dy < 0) {
-        h = -h;
-      }
-      sx = h * dx / dy;
-      sy = h;
-    } else {
-      // Intersection is left or right of rect.
-      if (dx < 0) {
-        w = -w;
-      }
-      sx = w;
-      sy = w * dy / dx;
-    }
-  
-    return { x: x + sx, y: y + sy };
+    return { x: sx, y: sy };
   }
   
   /*
@@ -4348,4 +4381,3 @@
   
   },{}]},{},[1])(1)
   });
-  
