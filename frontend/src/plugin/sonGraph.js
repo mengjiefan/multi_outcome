@@ -243,7 +243,7 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
         width: "100%",
         height: "100%",
         drawGrid: { name: 'mesh', args: { color: '#bbbbbb' } },
-        gridSize: 16,
+        gridSize: 80,
         interactive: function (cellView, method) {
             return null
         }

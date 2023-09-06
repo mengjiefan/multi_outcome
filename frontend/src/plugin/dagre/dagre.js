@@ -687,11 +687,11 @@
 
                 g.edges().forEach(e => {
                     var edge = g.edge(e);
-                   if(edge.points)
-                    edge.points.forEach(p => {
-                        p.x -= minX;
-                        p.y -= minY;
-                    });
+                    if (edge.points)
+                        edge.points.forEach(p => {
+                            p.x -= minX;
+                            p.y -= minY;
+                        });
                     if (edge.hasOwnProperty("x")) { edge.x -= minX; }
                     if (edge.hasOwnProperty("y")) { edge.y -= minY; }
                 });
@@ -1337,7 +1337,6 @@
                         bestCC = cc;
                     }
                 }
-
                 assignOrder(g, best);
             }
 
@@ -1360,7 +1359,8 @@
             function assignOrder(g, layering) {
                 Object.values(layering).forEach(layer => layer.forEach((v, i) => {
                     g.node(v).order = i;
-                    // console.log(v, g.node(v), i);
+                    if (g.node(v).fixed)
+                        console.log(v, g.node(v), i);
                 }));
             }
 
@@ -1913,6 +1913,7 @@
                 // We cache the position here based on the layering because the graph and
                 // layering may be out of sync. The layering matrix is manipulated to
                 // generate different extreme alignments.
+                let firstFixed = null;
                 layering.forEach(function (layer) {
                     layer.forEach(function (v, order) {
                         root[v] = v;
@@ -1920,10 +1921,11 @@
                         pos[v] = order;
                     });
                 });
-
                 layering.forEach(function (layer) {
                     var prevIdx = -1;
                     layer.forEach(function (v) {
+                        let node = g.node(v);
+
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
@@ -1938,9 +1940,14 @@
                                     prevIdx = pos[w];
                                 }
                             }
+
+
                         }
+
                     });
                 });
+
+
 
                 return { root: root, align: align };
             }
@@ -2094,7 +2101,6 @@
                 var conflicts = Object.assign(
                     findType1Conflicts(g, layering),
                     findType2Conflicts(g, layering));
-
                 var xss = {};
                 var adjustedLayering;
                 ["u", "d"].forEach(function (vert) {
@@ -2175,7 +2181,6 @@
 
             function position(g) {
                 g = util.asNonCompoundGraph(g);
-
                 positionY(g);
                 Object.entries(positionX(g)).forEach(([v, x]) => g.node(v).x = x);
             }
@@ -2423,7 +2428,7 @@
                 initLowLimValues(t);
                 initCutValues(t, g);
                 var e, f;
-                
+
                 while ((e = leaveEdge(t))) {
                     f = enterEdge(t, g, e);
                     exchangeEdges(t, g, e, f);
