@@ -292,7 +292,6 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         path.addTo(graph);
         path.vertices(vertices);
         path.connector("rounded");
-
     })
 
     if (nodesList) {

@@ -217,6 +217,7 @@ export default {
         this.sonGraphs.push(ans);
         this.gaps.push(1);
       }
+      
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }

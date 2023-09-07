@@ -1923,14 +1923,65 @@
                 });
                 layering.forEach(function (layer) {
                     var prevIdx = -1;
-                    layer.forEach(function (v) {
-                        let node = g.node(v);
+                    let alignFixed = -1;
+                    let fixedIndex = layer.findIndex(node => {
+                        if (g.node(node).fixed) return true;
+                        else return false;
+                    })
 
+                    if (fixedIndex > -1) {
+                        let v = layer[fixedIndex];
+                        let now = g.node(v);
+                        if (now.fixed && firstFixed) {
+                            align[firstFixed] = v;
+                            align[v] = root[v] = root[firstFixed];
+                            alignFixed = pos[firstFixed];
+                        } else if (now.fixed) {
+                            firstFixed = v;
+                            fixedIndex = -1;
+                        }
+                    }
+                    for (let index = 0; index < fixedIndex; index++) {
+                        let v = layer[index];
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
+                            console.log('v', v, g.node(v).rank, g.node(v).order)
+                            ws.forEach(id => {
+                                let node = g.node(id);
+                                console.log(node.rank, node.order)
+                            })
                             var mp = (ws.length - 1) / 2;
-                            for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
+                            let i = Math.floor(mp);
+                            if (fixedIndex > -1) i = 0;
+                            for (let il = Math.ceil(mp); i <= il; ++i) {
+                                var w = ws[i];
+                                if (align[v] === v &&
+                                    prevIdx < pos[w] && pos[w] < alignFixed &&
+                                    !hasConflict(conflicts, v, w)) {
+                                    align[w] = v;
+                                    align[v] = root[v] = root[w];
+                                    prevIdx = pos[w];
+                                    console.log('align', v, g.node(w).order)
+                                }
+                            }
+                        }
+                    }
+                    prevIdx = alignFixed;
+                    for (let index = fixedIndex + 1; index < layer.length; index++) {
+                        let v = layer[index];
+                        var ws = neighborFn(v);
+                        if (ws.length) {
+                            ws = ws.sort((a, b) => pos[a] - pos[b]);
+                            console.log('v', v, g.node(v).rank, g.node(v).order)
+                            ws.forEach(id => {
+                                let node = g.node(id);
+                                console.log(node.rank, node.order)
+                            })
+                            var mp = (ws.length - 1) / 2;
+                            let il = Math.ceil(mp);
+                            if (fixedIndex > -1) il = mp.length - 1;
+                            for (var i = Math.floor(mp); i <= il; ++i) {
                                 var w = ws[i];
                                 if (align[v] === v &&
                                     prevIdx < pos[w] &&
@@ -1938,17 +1989,12 @@
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
+                                    console.log('align', v, g.node(w).order)
                                 }
                             }
-
-
                         }
-
-                    });
+                    }
                 });
-
-
-
                 return { root: root, align: align };
             }
 
