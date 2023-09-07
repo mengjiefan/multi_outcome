@@ -526,7 +526,7 @@
                             inputLabel.y = layoutLabel.y;
                         }
                     } else {
-                        console.log('lable wrong')
+                        console.log('lable wrong!!!!!!!!')
                     }
                 });
 
@@ -1537,9 +1537,7 @@
 
             function sortSubgraph(g, v, cg, biasRight) {
                 var movable = g.children(v);
-                movable = movable.filter(v => {
-                    !g.node(v).fixed
-                })
+                movable = []
                 var node = g.node(v);
                 var bl = node ? node.borderLeft : undefined;
                 var br = node ? node.borderRight : undefined;
@@ -1934,6 +1932,15 @@
                     let alignFixed = -1;
                     let fixedIndex = layer.findIndex(node => {
                         if (g.node(node).fixed) return true;
+                        else if (node.includes('Undefined')) {
+                            let source = g.node(g.node(node).edgeObj.v);
+                            let target = g.node(g.node(node).edgeObj.w);
+                            if (source.fixed && target.fixed)
+                                console.log(g.node(node).edgeObj.v, g.node(node).edgeObj.w)
+                            if (source.fixed && target.fixed && Math.abs(target.rank - source.rank) === 2)
+                                return true;
+                            else return false
+                        }
                         else return false;
                     })
 
@@ -1953,11 +1960,9 @@
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
-
                             var mp = (ws.length - 1) / 2;
-                            let il = Math.floor(mp);
-                            if (fixedIndex > -1) il = 0;
-                            for (let i = il; i <= Math.ceil(mp); ++i) {
+
+                            for (let i = Math.floor(mp); i <= Math.ceil(mp); ++i) {
                                 var w = ws[i];
                                 if (align[v] === v &&
                                     prevIdx < pos[w] && pos[w] < alignFixed &&
@@ -2490,7 +2495,8 @@
                 var parent = childLab.parent;
                 if (!parent) return;
                 if (!g.node(parent).fixed) return;
-                //console.log('change', child, parent)
+                let rank = g.node(child).rank - g.node(parent).rank;
+                if (Math.abs(rank) > 2) return;
                 if (t.edge(child, parent).cutvalue < 0)
                     t.edge(child, parent).cutvalue = -calcCutValue(t, g, child);
             }
@@ -2838,7 +2844,6 @@
                 var dy = point.y - y;
                 var w = rect.width / 2;
                 var h = rect.height / 2;
-
                 if (!dx && !dy) {
                     throw new Error("Not possible to find intersection inside of the rectangle");
                 }

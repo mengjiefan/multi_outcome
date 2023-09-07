@@ -205,24 +205,24 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(24 * gap, 24 * gap);
+        faRect.resize(24 , 24 );
         faRect.position(
-            countXPos(nodesList[nodeI].x) - 12 * gap,
-            countYPos(nodesList[nodeI].y) - 12 * gap
+            countXPos(nodesList[nodeI].x) - 12 ,
+            countYPos(nodesList[nodeI].y) - 12 
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
             body: {
                 strokeWidth: 0,
-                rx: 20 * gap,
-                ry: 20 * gap,
+                rx: 20 ,
+                ry: 20 ,
                 fill: 'transparent'
             },
             label: {
                 text: nodesList[nodeI].id,
                 fill: "black",
                 y: 0,
-                fontSize: 6 * gap,
+                fontSize: 6 ,
             },
             title: nodesList[nodeI].id
         });
@@ -231,17 +231,17 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             let offset = 360 / indexes.length;
             circle.attr({
                 body: {
-                    strokeDasharray: 12 * gap * 3.1415926,
-                    strokeDashoffset: 12 * gap * 3.1415926 / 360 * (offset * i),
+                    strokeDasharray: 12  * 3.1415926,
+                    strokeDashoffset: 12  * 3.1415926 / 360 * (offset * i),
                     fill: "transparent",
                     stroke: cmap[indexes[i]],
-                    strokeWidth: 12 * gap
+                    strokeWidth: 12 
                 }
             })
-            circle.resize(12 * gap, 12 * gap);
+            circle.resize(12 , 12 );
             circle.position(
-                countXPos(nodesList[nodeI].x) - 6 * gap,
-                countYPos(nodesList[nodeI].y) - 6 * gap,
+                countXPos(nodesList[nodeI].x) - 6 ,
+                countYPos(nodesList[nodeI].y) - 6 ,
             );
             circle.addTo(graph);
         }
@@ -272,11 +272,11 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
                 stroke: 'black',
-                strokeWidth: (value * 8 * gap) + '',
+                strokeWidth: (value * 8 ) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': value * 7 * gap,
+                    'stroke-width': value * 7 ,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }

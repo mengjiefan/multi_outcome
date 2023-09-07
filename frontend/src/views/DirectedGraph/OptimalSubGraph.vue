@@ -221,7 +221,7 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
-      //this.setSonGraph(0);
+      //this.setSonGraph(1);
     },
     traversal(list, value, id, ids) {
       let index = list.lastIndexOf(value);
@@ -247,7 +247,7 @@ export default {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
       var edges = data.linksList;
-
+      const oriL = edges.length;
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
 
       let fixedY = [];
@@ -255,10 +255,7 @@ export default {
       let that = this;
       this.multipleSearchValue.nodesList.forEach((node) => {
         let index = states.findIndex((state) => {
-          if (
-            state.id === node.id &&
-            state.indexes.length === that.sonNum
-          )
+          if (state.id === node.id && state.indexes.length === that.sonNum)
             return true;
           else return false;
         });
@@ -271,7 +268,7 @@ export default {
           that.traversal(fixedY, state.y, state.id, fixedNode);
         }
       });*/
-      /*
+
       for (let i = 1; i < fixedNode.length; i++) {
         let source = fixedNode[i];
         let target = fixedNode[i - 1];
@@ -295,10 +292,8 @@ export default {
           });
         }
       }
-      */
+
       states.forEach(function (state) {
-        if (state.indexes.length === that.sonNum)
-          console.log(state.id, fixedNode.indexOf(state.id));
         g.setNode(state.id, {
           orank: fixedNode.indexOf(state.id) * 2,
           fixed: state.indexes.length === that.sonNum,
@@ -334,6 +329,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
+      data.linksList = edges.slice(0, oriL);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*

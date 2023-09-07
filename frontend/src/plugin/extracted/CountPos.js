@@ -17,15 +17,18 @@ export const countSimplePos = (g, nodes, links) => {
         let points = []
         if (pos.points)
             points = pos.points.slice(1, pos.points.length - 1);
-
+        if ('draw', v.v.includes('score') && v.w.includes('fam')) console.log(pos.points)
         let index = links.findIndex(link => {
             if (link.source === v.v && link.target === v.w) return true;
             else if (link.target === v.w && link.source === v.v) return true;
             else return false;
         })
-        let edge = links[index];
-        edge['points'] = points;
-        linksList.push(edge)
+        if (index > -1) {
+            let edge = links[index];
+            edge['points'] = points;
+            linksList.push(edge)
+        }
+
     })
     return { nodesList, linksList };
 }
