@@ -301,3 +301,34 @@ function assignOrder(g, layering) {
           console.log(v, g.node(v), i);
   }));
 }
+            /*
+             * Align the coordinates of each of the layout alignments such that
+             * left-biased alignments have their minimum coordinate at the same point as
+             * the minimum coordinate of the smallest width alignment and right-biased
+             * alignments have their maximum coordinate at the same point as the maximum
+             * coordinate of the smallest width alignment.
+             */
+            function alignCoordinates(xss, alignTo) {
+              var alignToVals = Object.values(alignTo),
+                  alignToMin = Math.min(...alignToVals),
+                  alignToMax = Math.max(...alignToVals);
+
+              ["u", "d"].forEach(function (vert) {
+                  ["l", "r"].forEach(function (horiz) {
+                      var alignment = vert + horiz,
+                          xs = xss[alignment];
+
+                      if (xs === alignTo) return;
+
+                      var xsVals = Object.values(xs);
+                      let delta = alignToMin - Math.min(...xsVals);
+                      if (horiz !== "l") {
+                          delta = alignToMax - Math.max(...xsVals);
+                      }
+
+                      if (delta) {
+                          xss[alignment] = util.mapValues(xs, x => x + delta);
+                      }
+                  });
+              });
+          }

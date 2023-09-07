@@ -1359,8 +1359,9 @@
             function assignOrder(g, layering) {
                 Object.values(layering).forEach(layer => layer.forEach((v, i) => {
                     g.node(v).order = i;
+                    /*
                     if (g.node(v).fixed)
-                        console.log(v, g.node(v), i);
+                        console.log(v, g.node(v), i);*/
                 }));
             }
 
@@ -1946,15 +1947,16 @@
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
+                            /*
                             console.log('v', v, g.node(v).rank, g.node(v).order)
                             ws.forEach(id => {
                                 let node = g.node(id);
                                 console.log(node.rank, node.order)
-                            })
+                            })*/
                             var mp = (ws.length - 1) / 2;
-                            let i = Math.floor(mp);
-                            if (fixedIndex > -1) i = 0;
-                            for (let il = Math.ceil(mp); i <= il; ++i) {
+                            let il = Math.floor(mp);
+                            if (fixedIndex > -1) il = 0;
+                            for (let i = il; i <= Math.ceil(mp); ++i) {
                                 var w = ws[i];
                                 if (align[v] === v &&
                                     prevIdx < pos[w] && pos[w] < alignFixed &&
@@ -1962,7 +1964,7 @@
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
-                                    console.log('align', v, g.node(w).order)
+                                    //console.log('align', v, g.node(w).order)
                                 }
                             }
                         }
@@ -1973,23 +1975,25 @@
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
-                            console.log('v', v, g.node(v).rank, g.node(v).order)
+                            /*console.log('v', v, g.node(v).rank, g.node(v).order)
                             ws.forEach(id => {
                                 let node = g.node(id);
                                 console.log(node.rank, node.order)
-                            })
+                            })*/
                             var mp = (ws.length - 1) / 2;
-                            let il = Math.ceil(mp);
-                            if (fixedIndex > -1) il = mp.length - 1;
-                            for (var i = Math.floor(mp); i <= il; ++i) {
+                            /*
+                            let i = Math.ceil(mp);
+                            if (fixedIndex > -1) i = mp.length - 1;*/
+                            for (let i = Math.ceil(mp); i >= Math.floor(mp); i--) {
                                 var w = ws[i];
+                                //console.log(prevIdx, pos[w], hasConflict(conflicts, v, w))
                                 if (align[v] === v &&
                                     prevIdx < pos[w] &&
                                     !hasConflict(conflicts, v, w)) {
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
-                                    console.log('align', v, g.node(w).order)
+                                    //console.log('align', v, g.node(w).order)
                                 }
                             }
                         }
@@ -2007,7 +2011,6 @@
                 var xs = {},
                     blockG = buildBlockGraph(g, layering, root, reverseSep),
                     borderType = reverseSep ? "borderLeft" : "borderRight";
-
                 function iterate(setXsFunc, nextNodesFunc) {
                     var stack = blockG.nodes();
                     var elem = stack.pop();
@@ -2028,7 +2031,9 @@
                 // First pass, assign smallest coordinates
                 function pass1(elem) {
                     xs[elem] = blockG.inEdges(elem).reduce(function (acc, e) {
-                        return Math.max(acc, xs[e.v] + blockG.edge(e));
+                        let later = blockG.edge(e);
+                        if (xs[e.v]) later = later + xs[e.v]
+                        return Math.max(acc, later);
                     }, 0);
                 }
 
@@ -2160,6 +2165,7 @@
 
                         var neighborFn = (vert === "u" ? g.predecessors : g.successors).bind(g);
                         var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
+                        console.log(align)
                         var xs = horizontalCompaction(g, adjustedLayering,
                             align.root, align.align, horiz === "r");
                         if (horiz === "r") {
@@ -2169,8 +2175,9 @@
                     });
                 });
 
-
+                console.log(xss)
                 var smallestWidth = findSmallestWidthAlignment(g, xss);
+                console.log('smallestWidth', smallestWidth)
                 alignCoordinates(xss, smallestWidth);
                 return balance(xss, g.graph().align);
             }
@@ -2466,11 +2473,7 @@
                 g = simplify(g);
                 initRank(g);
                 var t = feasibleTree(g);
-                console.log('after')
-                g.nodes().forEach(v => {
-                    const node = g.node(v);
-                    console.log(v, node.rank)
-                })
+
                 initLowLimValues(t);
                 initCutValues(t, g);
                 var e, f;

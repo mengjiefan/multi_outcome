@@ -217,7 +217,7 @@ export default {
         this.sonGraphs.push(ans);
         this.gaps.push(1);
       }
-      
+    
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
@@ -293,7 +293,7 @@ export default {
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*
-      if (index === 0) {
+      if (index === 3) {
         let render = new dagreD3.render();
         // 选择 svg 并添加一个g元素作为绘图容器.
         let svgGroup = d3.select("svg").append("g");
