@@ -221,6 +221,7 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
+      //this.setSonGraph(0);
     },
     traversal(list, value, id, ids) {
       let index = list.lastIndexOf(value);
@@ -245,24 +246,65 @@ export default {
     setSonGraph(index) {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
-      // {
-      let g = new dagreD3.graphlib.Graph({}).setGraph({});
-      let y = [];
-      let ids = [];
-      let that = this;
-      states.forEach(function (state) {
-        that.traversal(y, state.y, state.id, ids);
-      });
+      var edges = data.linksList;
 
+      let g = new dagreD3.graphlib.Graph({}).setGraph({});
+
+      let fixedY = [];
+      let fixedNode = [];
+      let that = this;
+      this.multipleSearchValue.nodesList.forEach((node) => {
+        let index = states.findIndex((state) => {
+          if (
+            state.id === node.id &&
+            state.indexes.length === that.sonNum
+          )
+            return true;
+          else return false;
+        });
+        if (index > -1)
+          that.traversal(fixedY, states[index].y, node.id, fixedNode);
+      });
+      /*
       states.forEach(function (state) {
+        if (state.indexes.length === that.sonNum) {
+          that.traversal(fixedY, state.y, state.id, fixedNode);
+        }
+      });*/
+      /*
+      for (let i = 1; i < fixedNode.length; i++) {
+        let source = fixedNode[i];
+        let target = fixedNode[i - 1];
+        let k = edges.findIndex((edge) => {
+          if (edge.source === source && edge.target === target) return true;
+          else if (edge.target === source && edge.source === target)
+            return true;
+          else return false;
+        });
+        if (k < 0) {
+          console.log({
+            index,
+            source,
+            target,
+          });
+          edges.push({
+            source,
+            target,
+            temp: true,
+            value: 0,
+          });
+        }
+      }
+      */
+      states.forEach(function (state) {
+        if (state.indexes.length === that.sonNum)
+          console.log(state.id, fixedNode.indexOf(state.id));
         g.setNode(state.id, {
-          orank: ids.indexOf(state.id) * 2,
+          orank: fixedNode.indexOf(state.id) * 2,
           fixed: state.indexes.length === that.sonNum,
           type: state.type,
         });
       });
-
-      var edges = data.linksList;
 
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;

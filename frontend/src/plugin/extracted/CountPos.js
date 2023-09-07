@@ -49,6 +49,11 @@ export const countSonPos = (all, son) => {
         else return false;
     })
     nodesList.push(all.nodesList[index]);
+    /*
+    all.nodesList.forEach(node => {
+        if(son.variable.includes(node.id)) 
+        nodesList.push(node)
+    })*/
     son.variable.forEach(node => {
         let index = all.nodesList.findIndex(item => {
             if (node === item.id) return true;

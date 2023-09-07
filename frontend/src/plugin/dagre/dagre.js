@@ -519,11 +519,14 @@
                 inputGraph.edges().forEach(e => {
                     var inputLabel = inputGraph.edge(e);
                     var layoutLabel = layoutGraph.edge(e);
-
-                    inputLabel.points = layoutLabel.points;
-                    if (layoutLabel.hasOwnProperty("x")) {
-                        inputLabel.x = layoutLabel.x;
-                        inputLabel.y = layoutLabel.y;
+                    if (layoutLabel) {
+                        inputLabel.points = layoutLabel.points;
+                        if (layoutLabel.hasOwnProperty("x")) {
+                            inputLabel.x = layoutLabel.x;
+                            inputLabel.y = layoutLabel.y;
+                        }
+                    } else {
+                        console.log('lable wrong')
                     }
                 });
 
@@ -1393,9 +1396,14 @@
                     layers[node.rank].push(v);
                     g.successors(v).forEach(dfs);
                 }
-
-                var orderedVs = simpleNodes.sort((a, b) => g.node(a).rank - g.node(b).rank);
-                orderedVs.forEach(dfs);
+                var fixedNodes = simpleNodes.filter(v => g.node(v).fixed);
+                var nonFixed = simpleNodes.filter(v => !g.node(v).fixed)
+                fixedNodes = fixedNodes.sort((a, b) => g.node(a).rank - g.node(b).rank);
+                nonFixed = nonFixed.sort((a, b) => g.node(a).rank - g.node(b).rank);
+                fixedNodes.forEach(dfs);
+                nonFixed.forEach(dfs)
+                //var orderedVs = simpleNodes.sort((a, b) => g.node(a).rank - g.node(b).rank);
+                //orderedVs.forEach(dfs);
 
                 return layers;
             }
@@ -1529,6 +1537,9 @@
 
             function sortSubgraph(g, v, cg, biasRight) {
                 var movable = g.children(v);
+                movable = movable.filter(v => {
+                    !g.node(v).fixed
+                })
                 var node = g.node(v);
                 var bl = node ? node.borderLeft : undefined;
                 var br = node ? node.borderRight : undefined;
@@ -1568,7 +1579,6 @@
                         result.weight += 2;
                     }
                 }
-
                 return result;
             }
 
@@ -1929,7 +1939,6 @@
 
                     if (fixedIndex > -1) {
                         let v = layer[fixedIndex];
-
                         if (firstFixed) {
                             align[firstFixed] = v;
                             align[v] = root[v] = root[firstFixed];
@@ -2456,7 +2465,6 @@
                 g = simplify(g);
                 initRank(g);
                 var t = feasibleTree(g);
-
                 initLowLimValues(t);
                 initCutValues(t, g);
                 var e, f;
@@ -2474,12 +2482,23 @@
                 var vs = postorder(t, t.nodes());
                 vs = vs.slice(0, vs.length - 1);
                 vs.forEach(v => assignCutValue(t, g, v));
+                vs.forEach(v => changeCutValueOfFixedNode(t, g, v));
             }
-
+            function changeCutValueOfFixedNode(t, g, child) {
+                if (!g.node(child).fixed) return;
+                var childLab = t.node(child);
+                var parent = childLab.parent;
+                if (!parent) return;
+                if (!g.node(parent).fixed) return;
+                //console.log('change', child, parent)
+                if (t.edge(child, parent).cutvalue < 0)
+                    t.edge(child, parent).cutvalue = -calcCutValue(t, g, child);
+            }
             function assignCutValue(t, g, child) {
                 var childLab = t.node(child);
                 var parent = childLab.parent;
                 if (!parent) return;
+                if (!t.edge(child, parent)) return;
                 t.edge(child, parent).cutvalue = calcCutValue(t, g, child);
             }
 
@@ -2616,6 +2635,8 @@
                         edge = g.edge(parent, v);
                         flipped = true;
                     }
+
+                    const old = g.node(v).rank;
                     if (!g.node(v).fixed)
                         g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
                 });
