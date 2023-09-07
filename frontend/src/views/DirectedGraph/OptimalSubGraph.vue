@@ -217,27 +217,29 @@ export default {
         this.sonGraphs.push(ans);
         this.gaps.push(1);
       }
-    
+
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
     },
-    traversal(list, value) {
-      if (list.includes(value)) return list;
+    traversal(list, value, id, ids) {
+      let index = list.lastIndexOf(value);
+      if (index > -1) {
+        list.splice(index, 0, value);
+        ids.splice(index, 0, id);
+        return;
+      }
       let i;
       for (i = 0; i < list.length; i++) {
         if (value < list[i]) {
-          if (i === 0) {
-            list.unshift(value);
-            break;
-          } else {
-            list.splice(i, 0, value);
-            break;
-          }
+          list.splice(i, 0, value);
+          ids.splice(i, 0, id);
+          break;
         }
       }
       if (i === list.length) {
         list.push(value);
+        ids.push(id);
       }
     },
     setSonGraph(index) {
@@ -246,14 +248,15 @@ export default {
       // {
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
       let y = [];
+      let ids = [];
       let that = this;
       states.forEach(function (state) {
-        that.traversal(y, state.y);
+        that.traversal(y, state.y, state.id, ids);
       });
 
       states.forEach(function (state) {
         g.setNode(state.id, {
-          orank: y.indexOf(state.y) * 2,
+          orank: ids.indexOf(state.id) * 2,
           fixed: state.indexes.length === that.sonNum,
           type: state.type,
         });
@@ -675,7 +678,6 @@ export default {
       );
     },
   },
-
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")

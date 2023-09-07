@@ -1929,7 +1929,7 @@
 
                     if (fixedIndex > -1) {
                         let v = layer[fixedIndex];
-            
+
                         if (firstFixed) {
                             align[firstFixed] = v;
                             align[v] = root[v] = root[firstFixed];
@@ -2460,11 +2460,11 @@
                 initLowLimValues(t);
                 initCutValues(t, g);
                 var e, f;
-                /*
+
                 while ((e = leaveEdge(t))) {
                     f = enterEdge(t, g, e);
                     exchangeEdges(t, g, e, f);
-                }*/
+                }
             }
 
             /*
@@ -2616,7 +2616,8 @@
                         edge = g.edge(parent, v);
                         flipped = true;
                     }
-                    g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
+                    if (!g.node(v).fixed)
+                        g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
                 });
             }
 
