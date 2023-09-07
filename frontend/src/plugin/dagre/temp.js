@@ -184,151 +184,173 @@ function verticalAlignment(g, layering, conflicts, neighborFn) {
 }
 function verticalAlignment(g, layering, conflicts, neighborFn) {
   var root = {},
-      align = {},
-      pos = {};
+    align = {},
+    pos = {};
 
   // We cache the position here based on the layering because the graph and
   // layering may be out of sync. The layering matrix is manipulated to
   // generate different extreme alignments.
   let firstFixed = null;
   layering.forEach(function (layer) {
-      layer.forEach(function (v, order) {
-          root[v] = v;
-          align[v] = v;
-          pos[v] = order;
-      });
+    layer.forEach(function (v, order) {
+      root[v] = v;
+      align[v] = v;
+      pos[v] = order;
+    });
   });
   layering.forEach(function (layer) {
-      var prevIdx = -1;
-      let alignFixed = -1;
-      let fixedIndex = layer.findIndex(node => {
-          if (g.node(node).fixed) return true;
-          else return false;
-      })
+    var prevIdx = -1;
+    let alignFixed = -1;
+    let fixedIndex = layer.findIndex(node => {
+      if (g.node(node).fixed) return true;
+      else return false;
+    })
 
-      if (fixedIndex > -1) {
-          let v = layer[fixedIndex];
-          let now = g.node(v);
-          if (now.fixed && firstFixed) {
-              align[firstFixed] = v;
-              align[v] = root[v] = root[firstFixed];
-              alignFixed = pos[firstFixed];
-          } else if (now.fixed) {
-              firstFixed = v;
-              fixedIndex = -1;
-          }
+    if (fixedIndex > -1) {
+      let v = layer[fixedIndex];
+      let now = g.node(v);
+      if (now.fixed && firstFixed) {
+        align[firstFixed] = v;
+        align[v] = root[v] = root[firstFixed];
+        alignFixed = pos[firstFixed];
+      } else if (now.fixed) {
+        firstFixed = v;
+        fixedIndex = -1;
       }
-      for (let index = 0; index < fixedIndex; index++) {
-          let v = layer[index];
-          var ws = neighborFn(v);
-          if (ws.length) {
-              ws = ws.sort((a, b) => pos[a] - pos[b]);
-              console.log('v', v, g.node(v).rank, g.node(v).order)
-              ws.forEach(id => {
-                  let node = g.node(id);
-                  console.log(node.rank, node.order)
-              })
-              var mp = (ws.length - 1) / 2;
+    }
+    for (let index = 0; index < fixedIndex; index++) {
+      let v = layer[index];
+      var ws = neighborFn(v);
+      if (ws.length) {
+        ws = ws.sort((a, b) => pos[a] - pos[b]);
+        console.log('v', v, g.node(v).rank, g.node(v).order)
+        ws.forEach(id => {
+          let node = g.node(id);
+          console.log(node.rank, node.order)
+        })
+        var mp = (ws.length - 1) / 2;
 
-              for (var i = 0, il = Math.ceil(mp); i <= il; ++i) {
-                  var w = ws[i];
-                  if (align[v] === v &&
-                      prevIdx < pos[w] && pos[w] < alignFixed &&
-                      !hasConflict(conflicts, v, w)) {
-                      align[w] = v;
-                      align[v] = root[v] = root[w];
-                      prevIdx = pos[w];
-                      console.log('align', v, g.node(w).order)
-                  }
-              }
+        for (var i = 0, il = Math.ceil(mp); i <= il; ++i) {
+          var w = ws[i];
+          if (align[v] === v &&
+            prevIdx < pos[w] && pos[w] < alignFixed &&
+            !hasConflict(conflicts, v, w)) {
+            align[w] = v;
+            align[v] = root[v] = root[w];
+            prevIdx = pos[w];
+            console.log('align', v, g.node(w).order)
           }
+        }
       }
-      prevIdx = alignFixed;
-      for (let index = fixedIndex + 1; index < layer.length; index++) {
-          let v = layer[index];
-          var ws = neighborFn(v);
-          if (ws.length) {
-              ws = ws.sort((a, b) => pos[a] - pos[b]);
-              console.log('v', v, g.node(v).rank, g.node(v).order)
-              ws.forEach(id => {
-                  let node = g.node(id);
-                  console.log(node.rank, node.order)
-              })
-              var mp = (ws.length - 1) / 2;
+    }
+    prevIdx = alignFixed;
+    for (let index = fixedIndex + 1; index < layer.length; index++) {
+      let v = layer[index];
+      var ws = neighborFn(v);
+      if (ws.length) {
+        ws = ws.sort((a, b) => pos[a] - pos[b]);
+        console.log('v', v, g.node(v).rank, g.node(v).order)
+        ws.forEach(id => {
+          let node = g.node(id);
+          console.log(node.rank, node.order)
+        })
+        var mp = (ws.length - 1) / 2;
 
-              for (var i = Math.floor(mp), il = mp.length - 1; i <= il; ++i) {
-                  var w = ws[i];
-                  if (align[v] === v &&
-                      prevIdx < pos[w] &&
-                      !hasConflict(conflicts, v, w)) {
-                      align[w] = v;
-                      align[v] = root[v] = root[w];
-                      prevIdx = pos[w];
-                      console.log('align', v, g.node(w).order)
-                  }
-              }
+        for (var i = Math.floor(mp), il = mp.length - 1; i <= il; ++i) {
+          var w = ws[i];
+          if (align[v] === v &&
+            prevIdx < pos[w] &&
+            !hasConflict(conflicts, v, w)) {
+            align[w] = v;
+            align[v] = root[v] = root[w];
+            prevIdx = pos[w];
+            console.log('align', v, g.node(w).order)
           }
+        }
       }
+    }
   });
   return { root: root, align: align };
 }
 function assignOrder(g, layering) {
   let fixedIndex = -1;
   Object.values(layering).forEach(layer => {
-      let nowIndex = -1;
+    let nowIndex = -1;
+    layer.forEach((v, i) => {
+      let node = g.node(v);
+      g.node(v).order = i;
+      if (node.fixed) {
+        if (fixedIndex > -1) {
+          nowIndex = i;
+          g.node(v).order = fixedIndex;
+        }
+        else fixedIndex = i;
+      }
+    })
+    if (nowIndex > -1 && fixedIndex > -1)
       layer.forEach((v, i) => {
-          let node = g.node(v);
-          g.node(v).order = i;
-          if (node.fixed) {
-              if (fixedIndex > -1) {
-                  nowIndex = i;
-                  g.node(v).order = fixedIndex;
-              }
-              else fixedIndex = i;
-          }
+        if (i === fixedIndex && !g.node(v).fixed)
+          g.node(v).order = nowIndex;
       })
-      if (nowIndex > -1 && fixedIndex > -1)
-          layer.forEach((v, i) => {
-              if (i === fixedIndex && !g.node(v).fixed)
-                  g.node(v).order = nowIndex;
-          })
   });
 }
 function assignOrder(g, layering) {
   Object.values(layering).forEach(layer => layer.forEach((v, i) => {
-      g.node(v).order = i;
-      if (g.node(v).fixed)
-          console.log(v, g.node(v), i);
+    g.node(v).order = i;
+    if (g.node(v).fixed)
+      console.log(v, g.node(v), i);
   }));
 }
-            /*
-             * Align the coordinates of each of the layout alignments such that
-             * left-biased alignments have their minimum coordinate at the same point as
-             * the minimum coordinate of the smallest width alignment and right-biased
-             * alignments have their maximum coordinate at the same point as the maximum
-             * coordinate of the smallest width alignment.
-             */
-            function alignCoordinates(xss, alignTo) {
-              var alignToVals = Object.values(alignTo),
-                  alignToMin = Math.min(...alignToVals),
-                  alignToMax = Math.max(...alignToVals);
+/*
+ * Align the coordinates of each of the layout alignments such that
+ * left-biased alignments have their minimum coordinate at the same point as
+ * the minimum coordinate of the smallest width alignment and right-biased
+ * alignments have their maximum coordinate at the same point as the maximum
+ * coordinate of the smallest width alignment.
+ */
+function alignCoordinates(xss, alignTo) {
+  var alignToVals = Object.values(alignTo),
+    alignToMin = Math.min(...alignToVals),
+    alignToMax = Math.max(...alignToVals);
 
-              ["u", "d"].forEach(function (vert) {
-                  ["l", "r"].forEach(function (horiz) {
-                      var alignment = vert + horiz,
-                          xs = xss[alignment];
+  ["u", "d"].forEach(function (vert) {
+    ["l", "r"].forEach(function (horiz) {
+      var alignment = vert + horiz,
+        xs = xss[alignment];
 
-                      if (xs === alignTo) return;
+      if (xs === alignTo) return;
 
-                      var xsVals = Object.values(xs);
-                      let delta = alignToMin - Math.min(...xsVals);
-                      if (horiz !== "l") {
-                          delta = alignToMax - Math.max(...xsVals);
-                      }
+      var xsVals = Object.values(xs);
+      let delta = alignToMin - Math.min(...xsVals);
+      if (horiz !== "l") {
+        delta = alignToMax - Math.max(...xsVals);
+      }
 
-                      if (delta) {
-                          xss[alignment] = util.mapValues(xs, x => x + delta);
-                      }
-                  });
-              });
-          }
+      if (delta) {
+        xss[alignment] = util.mapValues(xs, x => x + delta);
+      }
+    });
+  });
+}
+/*
+ * Returns the alignment that has the smallest width of the given alignments.
+ */
+function findSmallestWidthAlignment(g, xss) {
+  return Object.values(xss).reduce((currentMinAndXs, xs) => {
+    var max = Number.NEGATIVE_INFINITY;
+    var min = Number.POSITIVE_INFINITY;
+
+    Object.entries(xs).forEach(([v, x]) => {
+      var halfWidth = width(g, v) / 2;
+
+      max = Math.max(x + halfWidth, max);
+      min = Math.min(x - halfWidth, min);
+    });
+
+    const newMin = max - min;
+    if (newMin < currentMinAndXs[0]) {
+      currentMinAndXs = [newMin, xs];
+    }
+    return currentMinAndXs;
+  }, [Number.POSITIVE_INFINITY, null])[1];
+}
