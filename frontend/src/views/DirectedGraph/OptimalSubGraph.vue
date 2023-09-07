@@ -253,7 +253,6 @@ export default {
 
       states.forEach(function (state) {
         g.setNode(state.id, {
-          x: state.x,
           orank: y.indexOf(state.y) * 2,
           fixed: state.indexes.length === that.sonNum,
           type: state.type,

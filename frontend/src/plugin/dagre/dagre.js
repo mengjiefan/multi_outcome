@@ -567,7 +567,6 @@
                         }
                     });
                     newNode['fixed'] = node.fixed;
-                    newNode['x'] = node.x;
                     newNode['orank'] = node.orank;
                     g.setNode(v, newNode);
                 });
@@ -1359,9 +1358,7 @@
             function assignOrder(g, layering) {
                 Object.values(layering).forEach(layer => layer.forEach((v, i) => {
                     g.node(v).order = i;
-                    /*
-                    if (g.node(v).fixed)
-                        console.log(v, g.node(v), i);*/
+
                 }));
             }
 
@@ -1932,12 +1929,12 @@
 
                     if (fixedIndex > -1) {
                         let v = layer[fixedIndex];
-                        let now = g.node(v);
-                        if (now.fixed && firstFixed) {
+            
+                        if (firstFixed) {
                             align[firstFixed] = v;
                             align[v] = root[v] = root[firstFixed];
                             alignFixed = pos[firstFixed];
-                        } else if (now.fixed) {
+                        } else {
                             firstFixed = v;
                             fixedIndex = -1;
                         }
@@ -1947,12 +1944,7 @@
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
-                            /*
-                            console.log('v', v, g.node(v).rank, g.node(v).order)
-                            ws.forEach(id => {
-                                let node = g.node(id);
-                                console.log(node.rank, node.order)
-                            })*/
+
                             var mp = (ws.length - 1) / 2;
                             let il = Math.floor(mp);
                             if (fixedIndex > -1) il = 0;
@@ -1964,7 +1956,6 @@
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
-                                    //console.log('align', v, g.node(w).order)
                                 }
                             }
                         }
@@ -1975,25 +1966,17 @@
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
-                            /*console.log('v', v, g.node(v).rank, g.node(v).order)
-                            ws.forEach(id => {
-                                let node = g.node(id);
-                                console.log(node.rank, node.order)
-                            })*/
+
                             var mp = (ws.length - 1) / 2;
-                            /*
-                            let i = Math.ceil(mp);
-                            if (fixedIndex > -1) i = mp.length - 1;*/
+
                             for (let i = Math.ceil(mp); i >= Math.floor(mp); i--) {
                                 var w = ws[i];
-                                //console.log(prevIdx, pos[w], hasConflict(conflicts, v, w))
                                 if (align[v] === v &&
                                     prevIdx < pos[w] &&
                                     !hasConflict(conflicts, v, w)) {
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
-                                    //console.log('align', v, g.node(w).order)
                                 }
                             }
                         }
@@ -2165,7 +2148,7 @@
 
                         var neighborFn = (vert === "u" ? g.predecessors : g.successors).bind(g);
                         var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
-                        console.log(align)
+                        //console.log(align)
                         var xs = horizontalCompaction(g, adjustedLayering,
                             align.root, align.align, horiz === "r");
                         if (horiz === "r") {
@@ -2175,9 +2158,9 @@
                     });
                 });
 
-                console.log(xss)
+                //console.log(xss)
                 var smallestWidth = findSmallestWidthAlignment(g, xss);
-                console.log('smallestWidth', smallestWidth)
+                //console.log('smallestWidth', smallestWidth)
                 alignCoordinates(xss, smallestWidth);
                 return balance(xss, g.graph().align);
             }
@@ -2477,11 +2460,11 @@
                 initLowLimValues(t);
                 initCutValues(t, g);
                 var e, f;
-
+                /*
                 while ((e = leaveEdge(t))) {
                     f = enterEdge(t, g, e);
                     exchangeEdges(t, g, e, f);
-                }
+                }*/
             }
 
             /*
@@ -2629,12 +2612,10 @@
                     var parent = t.node(v).parent,
                         edge = g.edge(v, parent),
                         flipped = false;
-
                     if (!edge) {
                         edge = g.edge(parent, v);
                         flipped = true;
                     }
-
                     g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
                 });
             }
