@@ -275,6 +275,8 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
         faRect.attr({
             body: {
                 strokeWidth: 0,
+                stroke: 'white',
+                strokeDasharray: 2,
                 rx: 20,
                 ry: 20,
                 fill: 'transparent'
@@ -287,6 +289,7 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
             },
             title: nodesList[nodeI].id
         });
+        if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;

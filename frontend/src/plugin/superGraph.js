@@ -90,6 +90,8 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         faRect.attr({
             body: {
                 strokeWidth: 0,
+                stroke: 'white',
+                strokeDasharray: 2,
                 rx: 20 * gap,
                 ry: 20 * gap,
                 fill: 'transparent'
@@ -102,6 +104,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             },
             title: nodesList[nodeI].id
         });
+        if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;
@@ -205,43 +208,46 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
-        faRect.resize(24 , 24 );
+        faRect.resize(24, 24);
         faRect.position(
-            countXPos(nodesList[nodeI].x) - 12 ,
-            countYPos(nodesList[nodeI].y) - 12 
+            countXPos(nodesList[nodeI].x) - 12,
+            countYPos(nodesList[nodeI].y) - 12
         );
         let indexes = nodesList[nodeI].indexes;
         faRect.attr({
             body: {
                 strokeWidth: 0,
-                rx: 20 ,
-                ry: 20 ,
+                stroke: 'white',
+                strokeDasharray: 2,
+                rx: 20,
+                ry: 20,
                 fill: 'transparent'
             },
             label: {
                 text: nodesList[nodeI].id,
                 fill: "black",
                 y: 0,
-                fontSize: 6 ,
+                fontSize: 6,
             },
             title: nodesList[nodeI].id
         });
+        if (nodesList[nodeI].type === 0)  faRect.attr('body/strokeWidth', 3)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;
             circle.attr({
                 body: {
-                    strokeDasharray: 12  * 3.1415926,
-                    strokeDashoffset: 12  * 3.1415926 / 360 * (offset * i),
+                    strokeDasharray: 12 * 3.1415926,
+                    strokeDashoffset: 12 * 3.1415926 / 360 * (offset * i),
                     fill: "transparent",
                     stroke: cmap[indexes[i]],
-                    strokeWidth: 12 
+                    strokeWidth: 12
                 }
             })
-            circle.resize(12 , 12 );
+            circle.resize(12, 12);
             circle.position(
-                countXPos(nodesList[nodeI].x) - 6 ,
-                countYPos(nodesList[nodeI].y) - 6 ,
+                countXPos(nodesList[nodeI].x) - 6,
+                countYPos(nodesList[nodeI].y) - 6,
             );
             circle.addTo(graph);
         }
@@ -272,11 +278,11 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
                 stroke: 'black',
-                strokeWidth: (value * 8 ) + '',
+                strokeWidth: (value * 8) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
                     'stroke': 'black',
-                    'stroke-width': value * 7 ,
+                    'stroke-width': value * 7,
                     'fill': 'transparent',
                     'd': 'M 10 -5 0 0 10 5 '
                 }
@@ -339,6 +345,8 @@ export const drawOriginalGraph = (dom, nodesList, links, scale, sonindex) => {
         faRect.attr({
             body: {
                 strokeWidth: 0,
+                stroke: 'white',
+                strokeDasharray: 2,
                 rx: 20,
                 ry: 20,
                 fill: 'transparent'
@@ -351,6 +359,7 @@ export const drawOriginalGraph = (dom, nodesList, links, scale, sonindex) => {
             },
             title: nodesList[nodeI].id
         });
+        if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;
