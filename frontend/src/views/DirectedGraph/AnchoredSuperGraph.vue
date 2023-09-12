@@ -133,6 +133,7 @@ export default {
         that.traversal(x, node.x);
         that.traversal(y, node.y);
       });
+
       this.simplePos.nodesList.forEach((node) => {
         nodes.push({
           rank: y.indexOf(node.y),
@@ -142,19 +143,32 @@ export default {
           outcome: node.type === 0,
         });
       });
+      let links = this.simplePos.linksList.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+          else return {
+            target: link.target,
+            source: link.source,
+            value: link.value,
+          }
+      });
       axios({
         method: "post",
         url: "http://localhost:8000/api/calculate_layout",
         //参数
         data: {
           nodesList: nodes,
+          linksList: links
         },
         headers: {
           "Content-Type": "application/json",
         },
       })
-        .then((response) => {
-        })
+        .then((response) => {})
         .catch((error) => {
           console.log("请求失败了", error);
         });
