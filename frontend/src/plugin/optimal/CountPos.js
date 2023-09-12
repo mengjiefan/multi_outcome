@@ -34,6 +34,7 @@ const evenValue = (values, value) => {
         return cha + index;
     }
 }
+
 export const countSonPos = (son, linksList) => {
     let x = [];
     let y = [];

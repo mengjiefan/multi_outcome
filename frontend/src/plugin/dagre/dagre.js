@@ -571,6 +571,7 @@
                     });
                     newNode['fixed'] = node.fixed;
                     newNode['orank'] = node.orank;
+                    newNode['opos'] = node.opos;
                     g.setNode(v, newNode);
                 });
 
@@ -1359,10 +1360,24 @@
             }
 
             function assignOrder(g, layering) {
+                var fixedNodes = g.nodes().filter(v => g.node(v).fixed);
+                fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
                 Object.values(layering).forEach(layer => layer.forEach((v, i) => {
                     g.node(v).order = i;
-
                 }));
+
+                //交换行内部顺序
+                for (let index = 0; index < layering.length; index++) {
+                    let fixedNodes = g.nodes().filter(v => g.node(v).fixed && g.node(v).rank === index);
+                    fixedNodes = fixedNodes.sort((a, b) => g.node(a).order - g.node(b).order);
+                    let orders = [];
+                    for (let i = 0; i < fixedNodes.length; i++)
+                        orders.push(g.node(fixedNodes[i]).order)
+                    fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
+                    for (let i = 0; i < fixedNodes.length; i++) {
+                        g.node(fixedNodes[i]).order = orders[i];
+                    }
+                }
             }
 
         }, { "../util": 27, "./add-subgraph-constraints": 11, "./build-layer-graph": 13, "./cross-count": 14, "./init-order": 16, "./sort-subgraph": 18, "@dagrejs/graphlib": 29 }], 16: [function (require, module, exports) {
@@ -1397,8 +1412,8 @@
                     g.successors(v).forEach(dfs);
                 }
                 var fixedNodes = simpleNodes.filter(v => g.node(v).fixed);
-                var nonFixed = simpleNodes.filter(v => !g.node(v).fixed)
-                fixedNodes = fixedNodes.sort((a, b) => g.node(a).rank - g.node(b).rank);
+                var nonFixed = simpleNodes.filter(v => !g.node(v).fixed);
+                fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
                 nonFixed = nonFixed.sort((a, b) => g.node(a).rank - g.node(b).rank);
                 fixedNodes.forEach(dfs);
                 nonFixed.forEach(dfs)
@@ -1911,6 +1926,9 @@
              * we're trying to form a block with, we also ignore that possibility - our
              * blocks would be split in that scenario.
              */
+
+            //强制对齐版
+            /*
             function verticalAlignment(g, layering, conflicts, neighborFn) {
                 var root = {},
                     align = {},
@@ -1919,7 +1937,7 @@
                 // We cache the position here based on the layering because the graph and
                 // layering may be out of sync. The layering matrix is manipulated to
                 // generate different extreme alignments.
-                let firstFixed = null;
+                
                 layering.forEach(function (layer) {
                     layer.forEach(function (v, order) {
                         root[v] = v;
@@ -1927,6 +1945,7 @@
                         pos[v] = order;
                     });
                 });
+                let firstFixed = null;
                 layering.forEach(function (layer) {
                     var prevIdx = -1;
                     let alignFixed = -1;
@@ -1935,8 +1954,6 @@
                         else if (node.includes('Undefined')) {
                             let source = g.node(g.node(node).edgeObj.v);
                             let target = g.node(g.node(node).edgeObj.w);
-                            if (source.fixed && target.fixed)
-                                console.log(g.node(node).edgeObj.v, g.node(node).edgeObj.w)
                             if (source.fixed && target.fixed && Math.abs(target.rank - source.rank) === 2)
                                 return true;
                             else return false
@@ -1955,17 +1972,18 @@
                             fixedIndex = -1;
                         }
                     }
-                    for (let index = 0; index < fixedIndex; index++) {
+                    prevIdx = alignFixed;
+                    for (let index = fixedIndex - 1; index >= 0; index--) {
                         let v = layer[index];
                         var ws = neighborFn(v);
                         if (ws.length) {
                             ws = ws.sort((a, b) => pos[a] - pos[b]);
                             var mp = (ws.length - 1) / 2;
 
-                            for (let i = Math.floor(mp); i <= Math.ceil(mp); ++i) {
+                            for (let i = Math.ceil(mp); i >= Math.floor(mp); --i) {
                                 var w = ws[i];
                                 if (align[v] === v &&
-                                    prevIdx < pos[w] && pos[w] < alignFixed &&
+                                    prevIdx > pos[w] &&
                                     !hasConflict(conflicts, v, w)) {
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
@@ -1996,6 +2014,89 @@
                         }
                     }
                 });
+                return { root: root, align: align };
+            }*/
+
+            function verticalAlignment(g, layering, conflicts, neighborFn) {
+                var root = {},
+                    align = {},
+                    pos = {};
+
+                // We cache the position here based on the layering because the graph and
+                // layering may be out of sync. The layering matrix is manipulated to
+                // generate different extreme alignments.
+
+                layering.forEach(function (layer) {
+                    layer.forEach(function (v, order) {
+                        root[v] = v;
+                        align[v] = v;
+                        pos[v] = order;
+                    });
+                });
+                let firstFixed = [];
+                layering.forEach(function (layer) {
+                    /*
+                    let fixedNodes = [];
+                    layer.forEach(node => {
+                        if (g.node(node).fixed) fixedNodes.push(node);
+                        else if (node.includes('Undefined')) {
+                            let source = g.node(g.node(node).edgeObj.v);
+                            let target = g.node(g.node(node).edgeObj.w);
+                            if (source.fixed && target.fixed) {
+                                if (g.node(node).edgeObj.v.includes(g.node(node).edgeObj.w) &&
+                                    g.node(node).edgeObj.v.includes('TEMP')) fixedNodes.push(node)
+                                else if (g.node(node).edgeObj.w.includes(g.node(node).edgeObj.v) &&
+                                    g.node(node).edgeObj.w.includes('TEMP')) fixedNodes.push(node)
+                                else return false;
+                            }
+                            else return false
+                        }
+                    })*/
+                    var fixedNodes = layer.filter(v => g.node(v).fixed);
+                    if (firstFixed.length > 0) fixedNodes = layer.filter(v => g.node(v).fixed && !v.includes("TEMP"))
+                        fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
+                    let fixedIds = [];
+                    if (firstFixed.length > 0) {
+                        fixedNodes.forEach(node => {
+                            let index = firstFixed.findIndex(state => {
+                                if (g.node(state).opos === g.node(node).opos) return true;
+                                else return false;
+                            })
+                            let w = firstFixed[index];
+                            align[w] = node;
+                            align[node] = root[node] = root[w];
+                            fixedIds.push(pos[w]);
+                        })
+                    } else {
+                        firstFixed = fixedNodes;
+                    }
+                    let nextIndex = 0;
+                    var prevIdx = -1;
+                    layer.forEach(function (v) {
+                        var ws = neighborFn(v);
+                        if (g.node(v).fixed && fixedIds.length > 0) {
+                            prevIdx = fixedIds[nextIndex];
+                            nextIndex++;
+                        }
+                        else if (ws.length) {
+                            ws = ws.sort((a, b) => pos[a] - pos[b]);
+                            var mp = (ws.length - 1) / 2;
+                            for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
+                                var w = ws[i];
+                                if (align[v] === v &&
+                                    prevIdx < pos[w] &&
+                                    !hasConflict(conflicts, v, w)) {
+                                    if (fixedIds.length > 0 && nextIndex < fixedIds.length && pos[w] >= fixedIds[nextIndex])
+                                        continue;
+                                    align[w] = v;
+                                    align[v] = root[v] = root[w];
+                                    prevIdx = pos[w];
+                                }
+                            }
+                        }
+                    });
+                });
+
                 return { root: root, align: align };
             }
 
@@ -2174,7 +2275,6 @@
 
                 //console.log(xss)
                 var smallestWidth = findSmallestWidthAlignment(g, xss);
-                //console.log('smallestWidth', smallestWidth)
                 alignCoordinates(xss, smallestWidth);
                 return balance(xss, g.graph().align);
             }
@@ -2641,8 +2741,6 @@
                         edge = g.edge(parent, v);
                         flipped = true;
                     }
-
-                    const old = g.node(v).rank;
                     if (!g.node(v).fixed)
                         g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
                 });

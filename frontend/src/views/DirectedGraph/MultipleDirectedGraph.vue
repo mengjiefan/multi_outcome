@@ -20,6 +20,12 @@
         Tightened Subgraphs
       </div>
       <div
+        :class="name === 'AnchoredGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('AnchoredGraph')"
+      >
+        Anchored Super Graph
+      </div>
+      <div
         :class="name === 'OptimalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OptimalSubGraph')"
       >

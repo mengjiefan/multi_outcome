@@ -32,8 +32,8 @@
     <div id="paper" class="sum-svg"></div>
   </div>
 </template>
-
-<script>
+  
+  <script>
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import dagre from "dagre";
@@ -193,25 +193,18 @@ export default {
       var states = data.nodesList;
 
       let that = this;
-      let groupsId = []; //string
-      let idGroups = []; //series
 
       states.forEach(function (state) {
         let indexes = that.getNodeIndex(state.id);
-        let index = indexes.join();
-        that.manageGroupId(groupsId, idGroups, indexes);
-        g.setParent(state.id, "group" + index);
+        if (indexes.length > 1) g.setParent(state.id, "group");
       });
-      for (let i = 0; i < groupsId.length; i++) {
-        g.setNode("group" + groupsId[i], {
-          label: "",
-          clusterLabelPos: "bottom",
-          style:
-            "stroke-width:0;stroke:transparent;fill: transparent;opacity: 0;",
-        });
-        let parent = that.findparent(idGroups, i);
-        if (parent) g.setParent("group" + groupsId[i], "group" + parent);
-      }
+      g.setNode("group", {
+        label: "",
+        clusterLabelPos: "bottom",
+        style:
+          "stroke-width:0;stroke:transparent;fill: transparent;opacity: 0;",
+      });
+
       dagre.layout(g);
     },
     setGraph() {
@@ -265,7 +258,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-      this.getAnchoredGraph(g);
+      //this.getAnchoredGraph(g);
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
 
@@ -276,23 +269,17 @@ export default {
       );
       console.log("simplePos", that.simplePos);
 
-      let commonNodes = [];
-      for (let i = 0; i < this.simplePos.nodesList.length; i++) {
-        this.simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
-          this.simplePos.nodesList[i].id
-        );
-        if (this.simplePos.nodesList[i].indexes.length > 1)
-          commonNodes.push(this.simplePos.nodesList[i].id);
-      }
-
-      let finalPos = countPos(g, this.multipleSearchValue.selections, commonNodes);
-      localStorage.setItem("SON_POS", JSON.stringify(finalPos));
       setTimeout(() => {
         that.redrawGraph();
       }, 0);
     },
     redrawGraph() {
-      localStorage.setItem("SIMPLE_POS", JSON.stringify(this.simplePos));
+      for (let i = 0; i < this.simplePos.nodesList.length; i++) {
+        this.simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
+          this.simplePos.nodesList[i].id
+        );
+      }
+      localStorage.setItem("ANCHOR_POS", JSON.stringify(this.simplePos));
       if (this.tooltip) {
         this.tipHidden();
       }
@@ -376,7 +363,7 @@ export default {
         let router = linkView.model.attributes.attrs.id;
         let hintHtml =
           "<div class='operate-header'><div class='hint-list'>Operate</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>" +
+                <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -732,9 +719,9 @@ export default {
   },
 };
 </script>
-
-
-<style scoped>
+  
+  
+  <style scoped>
 .super-graph {
   display: flex;
   flex-direction: column;

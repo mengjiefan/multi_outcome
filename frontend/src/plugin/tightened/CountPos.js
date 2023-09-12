@@ -1,8 +1,7 @@
-export const countPos = (g, childNodes) => {
+export const countPos = (g, childNodes, commonNode) => {
     let y = [];
     let x = [];
     let edges = [];
-    let commonNode = [];
     let finalPos = [];
     g.nodes().forEach((v) => {
         let pos = g.node(v);
@@ -10,7 +9,6 @@ export const countPos = (g, childNodes) => {
             traversal(y, pos.y)
             traversal(x, pos.x);
         }
-        if (pos.type === -1) commonNode.push(v);
     });
     g.edges().forEach((v) => {
         let pos = g.edge(v);
@@ -138,13 +136,19 @@ const traversal = (list, value) => {
     }
     return list;
 }
-export const countSonPos = (son, commonPos, linksList) => {
+export const countSonPos = (son, commonNodes, linksList) => {
     let sonPos = son.nodesList;
     let verticePos = son.linksList;
     let minPosX = -1;
     let maxPosX = 0;
     let minPosY = -1;
     let maxPosY = 0;
+    let commonIds = commonNodes.map(node => { return node.id });
+    let commonPos = [];
+    son.nodesList.forEach((node) => {
+        if (commonIds.includes(node.id))
+            commonPos.push(node);
+    })
     commonPos.forEach((pos) => {
         if (minPosX === -1 || pos.x < minPosX) minPosX = pos.x;
         if (pos.x > maxPosX) maxPosX = pos.x;

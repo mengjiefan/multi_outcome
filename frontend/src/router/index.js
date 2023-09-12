@@ -77,6 +77,13 @@ export default new VueRouter({
 									),
 								},
 								{
+									name: 'AnchoredGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/anchored0-super-graph',
+									component: () => import(
+										"../views/DirectedGraph/AnchoredSuperGraph.vue"
+									),
+								},
+								{
 									name: 'TightenedSubGraph',
 									path: '/AppMainPlot/DirectedGraphView/multiple/tightened-sub-graph',
 									component: () => import(
