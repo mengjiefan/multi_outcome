@@ -1411,14 +1411,15 @@
                     layers[node.rank].push(v);
                     g.successors(v).forEach(dfs);
                 }
+                /*
                 var fixedNodes = simpleNodes.filter(v => g.node(v).fixed);
                 var nonFixed = simpleNodes.filter(v => !g.node(v).fixed);
                 fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
                 nonFixed = nonFixed.sort((a, b) => g.node(a).rank - g.node(b).rank);
                 fixedNodes.forEach(dfs);
-                nonFixed.forEach(dfs)
-                //var orderedVs = simpleNodes.sort((a, b) => g.node(a).rank - g.node(b).rank);
-                //orderedVs.forEach(dfs);
+                nonFixed.forEach(dfs)*/
+                var orderedVs = simpleNodes.sort((a, b) => g.node(a).rank - g.node(b).rank === 0 ? g.node(a).rank - g.node(b).rank === 0 : g.node(a).opos - g.node(b).opos);
+                orderedVs.forEach(dfs);
 
                 return layers;
             }
@@ -2054,7 +2055,7 @@
                     })*/
                     var fixedNodes = layer.filter(v => g.node(v).fixed);
                     if (firstFixed.length > 0) fixedNodes = layer.filter(v => g.node(v).fixed && !v.includes("TEMP"))
-                        fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
+                    fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
                     let fixedIds = [];
                     if (firstFixed.length > 0) {
                         fixedNodes.forEach(node => {

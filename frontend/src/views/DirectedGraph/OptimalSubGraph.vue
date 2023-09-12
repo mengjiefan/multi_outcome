@@ -261,12 +261,16 @@ export default {
           id: state.id,
           opos: x.indexOf(state.x),
           orank: y.indexOf(state.y) * 2,
-          fixed: state.indexes.length > 1,
+          fixed: state.indexes.length === that.sonNum,
           type: state.type,
         };
       });
-      let fixedNodes = nodes.filter((w) => w.fixed);
-      console.log(fixedNodes)
+      let fixedNodes = nodes.filter(
+        (w) =>
+          w.fixed &&
+          nodes.filter((node) => node.opos === w.opos)[0].id === w.id
+      );
+      console.log(fixedNodes);
       fixedNodes.sort((a, b) => b.orank - a.orank);
 
       nodes.forEach(function (state) {

@@ -11,15 +11,7 @@ export const countSimplePos = (g, nodes, links) => {
             y: pos.y,
         })
     })
-    g.nodes().forEach(v => {
-        if (v.includes("TEMP"))
-            nodesList.push({
-                type: -1,
-                id: v,
-                x: g.node(v).x,
-                y: g.node(v).y
-            })
-    })
+
     let linksList = [];
     g.edges().forEach((v) => {
         let pos = g.edge(v);
