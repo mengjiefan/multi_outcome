@@ -274,7 +274,14 @@ export default {
     // 通过公用数据库store进行数据管理
     btnSelect() {
       let selections = this.$refs.multipleTable.selection;
-
+      if (!selections || selections.length === 0) {
+        this.$message({
+          showClose: true,
+          message: "Please select at least one history record!",
+          type: "warning",
+        });
+        return;
+      }
       if (this.selectType === "2") {
         let outcomes = [];
         let factors = [];
@@ -344,9 +351,8 @@ export default {
               if (link.source !== linksList[index].source) {
                 link.source = linksList[index].source;
                 link.target = linksList[index].target;
-                if (!link.reverse)
-                  link["reverse"] = true;
-                else link.reverse = false;//这个可以不要，因为Redo的时候去除了所有的reverse
+                if (!link.reverse) link["reverse"] = true;
+                else link.reverse = false; //这个可以不要，因为Redo的时候去除了所有的reverse
               }
             }
           }
