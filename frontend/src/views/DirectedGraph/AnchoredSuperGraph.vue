@@ -14,6 +14,14 @@
         >
           Relayout
         </el-button>
+        <el-button
+          @click="transferToBackEnd()"
+          type="success"
+          round
+          size="small"
+        >
+          Post
+        </el-button>
       </div>
       <div class="graph-directors">
         <div
@@ -97,6 +105,59 @@ export default {
           mode: "save",
         },
       });
+    },
+    traversal(list, value) {
+      if (list.includes(value)) return list;
+      let i;
+      for (i = 0; i < list.length; i++) {
+        if (value < list[i]) {
+          if (i === 0) {
+            list.unshift(value);
+            break;
+          } else {
+            list.splice(i, 0, value);
+            break;
+          }
+        }
+      }
+      if (i === list.length) {
+        list.push(value);
+      }
+    },
+    transferToBackEnd() {
+      let nodes = [];
+      let x = [];
+      let y = [];
+      let that = this;
+      this.simplePos.nodesList.forEach((node) => {
+        that.traversal(x, node.x);
+        that.traversal(y, node.y);
+      });
+      this.simplePos.nodesList.forEach((node) => {
+        nodes.push({
+          rank: y.indexOf(node.y),
+          order: x.indexOf(node.x),
+          fixed: node.indexes.length > 0,
+          group: node.indexes,
+          outcome: node.type === 0,
+        });
+      });
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/calculate_layout",
+        //参数
+        data: {
+          nodesList: nodes,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+        })
+        .catch((error) => {
+          console.log("请求失败了", error);
+        });
     },
     findparent(idGroups, i) {
       let group = idGroups[i];
