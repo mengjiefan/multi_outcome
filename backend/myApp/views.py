@@ -439,3 +439,10 @@ def variable_show(request):
     outcome = "death"
     print(CovariantNum)
     return JsonResponse({'CovariantNum': CovariantNum, 'outcome': outcome, 'message': 'success'})
+
+def calculate_layout(request):
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    print(nodesList)
+    return JsonResponse({})
