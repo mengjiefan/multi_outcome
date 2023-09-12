@@ -444,5 +444,7 @@ def calculate_layout(request):
     postBody = request.body
     json_result = json.loads(postBody)
     nodesList = np.array(json_result['nodesList'])
+    linksList = np.array(json_result['linksList'])
     print(nodesList)
+    print(linksList)
     return JsonResponse({})
