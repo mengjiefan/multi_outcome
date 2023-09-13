@@ -303,7 +303,7 @@ export default {
             type: node.type,
           });
         }
-        /*
+      /*
       let alignNodes = fixedNodes
         .sort((a, b) => a.opos - b.opos)
         .map((node) => node.opos);

@@ -68,6 +68,32 @@ export const createChart = (dom, data) => {
     };
     myChart.setOption(option);
 }
+export const creatAllChart = (dom, data) => {
+    echarts.dispose(dom);
+    var myChart = echarts.init(dom);
+    let option = {
+        tooltip,
+        grid,
+        xAxis: {
+            type: 'category',
+            data: data.axis,
+
+            axisLabel: {
+                show: false
+            }
+        },
+        yAxis: {
+            type: 'value',
+        },
+        series: [
+            {
+                data: data.value,
+                type: 'bar'
+            }
+        ]
+    };
+    myChart.setOption(option);
+}
 export const createCharts = (id, dom, data) => {
     echarts.dispose(dom);
     var myChart = echarts.init(dom);

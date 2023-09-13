@@ -57,6 +57,7 @@
       {{ SelectedVariables[index] }}
       <div class="variable-chart"></div>
     </div>
+    <div class="variable-chart"></div>
     <div class="drawing-command">
       <el-select v-model="graphType" placeholder="请选择">
         <el-option
@@ -86,9 +87,7 @@ import axios from "axios";
 import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
-import {
-  createCharts
-} from "@/plugin/charts";
+import { createCharts, creatAllChart } from "@/plugin/charts";
 
 export default {
   props: {
@@ -146,6 +145,7 @@ export default {
     return {
       loadingInstance: ref(null),
       Variables_result: ref(),
+      allChart: ref(),
     };
   },
   methods: {
@@ -195,7 +195,10 @@ export default {
           let nodes = this.Variables_result.nodes.filter(
             (node) => node.type === 1
           );
-
+          this.allChart = {
+            axis: this.Variables_result.allValue.variable,
+            value: this.Variables_result.allValue.outcome,
+          };
           this.SelectedVariables = nodes.map((node) => {
             return node.id;
           });
@@ -210,11 +213,13 @@ export default {
         });
     },
     createChart() {
+      let charts = document.getElementsByClassName("variable-chart");
       for (let i = 0; i < this.SelectedVariables.length; i++) {
-        let dom = document.getElementsByClassName("variable-chart")[i];
+        let dom = charts[i];
         let id = this.SelectedVariables[i];
-        createCharts(id, dom, this.Variables_result.nodes[i].range)
+        createCharts(id, dom, this.Variables_result.nodes[i].range);
       }
+      creatAllChart(charts[charts.length - 1], this.allChart);
     },
     showErrorMsg(msg) {
       this.$message({
