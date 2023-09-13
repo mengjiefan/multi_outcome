@@ -261,76 +261,68 @@ export default {
           id: state.id,
           opos: x.indexOf(state.x),
           orank: y.indexOf(state.y) * 2,
-          fixed: state.indexes.length === that.sonNum,
+          fixed: state.indexes.length > 1,
           type: state.type,
         };
       });
-      let fixedNodes = nodes.filter(
+      let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
+      let highRank = fixedNodes[0].orank + 1;
+      fixedNodes = fixedNodes.filter(
         (w) =>
-          w.fixed &&
-          nodes.filter((node) => node.opos === w.opos)[0].id === w.id
+          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
       );
-      console.log(fixedNodes);
-      fixedNodes.sort((a, b) => b.orank - a.orank);
 
       nodes.forEach(function (state) {
         g.setNode(state.id, state);
       });
 
-      for (let index = 1; index < fixedNodes.length; index++) {
+      for (let index = 0; index < fixedNodes.length; index++) {
         let node = fixedNodes[index];
-        if (node.orank === fixedNodes[0].orank) continue;
-        else {
-          let flag = false;
-          for (
-            let i = 0;
-            i < fixedNodes.length &&
-            fixedNodes[i].orank === fixedNodes[0].orank;
-            i++
-          ) {
-            if (fixedNodes[i].opos === node.opos) {
-              flag = true;
-              break;
-            }
-          }
-          if (!flag) {
-            g.setNode(node.id + "_TEMP", {
-              opos: node.opos,
-              orank: fixedNodes[0].orank,
-              fixed: true,
-              type: node.type,
-            });
-          }
-        }
+
+        g.setNode(node.id + "_TEMP", {
+          opos: node.opos,
+          orank: highRank,
+          fixed: true,
+          type: node.type,
+        });
       }
-      fixedNodes = fixedNodes.reverse();
+      fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
+      let lowRank = fixedNodes[0].orank - 1;
+      fixedNodes = fixedNodes.filter(
+        (w) =>
+          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
+      );
+
       if (fixedNodes.length > 1)
-        for (let index = 1; index < fixedNodes.length; index++) {
+        for (let index = 0; index < fixedNodes.length; index++) {
           let node = fixedNodes[index];
-          if (node.orank === fixedNodes[0].orank) continue;
-          else {
-            let flag = false;
-            for (
-              let i = 0;
-              i < fixedNodes.length &&
-              fixedNodes[i].orank === fixedNodes[0].orank;
-              i++
-            ) {
-              if (fixedNodes[i].opos === node.opos) {
-                flag = true;
-                break;
-              }
-            }
-            if (!flag) {
-              g.setNode(node.id + "_TEMP2", {
-                opos: node.opos,
-                orank: fixedNodes[0].orank,
-                fixed: true,
-                type: node.type,
-              });
-            }
-          }
+          g.setNode(node.id + "_TEMP2", {
+            opos: node.opos,
+            orank: lowRank,
+            fixed: true,
+            type: node.type,
+          });
         }
+        /*
+      let alignNodes = fixedNodes
+        .sort((a, b) => a.opos - b.opos)
+        .map((node) => node.opos);
+      for (let i = alignNodes[0]; i < alignNodes[alignNodes.length - 1]; i++) {
+        if (!alignNodes.includes(alignNodes[i])) {
+          g.setNode(i + "_TEMP2", {
+            opos: i,
+            orank: lowRank,
+            fixed: true,
+            type: 0,
+          });
+          g.setNode(i + "_TEMP", {
+            opos: i,
+            orank: highRank,
+            fixed: true,
+            type: 0,
+          });
+        }
+      }*/
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";

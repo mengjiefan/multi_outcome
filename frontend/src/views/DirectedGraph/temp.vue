@@ -221,76 +221,116 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
-      //this.setSonGraph(0);
+      //this.setSonGraph(1);
     },
-    traversal(list, value, id, ids) {
-      let index = list.lastIndexOf(value);
-      if (index > -1) {
-        list.splice(index, 0, value);
-        ids.splice(index, 0, id);
-        return;
-      }
+    traversal(list, value) {
+      if (list.includes(value)) return list;
       let i;
       for (i = 0; i < list.length; i++) {
         if (value < list[i]) {
-          list.splice(i, 0, value);
-          ids.splice(i, 0, id);
-          break;
+          if (i === 0) {
+            list.unshift(value);
+            break;
+          } else {
+            list.splice(i, 0, value);
+            break;
+          }
         }
       }
       if (i === list.length) {
         list.push(value);
-        ids.push(id);
       }
     },
     setSonGraph(index) {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
       var edges = data.linksList;
-
+      const oriL = edges.length;
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
 
-      let fixedY = [];
-      let fixedNode = [];
       let that = this;
-      states.forEach(function (state) {
-        if (state.indexes.length === that.sonNum) {
-          that.traversal(fixedY, state.y, state.id, fixedNode);
-        }
-      });
-      /*
-      for (let i = 1; i < fixedNode.length; i++) {
-        let source = fixedNode[i];
-        let target = fixedNode[i - 1];
-        let k = edges.findIndex((edge) => {
-          if (edge.source === source && edge.target === target) return true;
-          else if (edge.target === source && edge.source === target)
-            return true;
-          else return false;
-        });
-        if (k < 0) {
-          console.log({
-            index,
-            source,
-            target,
-          });
-          edges.push({
-            source,
-            target,
-            temp: true,
-            value: 0,
-          });
-        }
-      }
-      */
-      states.forEach(function (state) {
-        g.setNode(state.id, {
-          orank: fixedNode.indexOf(state.id) * 2,
-          fixed: state.indexes.length === that.sonNum,
-          type: state.type,
-        });
+      let y = [];
+      let x = [];
+      this.finalPos.nodesList.forEach((node) => {
+        that.traversal(y, node.y);
+        that.traversal(x, node.x);
       });
 
+      let nodes = states.map(function (state) {
+        return {
+          id: state.id,
+          opos: x.indexOf(state.x),
+          orank: y.indexOf(state.y) * 2,
+          fixed: state.indexes.length === that.sonNum,
+          type: state.type,
+        };
+      });
+      let fixedNodes = nodes.filter(
+        (w) =>
+          w.fixed &&
+          nodes.filter((node) => node.opos === w.opos)[0].id === w.id
+      );
+      console.log(fixedNodes);
+      fixedNodes.sort((a, b) => b.orank - a.orank);
+
+      nodes.forEach(function (state) {
+        g.setNode(state.id, state);
+      });
+
+      for (let index = 1; index < fixedNodes.length; index++) {
+        let node = fixedNodes[index];
+        if (node.orank === fixedNodes[0].orank) continue;
+        else {
+          let flag = false;
+          for (
+            let i = 0;
+            i < fixedNodes.length &&
+            fixedNodes[i].orank === fixedNodes[0].orank;
+            i++
+          ) {
+            if (fixedNodes[i].opos === node.opos) {
+              flag = true;
+              break;
+            }
+          }
+          if (!flag) {
+            g.setNode(node.id + "_TEMP", {
+              opos: node.opos,
+              orank: fixedNodes[0].orank,
+              fixed: true,
+              type: node.type,
+            });
+          }
+        }
+      }
+      fixedNodes = fixedNodes.reverse();
+      if (fixedNodes.length > 1)
+        for (let index = 1; index < fixedNodes.length; index++) {
+          let node = fixedNodes[index];
+          if (node.orank === fixedNodes[0].orank) continue;
+          else {
+            let flag = false;
+            for (
+              let i = 0;
+              i < fixedNodes.length &&
+              fixedNodes[i].orank === fixedNodes[0].orank;
+              i++
+            ) {
+              if (fixedNodes[i].opos === node.opos) {
+                flag = true;
+                break;
+              }
+            }
+            if (!flag) {
+              g.setNode(node.id + "_TEMP2", {
+                opos: node.opos,
+                orank: fixedNodes[0].orank,
+                fixed: true,
+                type: node.type,
+              });
+            }
+          }
+        }
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -319,6 +359,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
+      data.linksList = edges.slice(0, oriL);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*
@@ -710,7 +751,7 @@ export default {
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+    this.finalPos = JSON.parse(localStorage.getItem("ANCHOR_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
