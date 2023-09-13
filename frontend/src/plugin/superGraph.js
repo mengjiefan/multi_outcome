@@ -1,7 +1,7 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import svgPanZoom from "svg-pan-zoom";
-import { g } from "jointjs";
+import { g, elementTools } from "jointjs";
 const cmap = [
     "#FF595E",
     "#FF924C",
@@ -23,7 +23,52 @@ const countXPos = (x) => {
 const countYPos = (y) => {
     return startY + y * gap;
 };
+const addTool = (element, paper) => {
+    function getMarkup(angle = 0) {
+        return [
+            {
+                tagName: "circle",
+                selector: "button",
+                attributes: {
+                    r: 5,
+                    fill: 'transparent',
+                    stroke: "transparent",
+                    cursor: "pointer"
+                }
+            },
+            {
+                tagName: "path",
+                selector: "icon",
+                attributes: {
+                    transform: `rotate(${angle})`,
+                    d: "M -2 -1 L 0 -1 L 0 -2 L 2 0 L 0 2 0 1 -2 1 z",
+                    fill: "#4666E5",
+                    stroke: "none",
+                    "stroke-width": 2,
+                    "pointer-events": "none"
+                }
+            }
+        ];
+    }
 
+
+    const connectBottom = new elementTools.Connect({
+        x: "50%",
+        y: "100%",
+        markup: getMarkup(90)
+    });
+    const connectTop = new elementTools.Connect({
+        x: "50%",
+        y: "0%",
+        markup: getMarkup(270)
+    });
+
+
+    const tools = new joint.dia.ToolsView({
+        tools: [ connectTop, connectBottom]
+    });
+    element.findView(paper).addTools(tools);
+}
 const checkDirection = (source, target) => {
     if (source.y <= target.y) return "DOWN";
     else return "UP";
@@ -74,9 +119,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         width: "100%",
         height: "100%",
         gridSize: 1,
-        interactive: function (cellView, method) {
-            return null
-        }
+        connectionStrategy: joint.connectionStrategies.pinAbsolute
     });
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
@@ -124,9 +167,9 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             );
             circle.addTo(graph);
         }
-
         nodesList[nodeI]["node"] = faRect;
         faRect.addTo(graph);
+        addTool(faRect, paper)
     }
     linksList.forEach(link => {
         let path = new joint.shapes.standard.Link({
@@ -231,7 +274,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             },
             title: nodesList[nodeI].id
         });
-        if (nodesList[nodeI].type === 0)  faRect.attr('body/strokeWidth', 3)
+        if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;

@@ -57,7 +57,10 @@
       {{ SelectedVariables[index] }}
       <div class="variable-chart"></div>
     </div>
-    <div class="variable-chart"></div>
+    <div v-if="Variables_result">
+      Correlation Value
+      <div class="variable-chart"></div>
+    </div>
     <div class="drawing-command">
       <el-select v-model="graphType" placeholder="请选择">
         <el-option
