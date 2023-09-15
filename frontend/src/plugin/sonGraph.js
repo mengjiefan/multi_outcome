@@ -1,5 +1,4 @@
 import * as joint from "jointjs";
-import { del, ref } from "vue";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";

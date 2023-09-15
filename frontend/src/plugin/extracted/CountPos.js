@@ -53,9 +53,9 @@ export const countSonPos = (all, son) => {
             else if (edge.source === link.target && edge.target === link.source) return true;
             else return false;
         })
-
-        link['points'] = all.linksList[index].points;
-
+        if (index > -1)
+            link['points'] = all.linksList[index].points;
+        else link['points'] = [];
         linksList.push(link);
     })
     let index = all.nodesList.findIndex(item => {

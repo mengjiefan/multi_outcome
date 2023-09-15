@@ -42,7 +42,7 @@ import { ref } from "vue";
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import { createChart } from "@/plugin/charts";
-import { drawSuperGraph } from "@/plugin/superGraph";
+import { drawSuperGraph, setSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
 import { countPos } from "@/plugin/tightened/CountPos";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
@@ -57,6 +57,8 @@ export default {
     return {
       simplePos: ref(),
       paper: ref(),
+      g: ref(),
+      tempLink: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -98,38 +100,7 @@ export default {
         },
       });
     },
-    findparent(idGroups, i) {
-      let group = idGroups[i];
-      let index;
-      for (index = i + 1; index < idGroups.length; index++) {
-        let nowGroup = idGroups[index];
-        let flag = true;
-        group.forEach((number) => {
-          if (!nowGroup.includes(number)) flag = false;
-        });
-        if (flag) break;
-      }
-      if (index >= idGroups.length) return "";
-      else return idGroups[index].join();
-    },
-    manageGroupId(groupsId, idGroups, indexes) {
-      let index = indexes.join();
-      if (groupsId.includes(index)) return;
-      let i;
-      for (i = 0; i < idGroups.length; i++) {
-        if (idGroups[i].length >= indexes.length) break;
-      }
-      if (i === idGroups.length) {
-        idGroups.push(indexes);
-        groupsId.push(index);
-      } else if (i === 0) {
-        idGroups.unshift(indexes);
-        groupsId.unshift(index);
-      } else {
-        idGroups.splice(i, 0, indexes);
-        groupsId.splice(i, 0, index);
-      }
-    },
+
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
@@ -187,85 +158,14 @@ export default {
       son.linksList = linksList;
       return son;
     },
-    getAnchoredGraph(g) {
-      console.log("anchor");
-      var data = this.multipleSearchValue;
-      var states = data.nodesList;
 
-      let that = this;
-      let groupsId = []; //string
-      let idGroups = []; //series
-
-      states.forEach(function (state) {
-        let indexes = that.getNodeIndex(state.id);
-        let index = indexes.join();
-        that.manageGroupId(groupsId, idGroups, indexes);
-        g.setParent(state.id, "group" + index);
-      });
-      for (let i = 0; i < groupsId.length; i++) {
-        g.setNode("group" + groupsId[i], {
-          label: "",
-          clusterLabelPos: "bottom",
-          style:
-            "stroke-width:0;stroke:transparent;fill: transparent;opacity: 0;",
-        });
-        let parent = that.findparent(idGroups, i);
-        if (parent) g.setParent("group" + groupsId[i], "group" + parent);
-      }
-      dagre.layout(g);
-    },
     setGraph() {
       var data = this.multipleSearchValue;
-      var states = data.nodesList;
-      // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
-
-      states.forEach(function (state) {
-        let node = {
-          label: "",
-          type: state.type,
-        };
-        if (node.type === 0) node["index"] = state.index;
-        g.setNode(state.id, node);
-      });
       let that = this;
-
-      var edges = data.linksList;
-
-      edges.forEach(function (edge) {
-        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
-        var valString = edgeValue.toString() + "px";
-        var widthStr = "stroke-width: " + valString;
-        var edgeColor = "stroke: black";
-        let completeStyle =
-          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
-        if (edge.hidden) {
-          g.setEdge(edge.source, edge.target, {
-            style:
-              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
-            curve: d3.curveBasis,
-          });
-        } else {
-          if (edge.value < 0) {
-            completeStyle = completeStyle + "stroke-dasharray:4 4";
-          }
-          g.setEdge(edge.source, edge.target, {
-            style: completeStyle,
-            arrowhead: "undirected",
-          });
-        }
-      });
-
-      // Set some general styles
-      g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        node.rx = node.ry = 20;
-        node.style = "fill:" + that.cmap[0];
-      });
-      dagre.layout(g);
-      this.getAnchoredGraph(g);
+      setSuperGraph(g, data);
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
 
@@ -285,7 +185,11 @@ export default {
           commonNodes.push(this.simplePos.nodesList[i].id);
       }
 
-      let finalPos = countPos(g, this.multipleSearchValue.selections, commonNodes);
+      let finalPos = countPos(
+        g,
+        this.multipleSearchValue.selections,
+        commonNodes
+      );
       localStorage.setItem("SON_POS", JSON.stringify(finalPos));
       setTimeout(() => {
         that.redrawGraph();
@@ -337,6 +241,7 @@ export default {
       this.setPaper(paper);
     },
     getWidth(router) {
+      if (!router) return "-";
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
       nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
@@ -349,8 +254,75 @@ export default {
       });
       return value.toFixed(3);
     },
+    getNode(nodeView) {
+      return nodeView.model.attributes.attrs.title;
+    },
+    //历史记录加边操作
+    //隐藏边，变为不隐藏，否则添加边
+    //有值则直接用，反向则计算
+    addTempLink(source, target) {
+      let index = this.findLink(
+        source,
+        target,
+        this.multipleSearchValue.linksList
+      );
+      if (index > -1) {
+        let originalLink = this.multipleSearchValue.linksList[index];
+        this.deleteLinkView.model.remove({ ui: true });
+        if (originalLink.hidden) {
+          originalLink.hidden = false;
+          this.multipleSearchValue.selections.forEach((selection) => {
+            let index = selection.linksList.findIndex((link) => {
+              if (link.source === source && link.target === target) return true;
+              else if (link.source === target && link.target === source)
+                return true;
+              else return false;
+            });
+            if (index > -1 && selection.linksList[index].hidden)
+              selection.linksList[index].hidden = false;
+          });
+        } else {
+          //原来就有边
+          this.$message({
+            showClose: true,
+            message: "Duplicate Edge!",
+            type: "warning",
+          });
+          //原来就有边
+        }
+        if (originalLink !== source) this.getEdgeValue(source, target); //隐藏为反向， 先解除隐藏，再进行反向操作
+      } else this.getEdgeValue(source, target);
+    },
+    findLink(source, target, linksList) {
+      return linksList.findIndex((link) => {
+        if (link.source === source && link.target === target) return true;
+        else if (link.source === target && link.target === source) return true;
+        else return false;
+      });
+    },
     setPaper(paper) {
       const _this = this;
+      let graph = paper.model.attributes.cells.graph;
+      graph.on("change:source change:target", function (link) {
+        _this.deleteLinkView = link.findView(paper);
+        _this.tempLink = link;
+        if (link.get("source").id && link.get("target").id) {
+          _this.paper = paper;
+          let sourceNode;
+          let targetNode;
+          graph.getElements().forEach((node) => {
+            if (node.id === link.get("source").id) sourceNode = node;
+          });
+          graph.getElements().forEach((node) => {
+            if (node.id === link.get("target").id) targetNode = node;
+          });
+          let source = sourceNode.findView(paper).model.attributes.attrs.title;
+          let target = targetNode.findView(paper).model.attributes.attrs.title;
+
+          _this.addTempLink(source, target);
+        }
+      });
+
       paper.on("link:mouseenter", function (linkView, d) {
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
@@ -359,6 +331,7 @@ export default {
           linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
 
         let width = _this.getWidth(router);
+
         if (!_this.tip2Show)
           _this.tipVisible(router + ": " + width, {
             pageX: d.pageX,
@@ -486,13 +459,16 @@ export default {
       )
         path.attr("line/targetMarker", null);
       else path.connector("rounded");
-      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      let vertices = [];
+      if (this.deleteLinkView.model.attributes.vertices)
+        vertices = this.deleteLinkView.model.attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(nodesList[sIndex].node);
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);
     },
     getEdgeValue(source, target) {
+      console.log("getEdgeVa");
       axios({
         //请求类型
         method: "GET",
@@ -504,15 +480,15 @@ export default {
           source: target,
           target: source,
         },
-      })
-        .then((response) => {
-          console.log("value", response.data.value);
-          let value = response.data.value;
-          this.changeEdge(source, target, value);
-        })
+      }).then((response) => {
+        console.log("value", response.data.value);
+        let value = response.data.value;
+        this.changeEdge(source, target, value);
+      });
+      /*
         .catch((error) => {
           console.log("请求失败了", error.message);
-        });
+        });*/
     },
     changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -529,14 +505,14 @@ export default {
           return true;
         } else return false;
       });
+      let history = {
+        source,
+        target,
+        value, //the true value after reversing
+      };
       if (index > -1) {
+        console.log(this.multipleSearchValue.linksList[index]);
         this.deleteLinkView.model.remove({ ui: true });
-
-        let history = {
-          source,
-          target,
-          value, //the true value after reversing
-        };
         this.multipleSearchValue.linksList[index].value = value;
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
@@ -582,6 +558,23 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
+      } else {
+        this.multipleSearchValue.linksList.push(history);
+        for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+          let selection = this.multipleSearchValue.selections[i];
+          if (
+            (source === selection.outcome ||
+              selection.variable.includes(source)) &&
+            (target === selection.outcome ||
+              selection.variable.includes(target))
+          ) {
+            //add Links to all subgraphs that contain source & target, add history
+            selection.linksList.push(history);
+            historyManage.addEdge(selection.history, history);
+          }
+        }
+        this.setGraph();
+        this.saveData();
       }
     },
     reverseDirection(edge) {

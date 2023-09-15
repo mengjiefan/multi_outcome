@@ -1,7 +1,10 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
+import { g } from "jointjs";
 import svgPanZoom from "svg-pan-zoom";
-import { g, elementTools } from "jointjs";
+import { getAnchoredGraph } from "@/plugin/super/anchor.js";
+import dagre from "dagre";
+
 const cmap = [
     "#FF595E",
     "#FF924C",
@@ -27,6 +30,7 @@ const addTool = (element, paper) => {
     function getMarkup(angle = 0) {
         return [
             {
+                title: element.attr('title'),
                 tagName: "circle",
                 selector: "button",
                 attributes: {
@@ -37,6 +41,7 @@ const addTool = (element, paper) => {
                 }
             },
             {
+                title: element.attr('title'),
                 tagName: "path",
                 selector: "icon",
                 attributes: {
@@ -52,20 +57,27 @@ const addTool = (element, paper) => {
     }
 
 
-    const connectBottom = new elementTools.Connect({
+    const connectBottom = new joint.elementTools.Connect({
         x: "50%",
         y: "100%",
-        markup: getMarkup(90)
+        markup: getMarkup(90),
+        magnet: 'body'
     });
-    const connectTop = new elementTools.Connect({
+    const connectTop = new joint.elementTools.Connect({
         x: "50%",
         y: "0%",
-        markup: getMarkup(270)
+        markup: getMarkup(270),
+        magnet: 'body'
+    });
+    const hoverButton = new joint.elementTools.HoverConnect({
+        useModelGeometry: true,
+        trackPath: (view) => {
+            view.model.attr(['body', 'd'])
+        }
     });
 
-
     const tools = new joint.dia.ToolsView({
-        tools: [ connectTop, connectBottom]
+        tools: [connectTop, connectBottom, hoverButton]
     });
     element.findView(paper).addTools(tools);
 }
@@ -96,6 +108,51 @@ const svgZoom = (name) => {
     svgZoom.setZoomScaleSensitivity(0.5);
 
 };
+export const setSuperGraph = (g, data) => {
+    var states = data.nodesList;
+    var edges = data.linksList;
+    states.forEach(function (state) {
+        let node = {
+            label: "",
+            type: state.type,
+        };
+        if (node.type === 0) node["index"] = state.index;
+        g.setNode(state.id, node);
+    });
+
+    edges.forEach(function (edge) {
+        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
+        var valString = edgeValue.toString() + "px";
+        var widthStr = "stroke-width: " + valString;
+        var edgeColor = "stroke: black";
+        let completeStyle =
+            edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+        if (edge.hidden) {
+            g.setEdge(edge.source, edge.target, {
+                style:
+                    "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
+                curve: d3.curveBasis,
+            });
+        } else {
+            if (edge.value < 0) {
+                completeStyle = completeStyle + "stroke-dasharray:4 4";
+            }
+            g.setEdge(edge.source, edge.target, {
+                style: completeStyle,
+                arrowhead: "undirected",
+            });
+        }
+    });
+
+    // Set some general styles
+    g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        node.rx = node.ry = 20;
+        node.style = "fill:" + cmap[0];
+    });
+    dagre.layout(g);
+    getAnchoredGraph(g, data);
+}
 export const drawSuperGraph = (dom, nodesList, links, scale) => {
     let name = "paper";
     startX = scale.startX;
@@ -113,12 +170,17 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         else return link;
     })
     let graph = new joint.dia.Graph({});
+
     let paper = new joint.dia.Paper({
         el: dom,
         model: graph,
         width: "100%",
         height: "100%",
         gridSize: 1,
+        async: true,
+        linkPinning: false,
+        sorting: joint.dia.Paper.sorting.APPROX,
+        defaultLink: () => new joint.shapes.standard.Link(),
         connectionStrategy: joint.connectionStrategies.pinAbsolute
     });
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
