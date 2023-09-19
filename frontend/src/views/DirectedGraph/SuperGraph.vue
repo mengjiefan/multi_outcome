@@ -42,11 +42,17 @@ import { ref } from "vue";
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import { createChart } from "@/plugin/charts";
-import { drawSuperGraph, setSuperGraph } from "@/plugin/superGraph";
+import {
+  drawSuperGraph,
+  setSuperGraph,
+  showHiddenEdge,
+} from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
 import { countPos } from "@/plugin/tightened/CountPos";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
+import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge.js";
 
 export default {
   name: "DirectedGraph",
@@ -57,6 +63,7 @@ export default {
     return {
       simplePos: ref(),
       paper: ref(),
+      scale: ref(),
       g: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
@@ -226,16 +233,16 @@ export default {
       let gap = 1000 / (maxW - minW);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
-
+      this.scale = {
+        startX,
+        startY,
+        gap,
+      };
       let paper = drawSuperGraph(
         dom,
         this.simplePos.nodesList,
         this.simplePos.linksList,
-        {
-          startX,
-          startY,
-          gap,
-        }
+        this.scale
       );
       this.setPaper(paper);
     },
@@ -256,9 +263,6 @@ export default {
     getNode(nodeView) {
       return nodeView.model.attributes.attrs.title;
     },
-    //历史记录加边操作
-    //隐藏边，变为不隐藏，否则添加边
-    //有值则直接用，反向则计算
     getLinkNode(paper, link) {
       let graph = paper.model.attributes.cells.graph;
       let sourceNode = null;
@@ -269,43 +273,104 @@ export default {
       graph.getElements().forEach((node) => {
         if (node.id === link.get("target").id) targetNode = node;
       });
-      let source = sourceNode.findView(paper).model.attributes.attrs.title;
-      let target = targetNode.findView(paper).model.attributes.attrs.title;
+      let source = this.getNode(sourceNode.findView(paper));
+      let target = this.getNode(targetNode.findView(paper));
       return { source, target };
     },
-    addTempLink(source, target) {
-      let index = this.findLink(
-        source,
-        target,
+    showHiddenLink(source, target) {
+      let index = findLink.showSameDireLink(
+        { source, target },
+        this.simplePos.linksList
+      );
+      let link = this.simplePos.linksList[index];
+      showHiddenEdge(this.paper, link, this.scale, this.simplePos);
+
+      this.saveData();
+    },
+    reverseAndShow(source, target, value) {
+      let index = findLink.showReverseLink(
+        { source, target },
         this.multipleSearchValue.linksList
       );
-      if (index > -1) {
-        let originalLink = this.multipleSearchValue.linksList[index];
+
+      let link = this.multipleSearchValue.linksList[index];
+      if (link.reverse) link.reverse = false;
+      else link["reverse"] = true;
+      link.value = value;
+      this.multipleSearchValue.selections.forEach((selection) => {
+        let index = findLink.showReverseLink(
+          { source, target },
+          selection.linksList
+        );
+        if (index > -1) {
+          link = selection.linksList[index];
+          if (link.reverse) link.reverse = false;
+          else link["reverse"] = true;
+          link.value = value;
+        }
+      });
+      index = findLink.showSameDireLink(
+        { source, target },
+        this.simplePos.linksList
+      );
+
+      link = this.simplePos.linksList[index];
+      link.value = value;
+      this.showHiddenLink(source, target);
+    },
+    //历史记录加边操作
+    //隐藏边，变为不隐藏，否则添加边
+    //有值则直接用，反向则计算
+    addTempLink(source, target) {
+      let oIndex = findLink.sameNodeLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+      if (oIndex > -1) {
+        let originalLink = this.multipleSearchValue.linksList[oIndex];
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) {
           originalLink.hidden = false;
           this.multipleSearchValue.selections.forEach((selection) => {
-            let index = selection.linksList.findIndex((link) => {
-              if (link.source === source && link.target === target) return true;
-              else if (link.source === target && link.target === source)
-                return true;
-              else return false;
-            });
+            let index = findLink.sameNodeLink(
+              { source, target },
+              selection.linksList
+            );
             if (index > -1 && selection.linksList[index].hidden)
               selection.linksList[index].hidden = false;
           });
         }
         if (originalLink.source !== source) {
-          //this.getEdgeValue(source, target);
-        } //隐藏为反向， 先解除隐藏，再进行反向操作
+          linkRequest.getLinkValue(source, target).then((response) => {
+            let value = response.data.value;
+            this.reverseAndShow(source, target, value);
+          });
+        } else this.showHiddenLink(source, target);
       } else this.getEdgeValue(source, target);
     },
-    findLink(source, target, linksList) {
-      return linksList.findIndex((link) => {
-        if (link.source === source && link.target === target) return true;
-        else if (link.source === target && link.target === source) return true;
-        else return false;
-      });
+    emphasizeLink(source, target) {
+      let oIndex = findLink.showSameDireLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+      let value = this.multipleSearchValue.linksList[oIndex].value;
+      let history = {
+        source: target,
+        target: source,
+        reverse: true,
+      };
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        historyManage.reverseEdge(selection.history, history);
+        let index = findLink.showSameDireLink(history, selection.linksList);
+        console.log(index);
+        if (index < 0) continue;
+        let link = selection.linksList[index];
+        link.value = value;
+        if (link.source === history.source) link["reverse"] = true;
+        else if (link.source === history.target) link.reverse = false;
+      }
+      this.saveData();
     },
     setPaper(paper) {
       const _this = this;
@@ -327,6 +392,7 @@ export default {
                 //原来就有边,什么也不做
                 flag = false;
                 _this.deleteLinkView.model.remove({ ui: true });
+                _this.emphasizeLink(realLink.source, realLink.target);
                 _this.$message({
                   showClose: true,
                   message: "Duplicate Edge!",
@@ -483,7 +549,7 @@ export default {
         nodesList[tIndex].node.attributes.position.y
       )
         path.attr("line/targetMarker", null);
-      else path.connector("rounded");
+      path.connector("rounded");
       let vertices = [];
       if (this.deleteLinkView.model.attributes.vertices)
         vertices = this.deleteLinkView.model.attributes.vertices.reverse();
@@ -493,28 +559,12 @@ export default {
       path.addTo(this.paper.model);
     },
     getEdgeValue(source, target) {
-      //原边，获得反转边value
       console.log("getEdgeVa");
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/recaculate_Links",
-        //参数
-        params: {
-          dataset: localStorage.getItem("DATATYPE"),
-          source: target,
-          target: source,
-        },
-      }).then((response) => {
+      linkRequest.getLinkValue(target, source).then((response) => {
         console.log("value", response.data.value);
         let value = response.data.value;
         this.changeEdge(source, target, value);
       });
-      /*
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });*/
     },
     changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -584,23 +634,6 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
-      } else {
-        this.multipleSearchValue.linksList.push(history);
-        for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-          let selection = this.multipleSearchValue.selections[i];
-          if (
-            (source === selection.outcome ||
-              selection.variable.includes(source)) &&
-            (target === selection.outcome ||
-              selection.variable.includes(target))
-          ) {
-            //add Links to all subgraphs that contain source & target, add history
-            selection.linksList.push(history);
-            historyManage.addEdge(selection.history, history);
-          }
-        }
-        this.setGraph();
-        this.saveData();
       }
     },
     reverseDirection(edge) {

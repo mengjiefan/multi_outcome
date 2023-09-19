@@ -108,6 +108,67 @@ const svgZoom = (name) => {
     svgZoom.setZoomScaleSensitivity(0.5);
 
 };
+export const showHiddenEdge = (paper, orlink, scale, data) => {
+    let link = orlink;
+    if (link.reverse) {
+        link = {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+            points: link.points,
+            reverse: true
+        }
+    }
+    let path = new joint.shapes.standard.Link({});
+    let vertices = [];
+    for (let i = 0; i < link.points.length; i++) {
+        let point = link.points[i];
+        startX = scale.startX;
+        startY = scale.startY;
+        gap = scale.gap;
+        vertices.push(
+            new g.Point(countXPos(point.x), countYPos(point.y))
+        );
+    }
+    if (link.reverse) vertices.reverse();
+    let sindex = data.nodesList.findIndex((item) => {
+        if (item.id === link.source) return true;
+        else return false;
+    });
+    let tindex = data.nodesList.findIndex((item) => {
+        if (item.id === link.target) return true;
+        else return false;
+    });
+    let value = Math.abs(link.value);
+    if (value > 1.2) value = 1.2;
+    path.attr({
+        id: "(" + link.source + ", " + link.target + ")",
+        line: {
+            strokeWidth: value * 8 + "",
+            targetMarker: {
+                // minute hand
+                type: "path",
+                stroke: "black",
+                "stroke-width": value * 8,
+                fill: "transparent",
+                d: "M 10 -5 0 0 10 5 ",
+            },
+        },
+    });
+    if (link.value < 0) {
+        path.attr("line/strokeDasharray", "4 4");
+    }
+    if (
+        data.nodesList[sindex].node.attributes.position.y <
+        data.nodesList[tindex].node.attributes.position.y
+    )
+        path.attr("line/targetMarker", null);
+    path.source(data.nodesList[sindex].node);
+    path.target(data.nodesList[tindex].node);
+    path.addTo(paper.model.attributes.cells.graph);
+    path.vertices(vertices);
+    path.connector("rounded");
+}
 export const setSuperGraph = (g, data) => {
     var states = data.nodesList;
     var edges = data.linksList;
@@ -131,7 +192,6 @@ export const setSuperGraph = (g, data) => {
             g.setEdge(edge.source, edge.target, {
                 style:
                     "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
-                curve: d3.curveBasis,
             });
         } else {
             if (edge.value < 0) {
