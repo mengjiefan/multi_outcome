@@ -58,30 +58,25 @@ export default {
             } else return false;
         })
         if (index < 0) {
-            let newRecord = record.filter(history => {
-                let flag = false;
-                if (history.source === operation.source && history.target === operation.target) flag = true;
-                else if (history.target === operation.source && history.source === operation.target) flag = true;
-                return !flag;
-            });
-            newRecord.push({
+            record.push({
                 source: operation.source,
                 target: operation.target,
                 value: operation.value,
                 add: true
             })
-            return newRecord;
+            return record;
         } else
             record.splice(index, 1);
     },
     reDoHistory(data) {
+        console.log('redo', data.history)
         let record = data.history;
         record.forEach(history => {
             let index = data.linksList.findIndex(link => {
                 if (link.source === history.source && link.target === history.target) {
                     return true;
                 }
-                if (link.source === history.target && link.target === history.source && history.hidden) {
+                if (link.source === history.target && link.target === history.source && (history.hidden || history.add)) {
                     return true;
                 }
             })
@@ -92,9 +87,18 @@ export default {
                         target: history.source,
                         value: history.value
                     });
-                } else {
+                } else if (history.hidden) {
                     data.linksList.splice(index, 1);
                 }
+            } else if (history.add) {
+                let sIndex = data.nodesList.findIndex(node => node.id === history.source);
+                let tIndex = data.nodesList.findIndex(node => node.id === history.target);
+                console.log(sIndex, tIndex)
+                if (sIndex > -1 && tIndex > -1) data.linksList.push({
+                    source: history.source,
+                    target: history.target,
+                    value: history.value
+                })
             }
         })
     },

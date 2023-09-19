@@ -288,7 +288,7 @@ export default {
           if (node.y < minH) minH = node.y;
         });
       });
-      let gap = 1200/ (maxW - minW);
+      let gap = 1200 / (maxW - minW);
       if (600 / (maxH - minH) < gap) gap = 600 / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
@@ -333,7 +333,8 @@ export default {
       );
       let link = this.simplePos.linksList[index];
       showHiddenEdge(this.paper, link, this.scale, this.simplePos);
-
+      console.log(link)
+      historyManage.addEdge(this.multipleSearchValue.history, link);
       this.saveData();
     },
     reverseAndShow(source, target, value) {
@@ -346,12 +347,17 @@ export default {
       if (link.reverse) link.reverse = false;
       else link["reverse"] = true;
       link.value = value;
-      index = findLink.showSameDireLink(
+      index = findLink.showReverseLink(
         { source, target },
         this.simplePos.linksList
       );
 
       link = this.simplePos.linksList[index];
+      console.log(link);
+      link.source = source;
+      link.target = target;
+      if (link.reverse) link.reverse = false;
+      else link.points.reverse();
       link.value = value;
       this.showHiddenLink(source, target);
     },
@@ -365,10 +371,11 @@ export default {
       );
       if (oIndex > -1) {
         let originalLink = this.multipleSearchValue.linksList[oIndex];
+        console.log(originalLink);
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
-
         if (originalLink.source !== source) {
+          console.log(11);
           linkRequest.getLinkValue(source, target).then((response) => {
             let value = response.data.value;
             this.reverseAndShow(source, target, value);
@@ -692,8 +699,10 @@ export default {
         this.saveData();
         this.tip2Hidden();
       } else {
+        console.log(11);
         let newLink = { source, target, value };
         this.multipleSearchValue.linksList.push(newLink);
+        historyManage.addEdge(this.multipleSearchValue.history, newLink);
         this.saveData();
         this.setGraph();
       }
@@ -757,8 +766,8 @@ export default {
       });
       if (index > -1) {
         this.multipleSearchValue.linksList[index] = {
-          source: this.multipleSearchValue.linksList[index].source,
-          target: this.multipleSearchValue.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1],
           value: this.multipleSearchValue.linksList[index].value,
           hidden: true,
         };

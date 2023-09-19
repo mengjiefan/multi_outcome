@@ -667,8 +667,8 @@ export default {
           target: nodes[1],
         };
         this.multipleSearchValue.linksList[index] = {
-          source: this.multipleSearchValue.linksList[index].source,
-          target: this.multipleSearchValue.linksList[index].target,
+          source: nodes[0],
+          target: nodes[1],
           value: this.multipleSearchValue.linksList[index].value,
           hidden: true,
         };
