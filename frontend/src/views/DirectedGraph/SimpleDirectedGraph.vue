@@ -333,7 +333,6 @@ export default {
       );
       let link = this.simplePos.linksList[index];
       showHiddenEdge(this.paper, link, this.scale, this.simplePos);
-      console.log(link)
       historyManage.addEdge(this.multipleSearchValue.history, link);
       this.saveData();
     },
@@ -353,7 +352,6 @@ export default {
       );
 
       link = this.simplePos.linksList[index];
-      console.log(link);
       link.source = source;
       link.target = target;
       if (link.reverse) link.reverse = false;
@@ -371,11 +369,11 @@ export default {
       );
       if (oIndex > -1) {
         let originalLink = this.multipleSearchValue.linksList[oIndex];
-        console.log(originalLink);
+
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
-          console.log(11);
+
           linkRequest.getLinkValue(source, target).then((response) => {
             let value = response.data.value;
             this.reverseAndShow(source, target, value);
@@ -649,9 +647,7 @@ export default {
       return this.multipleSearchValue.linksList[index].reverse === true;
     },
     getEdgeValue(source, target) {
-      console.log("getEdgeVa");
       linkRequest.getLinkValue(target, source).then((response) => {
-        console.log("value", response.data.value);
         let value = response.data.value;
         this.changeEdge(source, target, value);
       });
@@ -699,7 +695,6 @@ export default {
         this.saveData();
         this.tip2Hidden();
       } else {
-        console.log(11);
         let newLink = { source, target, value };
         this.multipleSearchValue.linksList.push(newLink);
         historyManage.addEdge(this.multipleSearchValue.history, newLink);

@@ -1,6 +1,5 @@
 export default {
     reverseEdge(record, operation) {
-        console.log(record)
         let index = record.findIndex(history => {
             if (history.source === operation.source && history.target === operation.target && history.reverse) {
                 return true;
@@ -12,7 +11,6 @@ export default {
                 return true;
             } else return false;
         })
-        console.log(index)
         if (index < 0) {
             record.push({
                 source: operation.source,
@@ -23,7 +21,6 @@ export default {
         }
         else
             record.splice(index, 1);
-        console.log(record)
     },
     deleteEdge(record, operation) {
         let index = record.findIndex(history => {
@@ -69,7 +66,6 @@ export default {
             record.splice(index, 1);
     },
     reDoHistory(data) {
-        console.log('redo', data.history)
         let record = data.history;
         record.forEach(history => {
             let index = data.linksList.findIndex(link => {
@@ -93,7 +89,7 @@ export default {
             } else if (history.add) {
                 let sIndex = data.nodesList.findIndex(node => node.id === history.source);
                 let tIndex = data.nodesList.findIndex(node => node.id === history.target);
-                console.log(sIndex, tIndex)
+    
                 if (sIndex > -1 && tIndex > -1) data.linksList.push({
                     source: history.source,
                     target: history.target,
