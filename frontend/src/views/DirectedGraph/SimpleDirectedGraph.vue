@@ -183,7 +183,7 @@ export default {
 
         if (node.type == 0) node.style = "fill: #f77;";
         else {
-          node.style = "fill:" + cmap[0];
+          node.style = "fill:" +  "#1f77b4";
         }
       });
       edges.forEach(function (edge) {
