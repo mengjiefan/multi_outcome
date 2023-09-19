@@ -172,7 +172,6 @@ export const showHiddenEdge = (paper, orlink, scale, data) => {
 export const setSuperGraph = (g, data) => {
     var states = data.nodesList;
     var edges = data.linksList;
-    edges.filter(edge => !edge.add);
     states.forEach(function (state) {
         let node = {
             label: "",

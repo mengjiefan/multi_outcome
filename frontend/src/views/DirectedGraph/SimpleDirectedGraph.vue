@@ -48,9 +48,7 @@
           Relayout
         </el-button>
       </div>
-      <svg v-if="simplePos && simplePos.nodesList.length > 0" class="graph-svg">
-        <g />
-      </svg>
+      <div id="paper" class="sum-svg"></div>
     </div>
   </div>
 </template>
@@ -66,21 +64,25 @@ import { Loading } from "element-ui";
 import { defaultFactors, ukbFactors, clhlsFactors } from "@/plugin/variable";
 import dagre from "dagre-d3/lib/dagre";
 import { createChart } from "@/plugin/charts";
-import singleGraph from "@/plugin/singleGraph";
+import * as joint from "jointjs";
+import { drawSuperGraph, showHiddenEdge } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
+import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
+import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge.js";
 
 var cmap = [
-    "#FF595E",
-    "#FF924C",
-    "#FFCA3A",
-    "#C5CA30",
-    "#8AC926",
-    "#36949D",
-    "#1982C4",
-    "#4267AC",
-    "#565AA0",
-    "#6A4C93",
+  "#FF595E",
+  "#FF924C",
+  "#FFCA3A",
+  "#C5CA30",
+  "#8AC926",
+  "#36949D",
+  "#1982C4",
+  "#4267AC",
+  "#565AA0",
+  "#6A4C93",
 ];
 
 export default {
@@ -90,6 +92,8 @@ export default {
   },
   data() {
     return {
+      deleteLinkView: ref(),
+      paper: ref(),
       dataset: ref(),
       chartVisible: ref(false),
       loadingInstance: ref(null),
@@ -153,52 +157,35 @@ export default {
       this.multipleSearchValue.nodesList = nodesList;
       this.hasNoHidden = true;
       this.saveData();
-      this.drawGraph();
+      this.setGraph();
     },
     setGraph() {
       var data = this.multipleSearchValue;
       var states = data.nodesList;
-      d3.select("svg").select("g").selectAll("*").remove();
       // {
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
 
-      // Automatically label each of the nodes
       states.forEach(function (state) {
         let node = {
-          label: state.id,
+          label: "",
           type: state.type,
         };
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
       });
+      let that = this;
 
       var edges = data.linksList;
-      let that = this;
-      // Set some general styles
-      g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        node.rx = node.ry = 5;
 
-        if (node.type == 0) node.style = "fill: #f77;";
-        else {
-          node.style = "fill:" +  "#1f77b4";
-        }
-      });
       edges.forEach(function (edge) {
-        let value = Math.abs(edge.value);
-        if (value > 1.5) value = 1.5;
-        value = value * 10;
-        var valString = value.toString() + "px";
-        if (edge.value < 0) {
-          valString = value.toString() + "px";
-        }
+        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
+        var valString = edgeValue.toString() + "px";
         var widthStr = "stroke-width: " + valString;
         var edgeColor = "stroke: black";
         let completeStyle =
           edgeColor + ";" + widthStr + ";" + "fill: transparent;";
-        let direction = "";
         if (edge.hidden) {
           g.setEdge(edge.source, edge.target, {
             style:
@@ -206,161 +193,37 @@ export default {
             curve: d3.curveBasis,
           });
         } else {
-          if (edge.reverse) {
-            direction = that.checkDirection(edge.target, edge.source);
-            if (direction !== "DOWN")
-              completeStyle = completeStyle + "marker-start:url(#normals);";
-          } else {
-            direction = that.checkDirection(edge.source, edge.target);
-            if (direction !== "DOWN")
-              completeStyle = completeStyle + "marker-end:url(#normale);";
-          }
           if (edge.value < 0) {
             completeStyle = completeStyle + "stroke-dasharray:4 4";
           }
-
           g.setEdge(edge.source, edge.target, {
             style: completeStyle,
-            curve: d3.curveBasis,
             arrowhead: "undirected",
           });
         }
       });
 
-      dagre.layout(g);
-      if (!that.simplePos || that.simplePos.nodesList <= 0) {
-        that.simplePos = countSimplePos(
-          g,
-          this.multipleSearchValue.nodesList,
-          this.multipleSearchValue.linksList
-        );
-        setTimeout(() => {
-          that.drawGraph();
-        }, 0);
-      }
-
-      var svg = d3.select("svg");
-      let inner = svg.select("g");
-      //正直反曲
-      if (this.tooltip) {
-        this.tipHidden();
-      }
-      if (this.tooltip2) {
-        this.tip2Hidden();
-      }
-      this.tooltip = this.createTooltip();
-      this.tooltip2 = this.createTooltip();
-      // Set up zoom support
-
-      var zoom = d3.zoom().on("zoom", function (event) {
-        that.transform = event.transform;
-        inner.attr("transform", event.transform);
-        that.tipHidden();
-        that.tip2Hidden();
+      // Set some general styles
+      g.nodes().forEach(function (v) {
+        var node = g.node(v);
+        node.rx = node.ry = 20;
+        node.style = "fill:" + cmap[0];
       });
-      svg.call(zoom);
+      dagre.layout(g);
+      //this.getAnchoredGraph(g);
+      //save positon and redraw, which need to know the direction of edges
+      const simpleG = g;
 
-      // Create the renderer
-      var render = new dagreD3.render();
-      // Run the renderer. This is what draws the final graph.
-      render(inner, g);
-      //add hover effect & hover hint to nodes
-      inner
-        .selectAll("g.node")
-        .on("mouseover", (v) => {
-          v.fromElement.setAttribute("id", "hover-node");
-        })
-        .on("mouseout", (v) => {
-          v.fromElement.setAttribute("id", "");
-        })
-        .on("click", (d, id) => {
-          if (!this.ifOutCome(id)) {
-            let hintHtml =
-              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-            <div class='operate-menu'>Delete node " +
-              id +
-              "</div>";
-            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-            setTimeout(() => {
-              document.addEventListener("click", _this.listener2);
-            }, 0);
-          }
-        });
-
-      // add hover effect & click hint to lines
-      // Center the graph
-
-      if (that.transform) {
-        inner.attr("transform", that.transform);
-      } else {
-        var initialScale = 1;
-        let xOffset = (1200 - g.graph().width * initialScale) / 2;
-        let yOffset = (450 - g.graph().height * initialScale) / 2;
-        svg.call(
-          zoom.transform,
-          d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
-        );
-
-        svg.attr("height", g.graph().height * initialScale + 40);
-      }
-      var onmousepath = svg.selectAll(".edgePath");
-      var allpathes = onmousepath.select(".path");
-      const _this = this;
-      singleGraph.addArrowType(svg);
-      allpathes
-        .on("mouseout", function (d, id) {
-          if (d3.select(this).style("stroke") !== "transparent") {
-            d3.select(this).style("stroke", "black");
-            if (!_this.isReverse(id)) {
-              if (_this.checkDirection(id.v, id.w) === "UP")
-                d3.select(this).style("marker-end", "url(#normale)"); //Added
-            } else {
-              if (_this.checkDirection(id.w, id.v) === "UP")
-                d3.select(this).style("marker-start", "url(#normals)"); //Added
-            }
-          }
-          _this.tipHidden();
-        })
-        .on("mouseover", function (d, id) {
-          let router = "";
-          if (d3.select(this).style("stroke") !== "transparent") {
-            if (!_this.isReverse(id)) {
-              router = "(" + id.v + ", " + id.w + ")";
-              if (_this.checkDirection(id.v, id.w) === "UP")
-                d3.select(this).style("marker-end", "url(#activeE)"); //Added
-            } else {
-              router = "(" + id.w + ", " + id.v + ")";
-              if (_this.checkDirection(id.w, id.v) === "UP")
-                d3.select(this).style("marker-start", "url(#activeS)"); //Added
-            }
-            d3.select(this).style("stroke", "#1f77b4");
-
-            if (!_this.tip2Show)
-              _this.tipVisible(router + ": " + _this.getWidth(router), {
-                pageX: d.pageX,
-                pageY: d.pageY,
-              });
-          }
-        })
-        .on("click", function (d, id) {
-          if (d3.select(this).style("stroke") !== "transparent") {
-            let router = "";
-            if (!_this.isReverse(id)) {
-              router = "(" + id.v + ", " + id.w + ")";
-            } else {
-              router = "(" + id.w + ", " + id.v + ")";
-            }
-            let hintHtml =
-              "<div class='operate-header'><div class='hint-list'>operate</div><div class='close-button'>x</div></div><hr/>\
-            <div class='operate-menu'>Delete edge<br/>" +
-              router +
-              "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
-            _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-            setTimeout(() => {
-              document.addEventListener("click", _this.listener);
-            }, 0);
-          }
-        });
+      this.simplePos = countSimplePos(
+        simpleG,
+        this.multipleSearchValue.nodesList,
+        this.multipleSearchValue.linksList
+      );
+      console.log("simplePos", this.simplePos);
+      setTimeout(() => {
+        that.drawGraph();
+      }, 0);
+      // Set up zoom support
     },
     getWidth(router) {
       let nodes = router.split(", ");
@@ -394,13 +257,207 @@ export default {
       else return "UP";
     },
     drawGraph() {
-      setTimeout(() => {
-        this.setGraph();
-      }, 0);
+      this.simplePos.nodesList.forEach((node) => {
+        if (node.type === 0) node["indexes"] = ["8"];
+        else node["indexes"] = ["0"];
+      });
+      if (this.tooltip) {
+        this.tipHidden();
+      }
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
+      let dom = document.getElementById("paper");
+      let minW = 150000;
+      let maxW = 0;
+      let minH = 15000;
+      let maxH = 0;
+      this.simplePos.nodesList.forEach((node) => {
+        if (node.x > maxW) maxW = node.x;
+        if (node.x < minW) minW = node.x;
+        if (node.y > maxH) maxH = node.y;
+        if (node.y < minH) minH = node.y;
+      });
+      this.simplePos.linksList.forEach((link) => {
+        link.points.forEach((node) => {
+          if (node.x > maxW) maxW = node.x;
+          if (node.x < minW) minW = node.x;
+          if (node.y > maxH) maxH = node.y;
+          if (node.y < minH) minH = node.y;
+        });
+      });
+      let gap = 1200/ (maxW - minW);
+      if (600 / (maxH - minH) < gap) gap = 600 / (maxH - minH);
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
+      let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
+      this.scale = {
+        startX,
+        startY,
+        gap,
+      };
+      let paper = drawSuperGraph(
+        dom,
+        this.simplePos.nodesList,
+        this.simplePos.linksList,
+        this.scale
+      );
+      this.setPaper(paper);
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
+    },
+    getNode(nodeView) {
+      return nodeView.model.attributes.attrs.title;
+    },
+    getLinkNode(paper, link) {
+      let graph = paper.model.attributes.cells.graph;
+      let sourceNode = null;
+      let targetNode = null;
+      graph.getElements().forEach((node) => {
+        if (node.id === link.get("source").id) sourceNode = node;
+      });
+      graph.getElements().forEach((node) => {
+        if (node.id === link.get("target").id) targetNode = node;
+      });
+      let source = this.getNode(sourceNode.findView(paper));
+      let target = this.getNode(targetNode.findView(paper));
+      return { source, target };
+    },
+    showHiddenLink(source, target) {
+      let index = findLink.showSameDireLink(
+        { source, target },
+        this.simplePos.linksList
+      );
+      let link = this.simplePos.linksList[index];
+      showHiddenEdge(this.paper, link, this.scale, this.simplePos);
+
+      this.saveData();
+    },
+    reverseAndShow(source, target, value) {
+      let index = findLink.showReverseLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+
+      let link = this.multipleSearchValue.linksList[index];
+      if (link.reverse) link.reverse = false;
+      else link["reverse"] = true;
+      link.value = value;
+      index = findLink.showSameDireLink(
+        { source, target },
+        this.simplePos.linksList
+      );
+
+      link = this.simplePos.linksList[index];
+      link.value = value;
+      this.showHiddenLink(source, target);
+    },
+    //历史记录加边操作
+    //隐藏边，变为不隐藏，否则添加边
+    //有值则直接用，反向则计算
+    addTempLink(source, target) {
+      let oIndex = findLink.sameNodeLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+      if (oIndex > -1) {
+        let originalLink = this.multipleSearchValue.linksList[oIndex];
+        this.deleteLinkView.model.remove({ ui: true });
+        if (originalLink.hidden) originalLink.hidden = false;
+
+        if (originalLink.source !== source) {
+          linkRequest.getLinkValue(source, target).then((response) => {
+            let value = response.data.value;
+            this.reverseAndShow(source, target, value);
+          });
+        } else this.showHiddenLink(source, target);
+      } else this.getEdgeValue(source, target);
+    },
+    setPaper(paper) {
+      const _this = this;
+      let graph = paper.model.attributes.cells.graph;
+      graph.on("change:source change:target", function (link) {
+        if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = link.findView(paper);
+          _this.paper = paper;
+          let realLink = _this.getLinkNode(paper, link);
+          let flag = true;
+          graph.getCells().forEach((item) => {
+            if (item.attributes.type.includes("Link")) {
+              let realItem = _this.getLinkNode(paper, item);
+              if (
+                link.id !== item.id &&
+                realItem.source === realLink.source &&
+                realItem.target === realLink.target
+              ) {
+                //原来就有边,什么也不做
+                flag = false;
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.$message({
+                  showClose: true,
+                  message: "Duplicate Edge!",
+                  type: "warning",
+                });
+              } else if (
+                realItem.target === realLink.source &&
+                realItem.source === realLink.target
+              ) {
+                flag = false;
+                //原来边方向相反，相当于反转边
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.deleteLinkView = item.findView(paper);
+                _this.getEdgeValue(realItem.source, realItem.target);
+              }
+            }
+          });
+          if (flag) _this.addTempLink(realLink.source, realLink.target);
+        }
+      });
+
+      paper.on("link:mouseenter", function (linkView, d) {
+        let attributes = linkView.model.attributes.attrs;
+        let router = attributes.id;
+        linkView.model.attr("line/stroke", "#1f77b4");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
+
+        let width = _this.getWidth(router);
+        if (!_this.tip2Show)
+          _this.tipVisible(router + ": " + width, {
+            pageX: d.pageX,
+            pageY: d.pageY,
+          });
+      });
+      paper.on("link:mouseout", function (linkView) {
+        linkView.model.attr("line/stroke", "black");
+        if (linkView.model.attributes.attrs.line.targetMarker)
+          linkView.model.attr("line/targetMarker/stroke", "black");
+
+        _this.tipHidden();
+      });
+      paper.on("link:pointerclick", function (linkView, d) {
+        let router = linkView.model.attributes.attrs.id;
+        let hintHtml =
+          "<div class='operate-header'><div class='hint-list'>Operate</div><div class='close-button'>x</div></div><hr/>\
+                <div class='operate-menu'>Delete edge<br/>" +
+          router +
+          "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+        _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+        _this.deleteLinkView = linkView;
+        _this.paper = paper;
+        setTimeout(() => {
+          document.addEventListener("click", _this.listener);
+        }, 0);
+      });
+      paper.on("element:mouseover", function (elementView, evt) {
+        addHighLight(elementView);
+      });
+      paper.on("element:mouseout", function (elementView, evt) {
+        removeHighLight(elementView);
+      });
     },
 
     showLoading() {
@@ -470,7 +527,7 @@ export default {
           this.loadingInstance = null;
 
           this.saveData();
-          this.drawGraph();
+          this.setGraph();
           this.countingGraph = false;
         })
         .catch((error) => {
@@ -585,59 +642,104 @@ export default {
       return this.multipleSearchValue.linksList[index].reverse === true;
     },
     getEdgeValue(source, target) {
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/recaculate_Links",
-        //参数
-        params: {
-          dataset: localStorage.getItem("DATATYPE"),
-          source: target,
-          target: source,
-        },
-      })
-        .then((response) => {
-          console.log("value", response.data.value);
-          let value = response.data.value;
-          this.changeEdge(source, target, value);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
+      console.log("getEdgeVa");
+      linkRequest.getLinkValue(target, source).then((response) => {
+        console.log("value", response.data.value);
+        let value = response.data.value;
+        this.changeEdge(source, target, value);
+      });
     },
     changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
         if (
           (row.source === source &&
             row.target === target &&
-            !row.reverse &&
-            !row.hidden) ||
+            !row.hidden &&
+            !row.reverse) ||
           (row.target === source &&
             row.source === target &&
-            row.reverse &&
-            !row.hidden)
+            !row.hidden &&
+            row.reverse)
         ) {
           return true;
         } else return false;
       });
       if (index > -1) {
+        this.deleteLinkView.model.remove({ ui: true });
+
+        let history = {
+          source,
+          target,
+          value, //the true value after reversing
+        };
         this.multipleSearchValue.linksList[index].value = value;
+        historyManage.reverseEdge(this.multipleSearchValue.history, history);
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
           this.hasNoHidden = false;
+          this.addLink(this.simplePos.nodesList, {
+            source: target,
+            target: source,
+            value: value,
+          });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
+          this.addLink(
+            this.simplePos.nodesList,
+            this.multipleSearchValue.linksList[index]
+          );
         }
-        historyManage.reverseEdge(this.multipleSearchValue.history, {
-          source,
-          target,
-          value
-        });
         this.saveData();
         this.tip2Hidden();
-        this.drawGraph();
+      } else {
+        let newLink = { source, target, value };
+        this.multipleSearchValue.linksList.push(newLink);
+        this.saveData();
+        this.setGraph();
       }
+    },
+    addLink(nodesList, link) {
+      var path = new joint.shapes.standard.Link({});
+      let sIndex = nodesList.findIndex((node) => {
+        if (node.id === link.source) return true;
+        else return false;
+      });
+
+      let tIndex = nodesList.findIndex((node) => {
+        if (node.id === link.target) return true;
+        else return false;
+      });
+      let value = Math.abs(link.value);
+      if (value > 1.2) value = 1.2;
+      path.attr({
+        id: "(" + link.source + ", " + link.target + ")",
+        line: {
+          strokeWidth: value * 8 + "",
+          targetMarker: {
+            // minute hand
+            type: "path",
+            stroke: "black",
+            "stroke-width": value * 8,
+            fill: "transparent",
+            d: "M 10 -5 0 0 10 5 ",
+          },
+        },
+      });
+      if (link.value < 0) {
+        path.attr("line/strokeWidth", -link.value * 8 + "");
+        path.attr("line/strokeDasharray", "4 4");
+      }
+      if (
+        nodesList[sIndex].node.attributes.position.y <
+        nodesList[tIndex].node.attributes.position.y
+      )
+        path.attr("line/targetMarker", null);
+      path.connector("rounded");
+      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      path.vertices(vertices);
+      path.source(nodesList[sIndex].node);
+      path.target(nodesList[tIndex].node);
+      path.addTo(this.paper.model);
     },
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
@@ -670,7 +772,7 @@ export default {
         this.saveData();
         this.hasNoHidden = false;
         this.tip2Hidden();
-        this.drawGraph();
+        this.deleteLinkView.model.remove({ ui: true });
       }
     },
     // create tooltip but not show it
@@ -764,7 +866,7 @@ export default {
         (link) => link.hidden || link.reverse
       );
       if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
-      this.drawGraph();
+      this.setGraph();
     }
   },
 };
@@ -843,23 +945,10 @@ export default {
   height: 90%;
 }
 .sum-svg {
-  position: absolute;
-  left: 16px;
-  top: calc(8vh + 650px);
+  display: flex;
+  width: 100%;
+  height: 90%;
   padding: 16px;
-  width: 458px;
-  height: 480px;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-.sum-svg .title {
-  margin-bottom: 8px;
-  font-size: 20px;
-  font-weight: bold;
-}
-.sum-svg svg {
-  height: 450px;
-  width: 458px;
 }
 
 .one-line-operator {
@@ -883,5 +972,11 @@ export default {
   font-size: 18px;
   font-weight: bold;
   line-height: 32px;
+}
+.sum-svg {
+  display: flex;
+  width: 100%;
+  height: 90%;
+  padding: 16px;
 }
 </style>

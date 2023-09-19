@@ -150,11 +150,12 @@ export default {
             target: link.source,
             value: link.value,
           };
-          else return {
+        else
+          return {
             target: link.target,
             source: link.source,
             value: link.value,
-          }
+          };
       });
       axios({
         method: "post",
@@ -162,7 +163,7 @@ export default {
         //参数
         data: {
           nodesList: nodes,
-          linksList: links
+          linksList: links,
         },
         headers: {
           "Content-Type": "application/json",
@@ -547,7 +548,7 @@ export default {
         nodesList[tIndex].node.attributes.position.y
       )
         path.attr("line/targetMarker", null);
-      else path.connector("rounded");
+      path.connector("rounded");
       let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(nodesList[sIndex].node);
