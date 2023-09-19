@@ -634,6 +634,16 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
+      } else {
+        let newLink = { source, target, value };
+        this.multipleSearchValue.linksList.push(newLink);
+        this.multipleSearchValue.selections.forEach((selection) => {
+          let node = selection.variable.concat([selection.outcomt]);
+          if (node.includes(source) && node.includes(target))
+            selection.linksList.push(newLink);
+        });
+        this.saveData();
+        this.setGraph();
       }
     },
     reverseDirection(edge) {
