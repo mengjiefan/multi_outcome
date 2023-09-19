@@ -58,7 +58,6 @@ export default {
       simplePos: ref(),
       paper: ref(),
       g: ref(),
-      tempLink: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -260,6 +259,20 @@ export default {
     //历史记录加边操作
     //隐藏边，变为不隐藏，否则添加边
     //有值则直接用，反向则计算
+    getLinkNode(paper, link) {
+      let graph = paper.model.attributes.cells.graph;
+      let sourceNode = null;
+      let targetNode = null;
+      graph.getElements().forEach((node) => {
+        if (node.id === link.get("source").id) sourceNode = node;
+      });
+      graph.getElements().forEach((node) => {
+        if (node.id === link.get("target").id) targetNode = node;
+      });
+      let source = sourceNode.findView(paper).model.attributes.attrs.title;
+      let target = targetNode.findView(paper).model.attributes.attrs.title;
+      return { source, target };
+    },
     addTempLink(source, target) {
       let index = this.findLink(
         source,
@@ -281,16 +294,10 @@ export default {
             if (index > -1 && selection.linksList[index].hidden)
               selection.linksList[index].hidden = false;
           });
-        } else {
-          //原来就有边
-          this.$message({
-            showClose: true,
-            message: "Duplicate Edge!",
-            type: "warning",
-          });
-          //原来就有边
         }
-        if (originalLink !== source) this.getEdgeValue(source, target); //隐藏为反向， 先解除隐藏，再进行反向操作
+        if (originalLink.source !== source) {
+          //this.getEdgeValue(source, target);
+        } //隐藏为反向， 先解除隐藏，再进行反向操作
       } else this.getEdgeValue(source, target);
     },
     findLink(source, target, linksList) {
@@ -304,22 +311,40 @@ export default {
       const _this = this;
       let graph = paper.model.attributes.cells.graph;
       graph.on("change:source change:target", function (link) {
-        _this.deleteLinkView = link.findView(paper);
-        _this.tempLink = link;
         if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = link.findView(paper);
           _this.paper = paper;
-          let sourceNode;
-          let targetNode;
-          graph.getElements().forEach((node) => {
-            if (node.id === link.get("source").id) sourceNode = node;
+          let realLink = _this.getLinkNode(paper, link);
+          let flag = true;
+          graph.getCells().forEach((item) => {
+            if (item.attributes.type.includes("Link")) {
+              let realItem = _this.getLinkNode(paper, item);
+              if (
+                link.id !== item.id &&
+                realItem.source === realLink.source &&
+                realItem.target === realLink.target
+              ) {
+                //原来就有边,什么也不做
+                flag = false;
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.$message({
+                  showClose: true,
+                  message: "Duplicate Edge!",
+                  type: "warning",
+                });
+              } else if (
+                realItem.target === realLink.source &&
+                realItem.source === realLink.target
+              ) {
+                flag = false;
+                //原来边方向相反，相当于反转边
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.deleteLinkView = item.findView(paper);
+                _this.getEdgeValue(realItem.source, realItem.target);
+              }
+            }
           });
-          graph.getElements().forEach((node) => {
-            if (node.id === link.get("target").id) targetNode = node;
-          });
-          let source = sourceNode.findView(paper).model.attributes.attrs.title;
-          let target = targetNode.findView(paper).model.attributes.attrs.title;
-
-          _this.addTempLink(source, target);
+          if (flag) _this.addTempLink(realLink.source, realLink.target);
         }
       });
 
@@ -468,6 +493,7 @@ export default {
       path.addTo(this.paper.model);
     },
     getEdgeValue(source, target) {
+      //原边，获得反转边value
       console.log("getEdgeVa");
       axios({
         //请求类型
