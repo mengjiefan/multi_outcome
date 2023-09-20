@@ -373,7 +373,7 @@ export default {
         if (index < 0) continue;
         let link = selection.linksList[index];
         link.value = value;
-
+        //如果子图有隐藏的边，虽然会对方向和历史做修改，但并不会显示
         historyManage.reverseEdge(selection.history, history);
         if (link.source === history.source) link["reverse"] = true;
         else if (link.source === history.target) link.reverse = false;
