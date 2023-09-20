@@ -53,15 +53,16 @@ export const countPos = (g, childNodes, commonNode) => {
             });
         })
         child.linksList.forEach(link => {
-            let path = findLink(edges, link);
             let points = [];
-            path.points.forEach(point => {
-                points.push({
-                    x: evenValue(x, point.x),
-                    y: evenValue(y, point.y)
+            let path = findLink(edges, link);
+            if (path) {
+                path.points.forEach(point => {
+                    points.push({
+                        x: evenValue(x, point.x),
+                        y: evenValue(y, point.y)
+                    })
                 })
-            })
-
+            }
             linksList.push({
                 source: link.source,
                 target: link.target,
@@ -201,93 +202,95 @@ export const countSonPos = (son, commonNodes, linksList) => {
         ryGroups.push([])
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
-        vertice.points.forEach(pos => {
-            if (pos.x < minPosX && lX.length > 1) {
-                let xIndex = Math.ceil(evenValue(lX, pos.x));
-                if (xIndex < 0) xIndex = 0;
-                else if (xIndex > lX.length) xIndex = lX.length;
-                traversal(lxGroups[xIndex], pos.x)
-            } else if (pos.x > maxPosX && rX.length > 1) {
-                let xIndex = Math.ceil(evenValue(rX, pos.x));
-                if (xIndex < 0) xIndex = 0;
-                else if (xIndex > rX.length) xIndex = rX.length;
-                traversal(rxGroups[xIndex], pos.x)
-            } else if (pos.x < minPosX) {
-                traversal(lxGroups, pos.x);
-            } else if (pos.x > maxPosX) {
-                traversal(rxGroups, pos.x)
-            }
+        if (vertice)
+            vertice.points.forEach(pos => {
+                if (pos.x < minPosX && lX.length > 1) {
+                    let xIndex = Math.ceil(evenValue(lX, pos.x));
+                    if (xIndex < 0) xIndex = 0;
+                    else if (xIndex > lX.length) xIndex = lX.length;
+                    traversal(lxGroups[xIndex], pos.x)
+                } else if (pos.x > maxPosX && rX.length > 1) {
+                    let xIndex = Math.ceil(evenValue(rX, pos.x));
+                    if (xIndex < 0) xIndex = 0;
+                    else if (xIndex > rX.length) xIndex = rX.length;
+                    traversal(rxGroups[xIndex], pos.x)
+                } else if (pos.x < minPosX) {
+                    traversal(lxGroups, pos.x);
+                } else if (pos.x > maxPosX) {
+                    traversal(rxGroups, pos.x)
+                }
 
-            if (pos.y < minPosY && lY.length > 1) {
-                let yIndex = Math.ceil(evenValue(lY, pos.y));
-                if (yIndex < 0) yIndex = 0;
-                else if (yIndex > lY.length) yIndex = lY.length;
-                traversal(lyGroups[yIndex], pos.y)
-            } else if (pos.y > maxPosY && rY.length > 1) {
-                let yIndex = Math.ceil(evenValue(rY, pos.y));
-                if (yIndex < 0) yIndex = 0;
-                else if (yIndex > rY.length) yIndex = rY.length;
-                traversal(ryGroups[yIndex], pos.y)
-            } else if (pos.y < minPosY) {
-                traversal(lyGroups, pos.y);
-            } else if (pos.y > maxPosY) {
-                traversal(ryGroups, pos.y)
-            }
-        })
+                if (pos.y < minPosY && lY.length > 1) {
+                    let yIndex = Math.ceil(evenValue(lY, pos.y));
+                    if (yIndex < 0) yIndex = 0;
+                    else if (yIndex > lY.length) yIndex = lY.length;
+                    traversal(lyGroups[yIndex], pos.y)
+                } else if (pos.y > maxPosY && rY.length > 1) {
+                    let yIndex = Math.ceil(evenValue(rY, pos.y));
+                    if (yIndex < 0) yIndex = 0;
+                    else if (yIndex > rY.length) yIndex = rY.length;
+                    traversal(ryGroups[yIndex], pos.y)
+                } else if (pos.y < minPosY) {
+                    traversal(lyGroups, pos.y);
+                } else if (pos.y > maxPosY) {
+                    traversal(ryGroups, pos.y)
+                }
+            })
     }
     );
     linksList.forEach(link => {
         let vertice = findLink(verticePos, link);
         let points = [];
-        vertice.points.forEach(pos => {
-            let point = {
-                x: pos.x,
-                y: pos.y
-            }
-            if (pos.x < minPosX && lX.length > 1) {
-                let xIndex = Math.ceil(evenValue(lX, pos.x));
-                if (xIndex < 0) xIndex = 0;
-                if (xIndex > lX.length) xIndex = lX.length;
-                if (lX.includes(pos.x)) {
-                    point.x = minX + lX.indexOf(pos.x)
-                } else
-                    point.x = minX + xIndex - 1 + 1 / (lxGroups[xIndex].length + 1) * (lxGroups[xIndex].indexOf(pos.x) + 1)
-            } else if (pos.x > maxPosX && rX.length > 1) {
-                let xIndex = Math.ceil(evenValue(rX, pos.x));
-                if (xIndex < 0) xIndex = 0;
-                if (xIndex > rX.length) xIndex = rX.length;
-                if (rX.includes(pos.x)) {
-                    point.x = maxPosX + rX.indexOf(pos.x)
-                } else
-                    point.x = maxPosX + xIndex - 1 + 1 / (rxGroups[xIndex].length + 1) * (rxGroups[xIndex].indexOf(pos.x) + 1)
-            } else if (pos.x > maxPosX) {
-                point.x = maxPosX + (pos.x - maxPosX) / (rxGroups[rxGroups.length - 1] - maxPosX);
-            } else if (pos.x < minPosX) {
-                point.x = minPosX - (minPosX - point.x) / (minPosX - lxGroups[0]);
-            }
-            if (pos.y < minPosY && lY.length > 1) {
-                let yIndex = Math.ceil(evenValue(lY, pos.y));
-                if (yIndex < 0) yIndex = 0;
-                if (yIndex > lY.length) yIndex = lY.length;
-                if (lY.includes(pos.y)) {
-                    point.y = minY + lY.indexOf(pos.y)
-                } else
-                    point.y = minY + yIndex - 1 + 1 / (lyGroups[yIndex].length + 1) * (lyGroups[yIndex].indexOf(pos.y) + 1)
-            } else if (pos.y > maxPosY && rY.length > 1) {
-                let yIndex = Math.ceil(evenValue(rY, pos.y));
-                if (yIndex < 0) yIndex = 0;
-                if (yIndex > rY.length) yIndex = rY.length;
-                if (rY.includes(pos.y)) {
-                    point.y = maxPosY + rY.indexOf(pos.y)
-                } else
-                    point.y = maxPosY + yIndex - 1 + 1 / (ryGroups[yIndex].length + 1) * (ryGroups[yIndex].indexOf(pos.y) + 1)
-            } else if (pos.y > maxPosY) {
-                point.y = maxPosY + (pos.y - maxPosY) / (ryGroups[ryGroups.length - 1] - maxPosY);
-            } else if (pos.y < minPosY) {
-                point.y = minPosY - (minPosY - pos.y) / (minPosY - lyGroups[0]);
-            }
-            points.push(point);
-        })
+        if (vertice)
+            vertice.points.forEach(pos => {
+                let point = {
+                    x: pos.x,
+                    y: pos.y
+                }
+                if (pos.x < minPosX && lX.length > 1) {
+                    let xIndex = Math.ceil(evenValue(lX, pos.x));
+                    if (xIndex < 0) xIndex = 0;
+                    if (xIndex > lX.length) xIndex = lX.length;
+                    if (lX.includes(pos.x)) {
+                        point.x = minX + lX.indexOf(pos.x)
+                    } else
+                        point.x = minX + xIndex - 1 + 1 / (lxGroups[xIndex].length + 1) * (lxGroups[xIndex].indexOf(pos.x) + 1)
+                } else if (pos.x > maxPosX && rX.length > 1) {
+                    let xIndex = Math.ceil(evenValue(rX, pos.x));
+                    if (xIndex < 0) xIndex = 0;
+                    if (xIndex > rX.length) xIndex = rX.length;
+                    if (rX.includes(pos.x)) {
+                        point.x = maxPosX + rX.indexOf(pos.x)
+                    } else
+                        point.x = maxPosX + xIndex - 1 + 1 / (rxGroups[xIndex].length + 1) * (rxGroups[xIndex].indexOf(pos.x) + 1)
+                } else if (pos.x > maxPosX) {
+                    point.x = maxPosX + (pos.x - maxPosX) / (rxGroups[rxGroups.length - 1] - maxPosX);
+                } else if (pos.x < minPosX) {
+                    point.x = minPosX - (minPosX - point.x) / (minPosX - lxGroups[0]);
+                }
+                if (pos.y < minPosY && lY.length > 1) {
+                    let yIndex = Math.ceil(evenValue(lY, pos.y));
+                    if (yIndex < 0) yIndex = 0;
+                    if (yIndex > lY.length) yIndex = lY.length;
+                    if (lY.includes(pos.y)) {
+                        point.y = minY + lY.indexOf(pos.y)
+                    } else
+                        point.y = minY + yIndex - 1 + 1 / (lyGroups[yIndex].length + 1) * (lyGroups[yIndex].indexOf(pos.y) + 1)
+                } else if (pos.y > maxPosY && rY.length > 1) {
+                    let yIndex = Math.ceil(evenValue(rY, pos.y));
+                    if (yIndex < 0) yIndex = 0;
+                    if (yIndex > rY.length) yIndex = rY.length;
+                    if (rY.includes(pos.y)) {
+                        point.y = maxPosY + rY.indexOf(pos.y)
+                    } else
+                        point.y = maxPosY + yIndex - 1 + 1 / (ryGroups[yIndex].length + 1) * (ryGroups[yIndex].indexOf(pos.y) + 1)
+                } else if (pos.y > maxPosY) {
+                    point.y = maxPosY + (pos.y - maxPosY) / (ryGroups[ryGroups.length - 1] - maxPosY);
+                } else if (pos.y < minPosY) {
+                    point.y = minPosY - (minPosY - pos.y) / (minPosY - lyGroups[0]);
+                }
+                points.push(point);
+            })
         linksPos.push({
             source: link.source,
             target: link.target,
