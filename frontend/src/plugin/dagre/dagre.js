@@ -570,6 +570,7 @@
                         }
                     });
                     newNode['fixed'] = node.fixed;
+                    if (node.align) newNode['align'] = true;
                     newNode['orank'] = node.orank;
                     newNode['opos'] = node.opos;
                     g.setNode(v, newNode);
@@ -2036,23 +2037,6 @@
                 });
                 let firstFixed = [];
                 layering.forEach(function (layer) {
-                    /*
-                    let fixedNodes = [];
-                    layer.forEach(node => {
-                        if (g.node(node).fixed) fixedNodes.push(node);
-                        else if (node.includes('Undefined')) {
-                            let source = g.node(g.node(node).edgeObj.v);
-                            let target = g.node(g.node(node).edgeObj.w);
-                            if (source.fixed && target.fixed) {
-                                if (g.node(node).edgeObj.v.includes(g.node(node).edgeObj.w) &&
-                                    g.node(node).edgeObj.v.includes('TEMP')) fixedNodes.push(node)
-                                else if (g.node(node).edgeObj.w.includes(g.node(node).edgeObj.v) &&
-                                    g.node(node).edgeObj.w.includes('TEMP')) fixedNodes.push(node)
-                                else return false;
-                            }
-                            else return false
-                        }
-                    })*/
                     var fixedNodes = layer.filter(v => g.node(v).fixed);
                     if (firstFixed.length > 0) fixedNodes = layer.filter(v => g.node(v).fixed && !v.includes("TEMP"))
                     fixedNodes = fixedNodes.sort((a, b) => g.node(a).opos - g.node(b).opos);
@@ -2063,13 +2047,14 @@
                                 if (g.node(state).opos === g.node(node).opos) return true;
                                 else return false;
                             })
+                            if (index < 0) console.log('vertical Align: wrong', node)
                             let w = firstFixed[index];
                             align[w] = node;
                             align[node] = root[node] = root[w];
                             fixedIds.push(pos[w]);
                         })
-                    } else {
-                        firstFixed = fixedNodes;
+                    } else if (fixedNodes.length > 0) {
+                        firstFixed = layer.filter(v => g.node(v).fixed || g.node(v).align);
                     }
                     let nextIndex = 0;
                     var prevIdx = -1;
@@ -2147,7 +2132,6 @@
                         xs[elem] = Math.max(xs[elem], min);
                     }
                 }
-
                 iterate(pass1, blockG.predecessors.bind(blockG));
                 iterate(pass2, blockG.successors.bind(blockG));
 
@@ -2214,7 +2198,6 @@
                 var alignToVals = Object.values(alignTo),
                     alignToMin = Math.min(...alignToVals),
                     alignToMax = Math.max(...alignToVals);
-
                 ["u", "d"].forEach(function (vert) {
                     ["l", "r"].forEach(function (horiz) {
                         var alignment = vert + horiz,
@@ -2264,7 +2247,7 @@
 
                         var neighborFn = (vert === "u" ? g.predecessors : g.successors).bind(g);
                         var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
-                        //console.log(align)
+
                         var xs = horizontalCompaction(g, adjustedLayering,
                             align.root, align.align, horiz === "r");
                         if (horiz === "r") {
@@ -2274,7 +2257,6 @@
                     });
                 });
 
-                //console.log(xss)
                 var smallestWidth = findSmallestWidthAlignment(g, xss);
                 alignCoordinates(xss, smallestWidth);
                 return balance(xss, g.graph().align);
@@ -3145,7 +3127,6 @@
                 if (typeof funcOrProp === 'string') {
                     func = (val) => val[funcOrProp];
                 }
-
                 return Object.entries(obj).reduce((acc, [k, v]) => {
                     acc[k] = func(v, k);
                     return acc;

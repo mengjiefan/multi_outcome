@@ -376,7 +376,6 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
-
           linkRequest.getLinkValue(source, target).then((response) => {
             let value = response.data.value;
             this.reverseAndShow(source, target, value);

@@ -245,7 +245,7 @@ export default {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
       var edges = data.linksList;
-      const oriL = edges.length;
+      //const oriL = edges.length;
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
 
       let that = this;
@@ -269,15 +269,16 @@ export default {
         };
       });
       let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
+      fixedNodes.forEach((w) => {
+        if (w.fixed) {
+          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
+          if (alignNode.id !== w.id) alignNode.fixed = true;
+        }
+      });
       fixedNodes = fixedNodes.filter(
         (w) =>
           w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
       );
-
-      nodes.forEach(function (state) {
-        g.setNode(state.id, state);
-      });
-
       for (let index = 1; index < fixedNodes.length; index++) {
         let node = fixedNodes[index];
         if (node.orank === fixedNodes[0].orank) continue;
@@ -305,6 +306,12 @@ export default {
         }
       }
       fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
+      fixedNodes.forEach((w) => {
+        if (w.fixed) {
+          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
+          if (alignNode.id !== w.id) alignNode.fixed = true;
+        }
+      });
       fixedNodes = fixedNodes.filter(
         (w) =>
           w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
@@ -336,6 +343,9 @@ export default {
             }
           }
         }
+      nodes.forEach(function (state) {
+        g.setNode(state.id, state);
+      });
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -364,7 +374,7 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-      data.linksList = edges.slice(0, oriL);
+      //data.linksList = edges.slice(0, oriL);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*
