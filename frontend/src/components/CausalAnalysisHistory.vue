@@ -266,6 +266,7 @@ export default {
         }
         selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
         console.log(outcome, selectionNow.history);
+        console.log('redo')
         historyManage.reDoHistory(selectionNow);
         finalSelections.push(selectionNow);
       }

@@ -1,3 +1,4 @@
+import { findLink } from "@/plugin/links";
 export default {
     reverseEdge(record, operation) {
         let index = record.findIndex(history => {
@@ -68,34 +69,28 @@ export default {
     reDoHistory(data) {
         let record = data.history;
         record.forEach(history => {
-            let index = data.linksList.findIndex(link => {
-                if (link.source === history.source && link.target === history.target) {
-                    return true;
-                }
-                if (link.source === history.target && link.target === history.source && (history.hidden || history.add)) {
-                    return true;
-                }
-            })
-            if (index > -1) {
-                if (history.reverse) {
-                    data.linksList.splice(index, 1, {
-                        source: history.target,
-                        target: history.source,
-                        value: history.value
-                    });
-                } else if (history.hidden) {
-                    data.linksList.splice(index, 1);
-                }
-            } else if (history.add) {
+            let index = findLink.showSameDireLink(history, data.linksList);
+            let allIndex = findLink.sameNodeLink(history, data.linksList);
+            console.log(allIndex, data.linksList[allIndex]);
+            if (history.hidden && allIndex > -1) {
+                data.linksList.splice(allIndex, 1);
+            } else if (history.reverse && index > -1) {
+                data.linksList.splice(index, 1, {
+                    source: history.target,
+                    target: history.source,
+                    value: history.value
+                });
+            } else if (history.add && allIndex < 0) {
                 let sIndex = data.nodesList.findIndex(node => node.id === history.source);
                 let tIndex = data.nodesList.findIndex(node => node.id === history.target);
-    
+
                 if (sIndex > -1 && tIndex > -1) data.linksList.push({
                     source: history.source,
                     target: history.target,
                     value: history.value
                 })
             }
+
         })
     },
     combineHistory(records) {

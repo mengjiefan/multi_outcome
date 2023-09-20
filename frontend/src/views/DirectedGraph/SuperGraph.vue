@@ -137,13 +137,7 @@ export default {
       let linksList = [];
       for (let i = 0; i < son.linksList.length; i++) {
         let link = son.linksList[i];
-        let index = all.findIndex((item) => {
-          if (link.source === item.source && link.target === item.target)
-            return true;
-          else if (link.source === item.target && link.target === item.source)
-            return true;
-          else return false;
-        });
+        let index = findLink.sameNodeLink(link, all);
         if (index > -1) {
           linksList.push(all[index]);
         }
@@ -282,9 +276,39 @@ export default {
         { source, target },
         this.simplePos.linksList
       );
-      let link = this.simplePos.linksList[index];
-      showHiddenEdge(this.paper, link, this.scale, this.simplePos);
+      let superlink = this.simplePos.linksList[index];
 
+      this.multipleSearchValue.selections.forEach((selection) => {
+        let index = findLink.sameNodeLink(
+          { source, target },
+          selection.linksList
+        );
+        if (index > -1) {
+          let link = selection.linksList[index];
+          if (link.hidden) {
+            link.hidden = false;
+            historyManage.addEdge(selection.history, {
+              source,
+              target,
+              value: superlink.value,
+            });
+          }
+          link.value = superlink.value;
+          index = findLink.showReverseLink({ source, target }, [link]);
+          if (index === 0) {
+            if (link.reverse) link.reverse = false;
+            else link["reverse"] = true;
+
+            historyManage.reverseEdge(selection.history, {
+              source: target,
+              target: source,
+              value: superlink.value,
+            });
+          }
+        }
+      });
+
+      showHiddenEdge(this.paper, superlink, this.scale, this.simplePos);
       this.saveData();
     },
     reverseAndShow(source, target, value) {
@@ -297,24 +321,15 @@ export default {
       if (link.reverse) link.reverse = false;
       else link["reverse"] = true;
       link.value = value;
-      this.multipleSearchValue.selections.forEach((selection) => {
-        let index = findLink.showReverseLink(
-          { source, target },
-          selection.linksList
-        );
-        if (index > -1) {
-          link = selection.linksList[index];
-          if (link.reverse) link.reverse = false;
-          else link["reverse"] = true;
-          link.value = value;
-        }
-      });
-      index = findLink.showSameDireLink(
+
+      index = findLink.showReverseLink(
         { source, target },
         this.simplePos.linksList
       );
 
       link = this.simplePos.linksList[index];
+      if (link.reverse) link.reverse = false;
+      else link["reverse"] = true;
       link.value = value;
       this.showHiddenLink(source, target);
     },
@@ -331,14 +346,6 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) {
           originalLink.hidden = false;
-          this.multipleSearchValue.selections.forEach((selection) => {
-            let index = findLink.sameNodeLink(
-              { source, target },
-              selection.linksList
-            );
-            if (index > -1 && selection.linksList[index].hidden)
-              selection.linksList[index].hidden = false;
-          });
         }
         if (originalLink.source !== source) {
           linkRequest.getLinkValue(source, target).then((response) => {
@@ -361,12 +368,13 @@ export default {
       };
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
         let selection = this.multipleSearchValue.selections[i];
-        historyManage.reverseEdge(selection.history, history);
         let index = findLink.showSameDireLink(history, selection.linksList);
-        console.log(index);
+
         if (index < 0) continue;
         let link = selection.linksList[index];
         link.value = value;
+
+        historyManage.reverseEdge(selection.history, history);
         if (link.source === history.source) link["reverse"] = true;
         else if (link.source === history.target) link.reverse = false;
       }
@@ -638,9 +646,11 @@ export default {
         let newLink = { source, target, value };
         this.multipleSearchValue.linksList.push(newLink);
         this.multipleSearchValue.selections.forEach((selection) => {
-          let node = selection.variable.concat([selection.outcomt]);
-          if (node.includes(source) && node.includes(target))
+          let node = selection.variable.concat([selection.outcome]);
+          if (node.includes(source) && node.includes(target)) {
             selection.linksList.push(newLink);
+            historyManage.addEdge(selection.history, newLink);
+          }
         });
         this.saveData();
         this.setGraph();
