@@ -176,6 +176,9 @@ export const setSuperGraph = (g, data) => {
         let node = {
             label: "",
             type: state.type,
+            shape: "circle", // 设置节点形状为圆形
+            width: 10,
+            height:10,
         };
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
@@ -207,7 +210,6 @@ export const setSuperGraph = (g, data) => {
     // Set some general styles
     g.nodes().forEach(function (v) {
         var node = g.node(v);
-        node.rx = node.ry = 20;
         node.style = "fill:" + cmap[0];
     });
     dagre.layout(g);

@@ -263,6 +263,9 @@ export default {
           orank: y.indexOf(state.y) * 2,
           fixed: state.indexes.length > 1,
           type: state.type,
+          shape: "circle", // 设置节点形状为圆形
+          width: 10,
+          height: 10,
         };
       });
       let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
