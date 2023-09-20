@@ -47,6 +47,7 @@ import { countSimplePos } from "@/plugin/extracted/CountPos";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { findLink } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
+import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 
 export default {
   name: "DirectedGraph",
@@ -262,23 +263,6 @@ export default {
       });
       return value.toFixed(3);
     },
-    getNode(nodeView) {
-      return nodeView.model.attributes.attrs.title;
-    },
-    getLinkNode(paper, link) {
-      let graph = paper.model.attributes.cells.graph;
-      let sourceNode = null;
-      let targetNode = null;
-      graph.getElements().forEach((node) => {
-        if (node.id === link.get("source").id) sourceNode = node;
-      });
-      graph.getElements().forEach((node) => {
-        if (node.id === link.get("target").id) targetNode = node;
-      });
-      let source = this.getNode(sourceNode.findView(paper));
-      let target = this.getNode(targetNode.findView(paper));
-      return { source, target };
-    },
     showHiddenLink(source, target) {
       let index = findLink.showSameDireLink(
         { source, target },
@@ -395,16 +379,11 @@ export default {
         if (link.get("source").id && link.get("target").id) {
           _this.deleteLinkView = link.findView(paper);
           _this.paper = paper;
-          let realLink = _this.getLinkNode(paper, link);
+          let realLink = LinksManagement.getLinkNode(paper, link);
           let flag = true;
           graph.getCells().forEach((item) => {
             if (item.attributes.type.includes("Link")) {
-              let realItem = _this.getLinkNode(paper, item);
-              if (
-                link.id !== item.id &&
-                realItem.source === realLink.source &&
-                realItem.target === realLink.target
-              ) {
+              if (LinksManagement.dubplicateLink(paper, link, item)) {
                 //原来就有边,什么也不做
                 flag = false;
                 _this.deleteLinkView.model.remove({ ui: true });
@@ -414,15 +393,12 @@ export default {
                   message: "Duplicate Edge!",
                   type: "warning",
                 });
-              } else if (
-                realItem.target === realLink.source &&
-                realItem.source === realLink.target
-              ) {
+              } else if (LinksManagement.reversedLink(paper, link, item)) {
                 flag = false;
                 //原来边方向相反，相当于反转边
                 _this.deleteLinkView.model.remove({ ui: true });
                 _this.deleteLinkView = item.findView(paper);
-                _this.getEdgeValue(realItem.source, realItem.target);
+                _this.getEdgeValue(realLink.target, realLink.source);
               }
             }
           });

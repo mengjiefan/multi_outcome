@@ -362,10 +362,13 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         model: graph,
         width: "100%",
         height: "100%",
+  
         gridSize: 1,
-        interactive: function (cellView, method) {
-            return null
-        }
+        async: true,
+        linkPinning: false,
+        sorting: joint.dia.Paper.sorting.APPROX,
+        defaultLink: () => new joint.shapes.standard.Link(),
+        connectionStrategy: joint.connectionStrategies.pinAbsolute
     });
 
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {

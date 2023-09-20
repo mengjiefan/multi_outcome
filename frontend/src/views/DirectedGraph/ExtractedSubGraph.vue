@@ -41,7 +41,7 @@
     </div>
   </div>
 </template>
-  <script>
+<script>
 import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
@@ -52,6 +52,7 @@ import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/extracted/CountPos";
+import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 
 export default {
   data() {
@@ -74,18 +75,18 @@ export default {
         nodesList: [],
         linksList: [],
       }),
-      cmap:[
-    "#FF595E",
-    "#FF924C",
-    "#FFCA3A",
-    "#C5CA30",
-    "#8AC926",
-    "#36949D",
-    "#1982C4",
-    "#4267AC",
-    "#565AA0",
-    "#6A4C93",
-]
+      cmap: [
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
     };
   },
   methods: {
@@ -315,9 +316,58 @@ export default {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
+    //TODO
+    addTempLink(index, source, target) {
+      let oIndex = findLink.sameNodeLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+      if (oIndex > -1) {
+        let originalLink = this.multipleSearchValue.linksList[oIndex];
+
+        this.deleteLinkView.model.remove({ ui: true });
+        if (originalLink.hidden) originalLink.hidden = false;
+        if (originalLink.source !== source) {
+          linkRequest.getLinkValue(source, target).then((response) => {
+            let value = response.data.value;
+            this.reverseAndShow(source, target, value);
+          });
+        } else this.showHiddenLink(source, target);
+      } else this.getEdgeValue(source, target);
+    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
+      let graph = paper.model.attributes.cells.graph;
+      graph.on("change:source change:target", function (link) {
+        if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = link.findView(paper);
+          _this.paper = paper;
+          let realLink = LinksManagement.getLinkNode(paper, link);
+          let flag = true;
+          graph.getCells().forEach((item) => {
+            if (item.attributes.type.includes("Link")) {
+              if (LinksManagement.dubplicateLink(paper, link, item)) {
+                //原来就有边,什么也不做
+                flag = false;
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.$message({
+                  showClose: true,
+                  message: "Duplicate Edge!",
+                  type: "warning",
+                });
+              } else if (LinksManagement.reversedLink(paper, link, item)) {
+                flag = false;
+                //原来边方向相反，相当于反转边
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.deleteLinkView = item.findView(paper);
+                _this.getEdgeValue(index, realLink.target, realLink.source);
+              }
+            }
+          });
+          if (flag) _this.addTempLink(index, realLink.source, realLink.target);
+        }
+      });
 
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
