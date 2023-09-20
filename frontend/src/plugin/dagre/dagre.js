@@ -3118,7 +3118,6 @@
                         dest[key] = source[key];
                     }
                 }
-
                 return dest;
             }
 

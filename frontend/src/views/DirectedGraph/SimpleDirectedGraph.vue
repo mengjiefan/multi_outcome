@@ -431,7 +431,9 @@ export default {
         if (linkView.model.attributes.attrs.line.targetMarker)
           linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
 
-        let width = _this.getWidth(router);
+        let width = "";
+        if(router)
+        width = _this.getWidth(router);
         if (!_this.tip2Show)
           _this.tipVisible(router + ": " + width, {
             pageX: d.pageX,
