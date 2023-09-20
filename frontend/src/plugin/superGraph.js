@@ -81,10 +81,6 @@ const addTool = (element, paper) => {
     });
     element.findView(paper).addTools(tools);
 }
-const checkDirection = (source, target) => {
-    if (source.y <= target.y) return "DOWN";
-    else return "UP";
-}
 const svgZoom = (name) => {
     /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
     let svgZoom = svgPanZoom("#" + name + " svg", {
@@ -420,6 +416,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         }
         nodesList[nodeI]["node"] = faRect;
         faRect.addTo(graph);
+        addTool(faRect, paper)
     }
     linksList.forEach(link => {
         let points = link.points;

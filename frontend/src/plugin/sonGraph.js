@@ -15,6 +15,61 @@ const cmap = [
     "#565AA0",
     "#6A4C93",
 ]
+const addTool = (element, paper) => {
+    function getMarkup(angle = 0) {
+        return [
+            {
+                title: element.attr('title'),
+                tagName: "circle",
+                selector: "button",
+                attributes: {
+                    r: 5,
+                    fill: 'transparent',
+                    stroke: "transparent",
+                    cursor: "pointer"
+                }
+            },
+            {
+                title: element.attr('title'),
+                tagName: "path",
+                selector: "icon",
+                attributes: {
+                    transform: `rotate(${angle})`,
+                    d: "M -2 -1 L 0 -1 L 0 -2 L 2 0 L 0 2 0 1 -2 1 z",
+                    fill: "#4666E5",
+                    stroke: "none",
+                    "stroke-width": 2,
+                    "pointer-events": "none"
+                }
+            }
+        ];
+    }
+
+
+    const connectBottom = new joint.elementTools.Connect({
+        x: "50%",
+        y: "100%",
+        markup: getMarkup(90),
+        magnet: 'body'
+    });
+    const connectTop = new joint.elementTools.Connect({
+        x: "50%",
+        y: "0%",
+        markup: getMarkup(270),
+        magnet: 'body'
+    });
+    const hoverButton = new joint.elementTools.HoverConnect({
+        useModelGeometry: true,
+        trackPath: (view) => {
+            view.model.attr(['body', 'd'])
+        }
+    });
+
+    const tools = new joint.dia.ToolsView({
+        tools: [connectTop, connectBottom, hoverButton]
+    });
+    element.findView(paper).addTools(tools);
+}
 const findLink = (links, edge) => {
     let index = links.findIndex(link => {
         if (link.source === edge.source && link.target === edge.target) return true;
@@ -312,6 +367,7 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
         nodesList[nodeI]["node"] = faRect;
 
         faRect.addTo(graph);
+        addTool(faRect, paper)
     }
     linksList.forEach(link => {
         let points = findLink(linksPos, link);

@@ -43,7 +43,6 @@
           type="success"
           round
           size="small"
-          :disabled="hasNoHidden"
         >
           Relayout
         </el-button>
@@ -104,7 +103,6 @@ export default {
       checkAll: ref(false),
       VariablesOptions: ref(defaultFactors),
       checkedVariables: ref([]),
-      hasNoHidden: ref(true),
       tip2Show: ref(false),
       transform: ref(),
       simplePos: ref(),
@@ -151,11 +149,16 @@ export default {
             target: link.source,
             value: link.value,
           };
+        else if (link.add)
+          return {
+            source: link.source,
+            target: link.target,
+            value: link.value,
+          };
         else return link;
       });
       this.multipleSearchValue.linksList = linksList;
       this.multipleSearchValue.nodesList = nodesList;
-      this.hasNoHidden = true;
       this.saveData();
       this.setGraph();
     },
@@ -180,8 +183,8 @@ export default {
       });
       let that = this;
 
-      var edges = data.linksList;
-
+      var edges = data.linksList.filter((edge) => !edge.add);
+ 
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -205,7 +208,6 @@ export default {
           });
         }
       });
-
       // Set some general styles
       g.nodes().forEach(function (v) {
         var node = g.node(v);
@@ -216,12 +218,19 @@ export default {
       //this.getAnchoredGraph(g);
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
+      let addEdges = data.linksList.filter(edge => edge.add);
 
       this.simplePos = countSimplePos(
         simpleG,
         this.multipleSearchValue.nodesList,
         this.multipleSearchValue.linksList
       );
+      addEdges.forEach(edge => {
+          that.simplePos.linksList.push({
+            ...edge,
+            points: []
+          })
+      })
       console.log("simplePos", this.simplePos);
       setTimeout(() => {
         that.drawGraph();
@@ -498,7 +507,6 @@ export default {
       );
     },
     getLinks() {
-      this.hasNoHidden = true;
       let newFac = [];
       let newOut;
       this.multipleSearchValue.nodesList.forEach((row) => {
@@ -682,11 +690,11 @@ export default {
         historyManage.reverseEdge(this.multipleSearchValue.history, history);
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
-          this.hasNoHidden = false;
           this.addLink(this.simplePos.nodesList, {
             source: target,
             target: source,
             value: value,
+            add: true,
           });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
@@ -698,11 +706,13 @@ export default {
         this.saveData();
         this.tip2Hidden();
       } else {
-        let newLink = { source, target, value };
+        let newLink = { source, target, value, add: true};
         this.multipleSearchValue.linksList.push(newLink);
         historyManage.addEdge(this.multipleSearchValue.history, newLink);
+        this.deleteLinkView.model.remove({ ui: true });
+        this.addLink(this.simplePos.nodesList, newLink);
         this.saveData();
-        this.setGraph();
+        //his.setGraph();
       }
     },
     addLink(nodesList, link) {
@@ -742,7 +752,9 @@ export default {
       )
         path.attr("line/targetMarker", null);
       path.connector("rounded");
-      let vertices = this.deleteLinkView.model.attributes.vertices.reverse();
+      let vertices = [];
+      if (this.deleteLinkView.model.attributes.vertices)
+        vertices = this.deleteLinkView.model.attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(nodesList[sIndex].node);
       path.target(nodesList[tIndex].node);
@@ -777,7 +789,6 @@ export default {
           }
         );
         this.saveData();
-        this.hasNoHidden = false;
         this.tip2Hidden();
         this.deleteLinkView.model.remove({ ui: true });
       }
@@ -869,10 +880,6 @@ export default {
       this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
         return node.id;
       });
-      let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
-        (link) => link.hidden || link.reverse
-      );
-      if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
       this.setGraph();
     }
   },
