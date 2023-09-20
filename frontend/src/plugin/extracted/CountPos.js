@@ -39,7 +39,6 @@ export const countSimplePos = (g, nodes, links) => {
             edge['points'] = points;
             linksList.push(edge)
         }
-
     })
     return { nodesList, linksList };
 }

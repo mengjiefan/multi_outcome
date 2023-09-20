@@ -5,13 +5,7 @@
         <el-button @click="saveToTable" type="success" size="small" round
           >Save to Table</el-button
         >
-        <el-button
-          @click="trulyDelete()"
-          type="success"
-          round
-          size="small"
-          :disabled="hasNoHidden"
-        >
+        <el-button @click="trulyDelete()" type="success" round size="small">
           Relayout
         </el-button>
       </div>
@@ -73,7 +67,6 @@ export default {
       tooltip2: null,
       sonNum: ref(0),
       transform: ref(),
-      hasNoHidden: ref(true),
       tip2Show: ref(false),
       multipleSearchValue: ref({
         nodesList: [],
@@ -120,6 +113,12 @@ export default {
             target: link.source,
             value: link.value,
           };
+        else if (link.add)
+          return {
+            source: link.source,
+            target: link.target,
+            value: link.value,
+          };
         else return link;
       });
       this.multipleSearchValue.linksList = linksList;
@@ -127,7 +126,6 @@ export default {
         this.multipleSearchValue.selections.map((selection) => {
           return this.trulyDeleteSon(selection);
         });
-      this.hasNoHidden = true;
       this.saveData();
       this.drawGraph();
     },
@@ -174,6 +172,16 @@ export default {
         this.multipleSearchValue.nodesList,
         this.multipleSearchValue.linksList
       );
+      let addEdges = this.multipleSearchValue.linksList.filter(
+        (edge) => edge.add
+      );
+      addEdges.forEach((edge) => {
+        that.simplePos.linksList.push({
+          ...edge,
+          points: [],
+        });
+      });
+
       console.log("simplePos", that.simplePos);
 
       let commonNodes = [];
@@ -600,7 +608,7 @@ export default {
         this.multipleSearchValue.linksList[index].value = value;
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
-          this.hasNoHidden = false;
+
           this.addLink(this.simplePos.nodesList, {
             source: target,
             target: source,
@@ -643,8 +651,10 @@ export default {
         this.saveData();
         this.tip2Hidden();
       } else {
-        let newLink = { source, target, value };
+        let newLink = { source, target, value, add: true };
         this.multipleSearchValue.linksList.push(newLink);
+        this.deleteLinkView.model.remove({ ui: true });
+        this.addLink(this.simplePos.nodesList, newLink);
         this.multipleSearchValue.selections.forEach((selection) => {
           let node = selection.variable.concat([selection.outcome]);
           if (node.includes(source) && node.includes(target)) {
@@ -653,7 +663,7 @@ export default {
           }
         });
         this.saveData();
-        this.setGraph();
+        //this.setGraph();
       }
     },
     reverseDirection(edge) {
@@ -707,7 +717,6 @@ export default {
           link["hidden"] = true;
         }
         this.saveData();
-        this.hasNoHidden = false;
         this.tip2Hidden();
         this.deleteLinkView.model.remove({ ui: true });
       }
@@ -795,10 +804,6 @@ export default {
     );
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
-      let hiddenOrReverse = this.multipleSearchValue.linksList.filter(
-        (link) => link.hidden || link.reverse
-      );
-      if (hiddenOrReverse.length > 0) this.hasNoHidden = false;
       this.drawGraph();
     }
   },

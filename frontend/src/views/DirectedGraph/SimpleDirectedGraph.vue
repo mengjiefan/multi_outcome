@@ -38,12 +38,7 @@
         <el-button @click="saveToTable" type="success" size="small" round
           >Save to Table</el-button
         >
-        <el-button
-          @click="truelyDelete()"
-          type="success"
-          round
-          size="small"
-        >
+        <el-button @click="truelyDelete()" type="success" round size="small">
           Relayout
         </el-button>
       </div>
@@ -184,7 +179,7 @@ export default {
       let that = this;
 
       var edges = data.linksList.filter((edge) => !edge.add);
- 
+
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -218,19 +213,20 @@ export default {
       //this.getAnchoredGraph(g);
       //save positon and redraw, which need to know the direction of edges
       const simpleG = g;
-      let addEdges = data.linksList.filter(edge => edge.add);
+
+      let addEdges = data.linksList.filter((edge) => edge.add);
 
       this.simplePos = countSimplePos(
         simpleG,
         this.multipleSearchValue.nodesList,
         this.multipleSearchValue.linksList
       );
-      addEdges.forEach(edge => {
-          that.simplePos.linksList.push({
-            ...edge,
-            points: []
-          })
-      })
+      addEdges.forEach((edge) => {
+        that.simplePos.linksList.push({
+          ...edge,
+          points: [],
+        });
+      });
       console.log("simplePos", this.simplePos);
       setTimeout(() => {
         that.drawGraph();
@@ -706,13 +702,12 @@ export default {
         this.saveData();
         this.tip2Hidden();
       } else {
-        let newLink = { source, target, value, add: true};
+        let newLink = { source, target, value, add: true };
         this.multipleSearchValue.linksList.push(newLink);
         historyManage.addEdge(this.multipleSearchValue.history, newLink);
         this.deleteLinkView.model.remove({ ui: true });
         this.addLink(this.simplePos.nodesList, newLink);
         this.saveData();
-        //his.setGraph();
       }
     },
     addLink(nodesList, link) {

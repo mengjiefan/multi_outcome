@@ -255,6 +255,7 @@ export default {
               }
             });
             if (index < 0) {
+              if (link.add) link.add = null;
               selectionNow.linksList.push(link);
             }
           });
@@ -266,7 +267,7 @@ export default {
         }
         selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
         console.log(outcome, selectionNow.history);
-        console.log('redo')
+        console.log("redo");
         historyManage.reDoHistory(selectionNow);
         finalSelections.push(selectionNow);
       }

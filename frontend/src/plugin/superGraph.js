@@ -167,14 +167,14 @@ export const showHiddenEdge = (paper, orlink, scale, data) => {
 }
 export const setSuperGraph = (g, data) => {
     var states = data.nodesList;
-    var edges = data.linksList;
+    var edges = data.linksList.filter(edge => !edge.add);
     states.forEach(function (state) {
         let node = {
             label: "",
             type: state.type,
             shape: "circle", // 设置节点形状为圆形
             width: 10,
-            height:10,
+            height: 10,
         };
         if (node.type === 0) node["index"] = state.index;
         g.setNode(state.id, node);
