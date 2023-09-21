@@ -48,20 +48,22 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawExtractedGraph } from "@/plugin/superGraph";
+import { drawExtractedGraph, showHiddenEdge } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/extracted/CountPos";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge.js";
 
 export default {
   data() {
     return {
+      scale: ref([]),
       papers: ref([]),
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
-      gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -205,14 +207,18 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
-      this.gaps = [];
+      this.scale = [];
       for (let i = 0; i < this.sonNum; i++) {
         let ans = countSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );
         this.sonGraphs.push(ans);
-        this.gaps.push(1);
+        this.scale.push({
+          startX: 0,
+          startY: 0,
+          gap: 1,
+        });
       }
       for (let i = 0; i < this.sonNum; i++) {
         this.drawSonGraph(i);
@@ -245,17 +251,17 @@ export default {
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
         (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
-      this.gaps[index] = gap;
+      this.scale.splice(index, 1, {
+        startX,
+        startY,
+        gap,
+      });
 
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
         this.sonGraphs[index].linksList,
-        {
-          gap,
-          startX,
-          startY,
-        },
+        this.scale[index],
         index
       );
 
@@ -300,6 +306,7 @@ export default {
         .style("display", "none");
     },
     getWidth(index, router) {
+      if (!router) return "-";
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
       nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
@@ -316,24 +323,61 @@ export default {
       let dom = document.getElementsByClassName(line)[0];
       createChart(dom, line);
     },
-    //TODO
+    showHiddenLink(i, source, target) {
+      let selection = this.multipleSearchValue.selections[i];
+      let index = findLink.sameNodeLink(
+        { source, target },
+        selection.linksList
+      );
+      let link = selection.linksList[index];
+      if (link.hidden)
+        historyManage.addEdge(selection.history, {
+          source,
+          target,
+          value: link.value,
+        });
+      index = findLink.sameNodeLink(
+        { source, target },
+        this.sonGraphs[i].linksList
+      );
+      let nowlink = this.sonGraphs[i].linksList[index];
+      index = findLink.showReverseLink({ source, target }, selection.linksList);
+      if (index > -1) {
+        if (link.reverse) link.reverse = false;
+        else link["reverse"] = true;
+        historyManage.reverseEdge(selection.history, {
+          source: target,
+          target: source,
+          value: link.value,
+        });
+        if (nowlink.reverse) nowlink.reverse = false;
+        else nowlink["reverse"] = true;
+        nowlink.value = link.value;
+      }
+
+      showHiddenEdge(this.paper, nowlink, this.scale[i], this.sonGraphs[i]);
+      this.saveData();
+    },
+
     addTempLink(index, source, target) {
       let oIndex = findLink.sameNodeLink(
         { source, target },
-        this.multipleSearchValue.linksList
+        this.multipleSearchValue.selections[index].linksList
       );
       if (oIndex > -1) {
-        let originalLink = this.multipleSearchValue.linksList[oIndex];
+        let originalLink =
+          this.multipleSearchValue.selections[index].linksList[oIndex];
 
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
           linkRequest.getLinkValue(source, target).then((response) => {
             let value = response.data.value;
-            this.reverseAndShow(source, target, value);
+            originalLink.value = value;
+            this.showHiddenLink(index, source, target);
           });
-        } else this.showHiddenLink(source, target);
-      } else this.getEdgeValue(source, target);
+        } else this.showHiddenLink(index, source, target);
+      } else this.getEdgeValue(index, source, target);
     },
     setPaper(index, paper) {
       const _this = this;
@@ -523,51 +567,24 @@ export default {
       }
     },
     getEdgeValue(i, source, target) {
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/recaculate_Links",
-        //参数
-        params: {
-          dataset: localStorage.getItem("DATATYPE"),
-          source: target,
-          target: source,
-        },
-      })
-        .then((response) => {
-          console.log("value", response.data.value);
-          let value = response.data.value;
-          this.changeEdge(i, source, target, value);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
+      linkRequest.getLinkValue(target, source).then((response) => {
+        console.log("value", response.data.value);
+        let value = response.data.value;
+        this.changeEdge(i, source, target, value);
+      });
     },
     changeEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
-      let index = selection.linksList.findIndex(function (row) {
-        if (
-          (row.source === source &&
-            row.target === target &&
-            !row.hidden &&
-            !row.reverse) ||
-          (row.source === target &&
-            row.target === source &&
-            !row.hidden &&
-            row.reverse)
-        ) {
-          return true;
-        } else return false;
-      });
+      let history = {
+        source,
+        target,
+        value,
+      };
+      let index = findLink.showSameDireLink(history, selection.linksList);
+
       if (index > -1) {
         this.deleteLinkView.model.remove({ ui: true });
-
-        historyManage.reverseEdge(selection.history, {
-          source,
-          target,
-          value,
-        });
+        historyManage.reverseEdge(selection.history, history);
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
@@ -581,6 +598,14 @@ export default {
           this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
+        this.saveData();
+      } else {
+        console.log(11);
+        let newLink = { source, target, value, add: true };
+        selection.linksList.push(newLink);
+        historyManage.addEdge(selection.history, newLink);
+        this.deleteLinkView.model.remove({ ui: true });
+        this.addLink(i, newLink);
         this.saveData();
       }
     },
@@ -607,24 +632,25 @@ export default {
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 * _this.gaps[index],
+          strokeWidth: value * 8 * _this.scale[index].gap,
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7 * _this.gaps[index],
+            "stroke-width": value * 7 * _this.scale[index].gap,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let source = attributes.target;
-      let target = attributes.source;
-
-      if (attributes.attrs.line.targetMarker)
+      let realLink = LinksManagement.getNodeByName(this.paper, link);
+      let source = realLink.source;
+      let target = realLink.target;
+      if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
       path.connector("rounded");
-      let vertices = attributes.vertices.reverse();
+      let vertices = [];
+      if (attributes.vertices) vertices = attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(source);
       path.target(target);

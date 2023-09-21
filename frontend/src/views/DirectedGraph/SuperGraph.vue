@@ -559,25 +559,15 @@ export default {
       });
     },
     changeEdge(source, target, value) {
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (
-          (row.source === source &&
-            row.target === target &&
-            !row.hidden &&
-            !row.reverse) ||
-          (row.target === source &&
-            row.source === target &&
-            !row.hidden &&
-            row.reverse)
-        ) {
-          return true;
-        } else return false;
-      });
       let history = {
         source,
         target,
         value, //the true value after reversing
       };
+      let index = findLink.showSameDireLink(
+        history,
+        this.multipleSearchValue.linksList
+      );
       if (index > -1) {
         console.log(this.multipleSearchValue.linksList[index]);
         this.deleteLinkView.model.remove({ ui: true });

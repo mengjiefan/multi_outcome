@@ -3,6 +3,7 @@ import "/node_modules/jointjs/dist/joint.css";
 import { g } from "jointjs";
 import svgPanZoom from "svg-pan-zoom";
 import { getAnchoredGraph } from "@/plugin/super/anchor.js";
+import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import dagre from "dagre";
 
 const cmap = [
@@ -105,6 +106,7 @@ const svgZoom = (name) => {
 
 };
 export const showHiddenEdge = (paper, orlink, scale, data) => {
+    console.log(orlink)
     let link = orlink;
     if (link.reverse) {
         link = {
@@ -154,13 +156,11 @@ export const showHiddenEdge = (paper, orlink, scale, data) => {
     if (link.value < 0) {
         path.attr("line/strokeDasharray", "4 4");
     }
-    if (
-        data.nodesList[sindex].node.attributes.position.y <
-        data.nodesList[tindex].node.attributes.position.y
-    )
+    let realLink = LinksManagement.getNodeByName(paper, link);
+    if (LinksManagement.isLinkDown(paper, link))
         path.attr("line/targetMarker", null);
-    path.source(data.nodesList[sindex].node);
-    path.target(data.nodesList[tindex].node);
+    path.source(realLink.source);
+    path.target(realLink.target);
     path.addTo(paper.model.attributes.cells.graph);
     path.vertices(vertices);
     path.connector("rounded");
@@ -239,7 +239,10 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         linkPinning: false,
         sorting: joint.dia.Paper.sorting.APPROX,
         defaultLink: () => new joint.shapes.standard.Link(),
-        connectionStrategy: joint.connectionStrategies.pinAbsolute
+        connectionStrategy: joint.connectionStrategies.pinAbsolute,
+        interactive: function (cellView, method) {
+            return null
+        }
     });
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
@@ -362,13 +365,15 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         model: graph,
         width: "100%",
         height: "100%",
-  
         gridSize: 1,
         async: true,
         linkPinning: false,
         sorting: joint.dia.Paper.sorting.APPROX,
         defaultLink: () => new joint.shapes.standard.Link(),
-        connectionStrategy: joint.connectionStrategies.pinAbsolute
+        connectionStrategy: joint.connectionStrategies.pinAbsolute,
+        interactive: function (cellView, method) {
+            return null
+        }
     });
 
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
