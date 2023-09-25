@@ -326,7 +326,10 @@ export default {
       );
       let link = this.simplePos.linksList[index];
       showHiddenEdge(this.paper, link, this.scale, this.simplePos);
-      historyManage.addEdge(this.multipleSearchValue.history, link);
+      this.multipleSearchValue.history = historyManage.addEdge(
+        this.multipleSearchValue.history,
+        link
+      );
       this.saveData();
     },
     reverseAndShow(source, target, value) {
@@ -371,7 +374,7 @@ export default {
             this.reverseAndShow(source, target, value);
           });
         } else this.showHiddenLink(source, target);
-      } else this.getEdgeValue(source, target);
+      } else this.getNewEdge(source, target);
     },
     setPaper(paper) {
       const _this = this;
@@ -631,10 +634,27 @@ export default {
       return this.multipleSearchValue.linksList[index].reverse === true;
     },
     getEdgeValue(source, target) {
+      console.log(target, source);
       linkRequest.getLinkValue(target, source).then((response) => {
         let value = response.data.value;
         this.changeEdge(source, target, value);
       });
+    },
+    getNewEdge(source, target) {
+      linkRequest.getLinkValue(source, target).then((response) => {
+        this.addNewEdge(source, target, response.data.value);
+      });
+    },
+    addNewEdge(source, target, value) {
+      let newLink = { source, target, value, add: true };
+      this.multipleSearchValue.linksList.push(newLink);
+      this.multipleSearchValue.history = historyManage.addEdge(
+        this.multipleSearchValue.history,
+        newLink
+      );
+      this.deleteLinkView.model.remove({ ui: true });
+      this.addLink(this.simplePos.nodesList, newLink);
+      this.saveData();
     },
     changeEdge(source, target, value) {
       let index = this.multipleSearchValue.linksList.findIndex(function (row) {
@@ -678,13 +698,6 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
-      } else {
-        let newLink = { source, target, value, add: true };
-        this.multipleSearchValue.linksList.push(newLink);
-        historyManage.addEdge(this.multipleSearchValue.history, newLink);
-        this.deleteLinkView.model.remove({ ui: true });
-        this.addLink(this.simplePos.nodesList, newLink);
-        this.saveData();
       }
     },
     addLink(nodesList, link) {

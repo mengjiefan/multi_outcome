@@ -24,47 +24,34 @@ export default {
             record.splice(index, 1);
     },
     deleteEdge(record, operation) {
-        let index = record.findIndex(history => {
-            if (history.source === operation.source && history.target === operation.target && history.add) {
-                return true;
-            } else if (history.source === operation.target && history.target === operation.source && history.add) {
-                return true;
-            } else return false;
+        //把add和reverse都去除
+        let newRecord = record.filter(history => {
+            let flag = false;
+            if (history.source === operation.source && history.target === operation.target) flag = true;
+            else if (history.target === operation.source && history.source === operation.target) flag = true;
+            return !flag;
+        });
+        newRecord.push({
+            source: operation.source,
+            target: operation.target,
+            hidden: true
         })
-        if (index < 0) {
-            let newRecord = record.filter(history => {
-                let flag = false;
-                if (history.source === operation.source && history.target === operation.target) flag = true;
-                else if (history.target === operation.source && history.source === operation.target) flag = true;
-                return !flag;
-            });
-            newRecord.push({
-                source: operation.source,
-                target: operation.target,
-                hidden: true
-            })
-            return newRecord;
-        } else
-            record.splice(index, 1);
+        return newRecord;
     },
     addEdge(record, operation) {
-        let index = record.findIndex(history => {
-            if (history.source === operation.source && history.target === operation.target && history.hidden) {
-                return true;
-            } else if (history.source === operation.target && history.target === operation.source && history.hidden) {
-                return true;
-            } else return false;
+        let newRecord = record.filter(history => {
+            let flag = false;
+            if (history.source === operation.source && history.target === operation.target && operation.hidden) flag = true;
+            else if (history.target === operation.source && history.source === operation.target && operation.hidden) flag = true;
+            return !flag;
         })
-        if (index < 0) {
-            record.push({
-                source: operation.source,
-                target: operation.target,
-                value: operation.value,
-                add: true
-            })
-            return record;
-        } else
-            record.splice(index, 1);
+        newRecord.push({
+            source: operation.source,
+            target: operation.target,
+            value: operation.value,
+            add: true
+        })
+        return newRecord;
     },
     reDoHistory(data) {
         let record = data.history;

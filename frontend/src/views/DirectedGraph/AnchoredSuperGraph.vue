@@ -136,6 +136,7 @@ export default {
 
       this.simplePos.nodesList.forEach((node) => {
         nodes.push({
+          id: node.id,
           rank: y.indexOf(node.y),
           order: x.indexOf(node.x),
           fixed: node.indexes.length > 0,

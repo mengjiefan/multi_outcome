@@ -31,7 +31,7 @@
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import dagre from "dagre";
-import axios from "axios";
+
 import { ref } from "vue";
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
@@ -279,7 +279,7 @@ export default {
           let link = selection.linksList[index];
           if (link.hidden) {
             link.hidden = false;
-            historyManage.addEdge(selection.history, {
+            selection.history = historyManage.addEdge(selection.history, {
               source,
               target,
               value: superlink.value,
@@ -345,7 +345,7 @@ export default {
             this.reverseAndShow(source, target, value);
           });
         } else this.showHiddenLink(source, target);
-      } else this.getEdgeValue(source, target);
+      } else this.getNewEdge(source, target);
     },
     emphasizeLink(source, target) {
       let oIndex = findLink.showSameDireLink(
@@ -558,6 +558,25 @@ export default {
         this.changeEdge(source, target, value);
       });
     },
+    getNewEdge(source, target) {
+      linkRequest.getLinkValue(source, target).then((response) => {
+        this.addNewEdge(source, target, response.data.value);
+      });
+    },
+    addNewEdge(source, target, value) {
+      let newLink = { source, target, value, add: true };
+      this.multipleSearchValue.linksList.push(newLink);
+      this.deleteLinkView.model.remove({ ui: true });
+      this.addLink(this.simplePos.nodesList, newLink);
+      this.multipleSearchValue.selections.forEach((selection) => {
+        let node = selection.variable.concat([selection.outcome]);
+        if (node.includes(source) && node.includes(target)) {
+          selection.linksList.push(newLink);
+          selection.history = historyManage.addEdge(selection.history, newLink);
+        }
+      });
+      this.saveData();
+    },
     changeEdge(source, target, value) {
       let history = {
         source,
@@ -616,20 +635,6 @@ export default {
         }
         this.saveData();
         this.tip2Hidden();
-      } else {
-        let newLink = { source, target, value, add: true };
-        this.multipleSearchValue.linksList.push(newLink);
-        this.deleteLinkView.model.remove({ ui: true });
-        this.addLink(this.simplePos.nodesList, newLink);
-        this.multipleSearchValue.selections.forEach((selection) => {
-          let node = selection.variable.concat([selection.outcome]);
-          if (node.includes(source) && node.includes(target)) {
-            selection.linksList.push(newLink);
-            historyManage.addEdge(selection.history, newLink);
-          }
-        });
-        this.saveData();
-        //this.setGraph();
       }
     },
     reverseDirection(edge) {

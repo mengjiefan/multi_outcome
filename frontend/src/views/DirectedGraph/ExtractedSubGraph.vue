@@ -104,16 +104,14 @@ export default {
         );
         this.drawSonGraph(i);
       }
-      for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
-        let link = this.multipleSearchValue.linksList[i];
-        let mapLink = link;
-        let index = selection.linksList.findIndex((edge) => {
-          if (edge.source === link.source && edge.target === link.target)
-            return true;
-          else return false;
-        });
-        if (index > -1) mapLink = selection.linksList[index];
-        this.multipleSearchValue.linksList[i] = mapLink;
+      for (let i = 0; i < selection.linksList.length; i++) {
+        let link = selection.linksList[i];
+        let index = findLink.sameNodeLink(
+          link,
+          this.multipleSearchValue.linksList
+        );
+        if (index > -1) this.multipleSearchValue.linksList[index] = link;
+        else this.multipleSearchValue.linksList.push(link);
       }
       this.saveData();
     },
@@ -331,7 +329,7 @@ export default {
       );
       let link = selection.linksList[index];
       if (link.hidden)
-        historyManage.addEdge(selection.history, {
+        selection.history = historyManage.addEdge(selection.history, {
           source,
           target,
           value: link.value,
@@ -367,7 +365,6 @@ export default {
       if (oIndex > -1) {
         let originalLink =
           this.multipleSearchValue.selections[index].linksList[oIndex];
-
         this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
@@ -377,7 +374,7 @@ export default {
             this.showHiddenLink(index, source, target);
           });
         } else this.showHiddenLink(index, source, target);
-      } else this.getEdgeValue(index, source, target);
+      } else this.getNewEdge(index, source, target);
     },
     setPaper(index, paper) {
       const _this = this;
@@ -566,11 +563,23 @@ export default {
         this.saveData();
       }
     },
+    getNewEdge(i, source, target) {
+      linkRequest.getLinkValue(source, target).then((response) => {
+        this.addNewEdge(i, source, target, response.data.value);
+      });
+    },
+    addNewEdge(i, source, target, value) {
+      let selection = this.multipleSearchValue.selections[i];
+      let newLink = { source, target, value, add: true };
+      selection.linksList.push({ source, target, value });
+      selection.history = historyManage.addEdge(selection.history, newLink);
+      this.deleteLinkView.model.remove({ ui: true });
+      this.addLink(i, newLink);
+      this.saveData();
+    },
     getEdgeValue(i, source, target) {
       linkRequest.getLinkValue(target, source).then((response) => {
-        console.log("value", response.data.value);
-        let value = response.data.value;
-        this.changeEdge(i, source, target, value);
+        this.changeEdge(i, source, target, response.data.value);
       });
     },
     changeEdge(i, source, target, value) {
@@ -581,7 +590,6 @@ export default {
         value,
       };
       let index = findLink.showSameDireLink(history, selection.linksList);
-
       if (index > -1) {
         this.deleteLinkView.model.remove({ ui: true });
         historyManage.reverseEdge(selection.history, history);
@@ -598,14 +606,6 @@ export default {
           this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
-        this.saveData();
-      } else {
-        console.log(11);
-        let newLink = { source, target, value, add: true };
-        selection.linksList.push(newLink);
-        historyManage.addEdge(selection.history, newLink);
-        this.deleteLinkView.model.remove({ ui: true });
-        this.addLink(i, newLink);
         this.saveData();
       }
     },
