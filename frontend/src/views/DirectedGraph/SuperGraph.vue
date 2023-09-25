@@ -372,6 +372,33 @@ export default {
       }
       this.saveData();
     },
+    checkIfExist(link, realLink, paper) {
+      const _this = this;
+      let graph = paper.model.attributes.cells.graph;
+      let flag = true;
+      graph.getCells().forEach((item) => {
+        if (item.attributes.type.includes("Link")) {
+          if (LinksManagement.dubplicateLink(paper, link, item)) {
+            //原来就有边,什么也不做
+            flag = false;
+            _this.deleteLinkView.model.remove({ ui: true });
+            _this.emphasizeLink(realLink.source, realLink.target);
+            _this.$message({
+              showClose: true,
+              message: "Duplicate Edge!",
+              type: "warning",
+            });
+          } else if (LinksManagement.reversedLink(paper, link, item)) {
+            flag = false;
+            //原来边方向相反，相当于反转边
+            _this.deleteLinkView.model.remove({ ui: true });
+            _this.deleteLinkView = item.findView(paper);
+            _this.getEdgeValue(realLink.target, realLink.source);
+          }
+        }
+      });
+      return flag;
+    },
     setPaper(paper) {
       const _this = this;
       let graph = paper.model.attributes.cells.graph;
@@ -380,29 +407,11 @@ export default {
           _this.deleteLinkView = link.findView(paper);
           _this.paper = paper;
           let realLink = LinksManagement.getLinkNode(paper, link);
-          let flag = true;
-          graph.getCells().forEach((item) => {
-            if (item.attributes.type.includes("Link")) {
-              if (LinksManagement.dubplicateLink(paper, link, item)) {
-                //原来就有边,什么也不做
-                flag = false;
-                _this.deleteLinkView.model.remove({ ui: true });
-                _this.emphasizeLink(realLink.source, realLink.target);
-                _this.$message({
-                  showClose: true,
-                  message: "Duplicate Edge!",
-                  type: "warning",
-                });
-              } else if (LinksManagement.reversedLink(paper, link, item)) {
-                flag = false;
-                //原来边方向相反，相当于反转边
-                _this.deleteLinkView.model.remove({ ui: true });
-                _this.deleteLinkView = item.findView(paper);
-                _this.getEdgeValue(realLink.target, realLink.source);
-              }
-            }
-          });
-          if (flag) _this.addTempLink(realLink.source, realLink.target);
+          if (realLink.source === realLink.target) {
+            _this.deleteLinkView.model.remove({ ui: true });
+          } else if (_this.checkIfExist(link, realLink, paper)) {
+            _this.addTempLink(realLink.source, realLink.target);
+          }
         }
       });
 
