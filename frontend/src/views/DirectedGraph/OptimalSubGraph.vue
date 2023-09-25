@@ -47,7 +47,7 @@
 import axios from "axios";
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import dagre from "@/plugin/dagre/dagre";
+import dagre from "@/plugin/dagre/optimate";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
@@ -217,11 +217,9 @@ export default {
         this.sonGraphs.push(ans);
         this.gaps.push(1);
       }
-
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
-      //this.setSonGraph(1);
     },
     traversal(list, value) {
       if (list.includes(value)) return list;
@@ -244,108 +242,25 @@ export default {
     setSonGraph(index) {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
-      var edges = data.linksList;
-      //const oriL = edges.length;
+      // {
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
-
-      let that = this;
       let y = [];
-      let x = [];
-      this.finalPos.nodesList.forEach((node) => {
-        that.traversal(y, node.y);
-        that.traversal(x, node.x);
+      let that = this;
+      states.forEach(function (state) {
+        that.traversal(y, state.y);
       });
 
-      let nodes = states.map(function (state) {
-        return {
-          id: state.id,
-          opos: x.indexOf(state.x),
+      states.forEach(function (state) {
+        g.setNode(state.id, {
+          x: state.x,
           orank: y.indexOf(state.y) * 2,
-          fixed: state.indexes.length > 1,
+          fixed: state.indexes.length >1,
           type: state.type,
-          shape: "circle", // 设置节点形状为圆形
-          width: 10,
-          height: 10,
-        };
+        });
       });
-      let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      for (let index = 1; index < fixedNodes.length; index++) {
-        let node = fixedNodes[index];
-        if (node.orank === fixedNodes[0].orank) continue;
-        else {
-          let flag = false;
-          for (
-            let i = 0;
-            i < fixedNodes.length &&
-            fixedNodes[i].orank === fixedNodes[0].orank;
-            i++
-          ) {
-            if (fixedNodes[i].opos === node.opos) {
-              flag = true;
-              break;
-            }
-          }
-          if (!flag) {
-            g.setNode(node.id + "_TEMP", {
-              opos: node.opos,
-              orank: fixedNodes[0].orank,
-              fixed: true,
-              type: node.type,
-            });
-          }
-        }
-      }
-      fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      if (fixedNodes.length > 1)
-        for (let index = 1; index < fixedNodes.length; index++) {
-          let node = fixedNodes[index];
-          if (node.orank === fixedNodes[0].orank) continue;
-          else {
-            let flag = false;
-            for (
-              let i = 0;
-              i < fixedNodes.length &&
-              fixedNodes[i].orank === fixedNodes[0].orank;
-              i++
-            ) {
-              if (fixedNodes[i].opos === node.opos) {
-                flag = true;
-                break;
-              }
-            }
-            if (!flag) {
-              g.setNode(node.id + "_TEMP2", {
-                opos: node.opos,
-                orank: fixedNodes[0].orank,
-                fixed: true,
-                type: node.type,
-              });
-            }
-          }
-        }
-      nodes.forEach(function (state) {
-        g.setNode(state.id, state);
-      });
+
+      var edges = data.linksList;
+
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -374,11 +289,10 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-      //data.linksList = edges.slice(0, oriL);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*
-      if (index === 3) {
+      if (index === 0) {
         let render = new dagreD3.render();
         // 选择 svg 并添加一个g元素作为绘图容器.
         let svgGroup = d3.select("svg").append("g");
@@ -761,12 +675,13 @@ export default {
       );
     },
   },
+
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("ANCHOR_POS"));
+    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }

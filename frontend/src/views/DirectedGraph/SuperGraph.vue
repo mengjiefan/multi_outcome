@@ -269,34 +269,36 @@ export default {
         this.simplePos.linksList
       );
       let superlink = this.simplePos.linksList[index];
-
+      let history = {
+        source,
+        target,
+        value: superlink.value,
+      };
       this.multipleSearchValue.selections.forEach((selection) => {
-        let index = findLink.sameNodeLink(
-          { source, target },
-          selection.linksList
-        );
+        let index = findLink.sameNodeLink(history, selection.linksList);
         if (index > -1) {
           let link = selection.linksList[index];
           if (link.hidden) {
             link.hidden = false;
-            selection.history = historyManage.addEdge(selection.history, {
-              source,
-              target,
-              value: superlink.value,
-            });
+            selection.history = historyManage.addEdge(
+              selection.history,
+              history
+            );
           }
           link.value = superlink.value;
-          index = findLink.showReverseLink({ source, target }, [link]);
+          index = findLink.showReverseLink(history, [link]);
           if (index === 0) {
             if (link.reverse) link.reverse = false;
             else link["reverse"] = true;
-
             historyManage.reverseEdge(selection.history, {
               source: target,
               target: source,
               value: superlink.value,
             });
           }
+        } else {
+          selection.linksList.push(history);
+          selection.history = historyManage.addEdge(selection.history, history);
         }
       });
 

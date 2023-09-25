@@ -209,7 +209,7 @@ export const setSuperGraph = (g, data) => {
         node.style = "fill:" + cmap[0];
     });
     dagre.layout(g);
-    getAnchoredGraph(g, data);
+    //getAnchoredGraph(g, data);
 }
 export const drawSuperGraph = (dom, nodesList, links, scale) => {
     let name = "paper";
