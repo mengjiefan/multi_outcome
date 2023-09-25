@@ -1380,6 +1380,10 @@
                     }
                 }
             }
+            /*
+            function assignOrder(g, layering) {
+                Object.values(layering).forEach(layer => layer.forEach((v, i) => g.node(v).order = i));
+              }*/
 
         }, { "../util": 27, "./add-subgraph-constraints": 11, "./build-layer-graph": 13, "./cross-count": 14, "./init-order": 16, "./sort-subgraph": 18, "@dagrejs/graphlib": 29 }], 16: [function (require, module, exports) {
             "use strict";
@@ -2017,7 +2021,7 @@
                     }
                 });
                 return { root: root, align: align };
-            }*/
+            }
 
             function verticalAlignment(g, layering, conflicts, neighborFn) {
                 var root = {},
@@ -2074,6 +2078,45 @@
                                     !hasConflict(conflicts, v, w)) {
                                     if (fixedIds.length > 0 && nextIndex < fixedIds.length && pos[w] >= fixedIds[nextIndex])
                                         continue;
+                                    align[w] = v;
+                                    align[v] = root[v] = root[w];
+                                    prevIdx = pos[w];
+                                }
+                            }
+                        }
+                    });
+                });
+
+                return { root: root, align: align };
+            }*/
+            function verticalAlignment(g, layering, conflicts, neighborFn) {
+                var root = {},
+                    align = {},
+                    pos = {};
+
+                // We cache the position here based on the layering because the graph and
+                // layering may be out of sync. The layering matrix is manipulated to
+                // generate different extreme alignments.
+                layering.forEach(function (layer) {
+                    layer.forEach(function (v, order) {
+                        root[v] = v;
+                        align[v] = v;
+                        pos[v] = order;
+                    });
+                });
+
+                layering.forEach(function (layer) {
+                    var prevIdx = -1;
+                    layer.forEach(function (v) {
+                        var ws = neighborFn(v);
+                        if (ws.length) {
+                            ws = ws.sort((a, b) => pos[a] - pos[b]);
+                            var mp = (ws.length - 1) / 2;
+                            for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
+                                var w = ws[i];
+                                if (align[v] === v &&
+                                    prevIdx < pos[w] &&
+                                    !hasConflict(conflicts, v, w)) {
                                     align[w] = v;
                                     align[v] = root[v] = root[w];
                                     prevIdx = pos[w];
@@ -4522,7 +4565,7 @@
             function read(json) {
                 var g = new Graph(json.options).setGraph(json.value);
                 json.nodes.forEach(function (entry) {
-                    g.setNode(entry.v, entry.value);
+                    g.setNode(entry.v, entry.value);Q
                     if (entry.parent) {
                         g.setParent(entry.v, entry.parent);
                     }

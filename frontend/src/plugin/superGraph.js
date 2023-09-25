@@ -347,6 +347,8 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
 export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
     let name = "paper" + (sonindex + 1);
     let linksList = links.map(link => {
+        if (!link.points)
+            link.points = [];
         if (link.reverse) return {
             source: link.target,
             target: link.source,

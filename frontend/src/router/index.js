@@ -84,6 +84,13 @@ export default new VueRouter({
 									),
 								},
 								{
+									name: 'ConstraintSubGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/constraint-sub-graph',
+									component: () => import(
+										"../views/DirectedGraph/ConstraintSubGraph.vue"
+									),
+								},
+								{
 									name: 'OptimalSubGraph',
 									path: '/AppMainPlot/DirectedGraphView/multiple/optimal-sub-graph',
 									component: () => import(

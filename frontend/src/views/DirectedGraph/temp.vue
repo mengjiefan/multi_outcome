@@ -47,7 +47,7 @@
 import axios from "axios";
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import dagre from "@/plugin/dagre/dagre";
+import dagre from "@/plugin/dagre/optimate";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
@@ -217,11 +217,9 @@ export default {
         this.sonGraphs.push(ans);
         this.gaps.push(1);
       }
-
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
       }
-      //this.setSonGraph(1);
     },
     traversal(list, value) {
       if (list.includes(value)) return list;
@@ -244,85 +242,25 @@ export default {
     setSonGraph(index) {
       var data = this.sonGraphs[index];
       var states = data.nodesList;
-      var edges = data.linksList;
-      const oriL = edges.length;
+      // {
       let g = new dagreD3.graphlib.Graph({}).setGraph({});
-
-      let that = this;
       let y = [];
-      let x = [];
-      this.finalPos.nodesList.forEach((node) => {
-        that.traversal(y, node.y);
-        that.traversal(x, node.x);
+      let that = this;
+      states.forEach(function (state) {
+        that.traversal(y, state.y);
       });
 
-      let nodes = states.map(function (state) {
-        return {
-          id: state.id,
-          opos: x.indexOf(state.x),
+      states.forEach(function (state) {
+        g.setNode(state.id, {
+          x: state.x,
           orank: y.indexOf(state.y) * 2,
           fixed: state.indexes.length > 1,
           type: state.type,
-        };
-      });
-      let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
-      let highRank = fixedNodes[0].orank + 1;
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-
-      nodes.forEach(function (state) {
-        g.setNode(state.id, state);
-      });
-
-      for (let index = 0; index < fixedNodes.length; index++) {
-        let node = fixedNodes[index];
-
-        g.setNode(node.id + "_TEMP", {
-          opos: node.opos,
-          orank: highRank,
-          fixed: true,
-          type: node.type,
         });
-      }
-      fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
-      let lowRank = fixedNodes[0].orank - 1;
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
+      });
 
-      if (fixedNodes.length > 1)
-        for (let index = 0; index < fixedNodes.length; index++) {
-          let node = fixedNodes[index];
-          g.setNode(node.id + "_TEMP2", {
-            opos: node.opos,
-            orank: lowRank,
-            fixed: true,
-            type: node.type,
-          });
-        }
-      /*
-      let alignNodes = fixedNodes
-        .sort((a, b) => a.opos - b.opos)
-        .map((node) => node.opos);
-      for (let i = alignNodes[0]; i < alignNodes[alignNodes.length - 1]; i++) {
-        if (!alignNodes.includes(alignNodes[i])) {
-          g.setNode(i + "_TEMP2", {
-            opos: i,
-            orank: lowRank,
-            fixed: true,
-            type: 0,
-          });
-          g.setNode(i + "_TEMP", {
-            opos: i,
-            orank: highRank,
-            fixed: true,
-            type: 0,
-          });
-        }
-      }*/
+      var edges = data.linksList;
+
       edges.forEach(function (edge) {
         let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
         var valString = edgeValue.toString() + "px";
@@ -351,11 +289,10 @@ export default {
         node.style = "fill:" + that.cmap[0];
       });
       dagre.layout(g);
-      data.linksList = edges.slice(0, oriL);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
       this.drawSonGraph(index, simplePos);
       /*
-      if (index === 3) {
+      if (index === 0) {
         let render = new dagreD3.render();
         // 选择 svg 并添加一个g元素作为绘图容器.
         let svgGroup = d3.select("svg").append("g");
@@ -738,12 +675,13 @@ export default {
       );
     },
   },
+
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("ANCHOR_POS"));
+    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }

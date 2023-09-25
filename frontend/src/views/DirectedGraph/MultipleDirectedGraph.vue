@@ -26,6 +26,12 @@
         Optimal Subgraphs
       </div>
       <div
+        :class="name === 'ConstraintSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('ConstraintSubGraph')"
+      >
+        Constraint Subgraphs
+      </div>
+      <div
         :class="name === 'OriginalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OriginalSubGraph')"
       >

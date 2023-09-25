@@ -204,6 +204,7 @@ export default {
         that.redrawGraph();
       }, 0);
     },
+
     redrawGraph() {
       localStorage.setItem("SIMPLE_POS", JSON.stringify(this.simplePos));
       if (this.tooltip) {
