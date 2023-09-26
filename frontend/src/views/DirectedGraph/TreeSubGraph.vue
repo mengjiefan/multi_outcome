@@ -53,7 +53,6 @@ import {
 } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
   data() {
@@ -294,6 +293,7 @@ export default {
       let maxW = 0;
       let minH = 15000;
       let maxH = 0;
+      let mid = (minW + maxW) / 2;
       nodes.forEach((node) => {
         if (node.x > maxW) maxW = node.x;
         if (node.x < minW) minW = node.x;
@@ -322,6 +322,48 @@ export default {
         this.papers.push(paper);
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
+      var svg = d3.select(".paper" + (index + 1)).select("svg");
+      var g = svg.append("g"); //添加第一个g
+      let links = this.multipleSearchValue.selections[index].linksList.filter(
+        (link) => !link.hidden
+      );
+      links = links.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+        else return link;
+      });
+      for (let i = 0; i < links.length; i++) {
+        let link = links[i];
+        let sIndex = nodes.findIndex((node) => node.id === link.source);
+        let tIndex = nodes.findIndex((node) => node.id === link.target);
+        let source = nodes[sIndex];
+        let target = nodes[tIndex];
+        let point = this.countControl(source, target, mid);
+        var Gen = d3
+          .line()
+          .x((p) => startX + gap * p.x)
+          .y((p) => startY + gap * p.y)
+          .curve(d3.curveBasis);
+        g.append("path")
+          .attr("d", Gen([source, point, target]))
+          .attr("fill", "none")
+          .attr("stroke", "green");
+      }
+    },
+    countControl(source, target, mid) {
+      let x = (source.x + target.x) / 2;
+      let y = (source.y + target.y) / 2;
+      let offset = (target.y - source.y) * 0.3;
+      if (source.x !== target.x) {
+        offset = Math.abs(offset);
+        if (x < mid) x = x - offset;
+        else x = x + offset;
+        return { x, y };
+      } else return { x: x + offset, y };
     },
     tipVisible(textContent, event) {
       this.tip2Hidden();
