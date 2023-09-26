@@ -13,6 +13,7 @@ const grid = {
     containLabel: true
 };
 export const createChart = (dom, data) => {
+    console.log(data);
     echarts.dispose(dom);
     var myChart = echarts.init(dom);
 

@@ -273,6 +273,7 @@ export const removeHighLight = (elementView) => {
     }
 }
 export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
+
     let maxX = 0;
     let maxY = 0;
     let linksList = links.filter(link => !link.hidden);

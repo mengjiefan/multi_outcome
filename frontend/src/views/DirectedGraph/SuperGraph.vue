@@ -48,6 +48,7 @@ import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { findLink } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { nodeRequest } from "@/plugin/request/node.js";
 
 export default {
   name: "DirectedGraph",
@@ -73,6 +74,7 @@ export default {
         nodesList: [],
         linksList: [],
       }),
+      chartsValue: ref(),
       cmap: [
         "#FF595E",
         "#FF924C",
@@ -454,8 +456,12 @@ export default {
           document.addEventListener("click", _this.listener);
         }, 0);
       });
-      paper.on("element:mouseover", function (elementView, evt) {
+      paper.on("element:mouseover", function (elementView, d) {
         addHighLight(elementView);
+        _this.tipVisible(elementView.model.attributes.attrs.title, {
+          pageX: d.pageX,
+          pageY: d.pageY,
+        });
       });
       paper.on("element:mouseout", function (elementView, evt) {
         removeHighLight(elementView);
@@ -472,6 +478,15 @@ export default {
       return indexes;
     },
     drawGraph() {
+      this.chartsValue = new Map();
+      /*
+      let ids = this.multipleSearchValue.nodesList
+        .map((node) => node.id)
+        .join(",");
+      nodeRequest.getNodeValue(ids).then((response) => {
+        console.log(response);
+      });*/
+
       this.ifGroup = false;
       let that = this;
       this.sonNum = 0;
@@ -485,7 +500,7 @@ export default {
     },
     plotChart(line) {
       let dom = document.getElementsByClassName(line)[0];
-      createChart(dom, line);
+      if (!line.includes(":")) createChart(dom, this.chartsValue.get(line));
     },
     saveData() {
       localStorage.setItem(

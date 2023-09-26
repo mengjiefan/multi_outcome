@@ -242,7 +242,11 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         connectionStrategy: joint.connectionStrategies.pinAbsolute,
         interactive: function (cellView, method) {
             return null
-        }
+        },
+        defaultConnector: {
+            name: "rounded",
+            args: { radius: 50 }
+        },
     });
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
@@ -332,11 +336,19 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
             path.attr('line/targetMarker', null)
 
-        path.source(nodesList[sindex].node);
+        path.source(nodesList[sindex].node, {
+            anchor: {
+                name: 'center',
+                args: {
+                    rotate: true,
+                    padding: 0
+                }
+            }
+        });
         path.target(nodesList[tindex].node);
         path.addTo(graph);
         path.vertices(vertices);
-        path.connector("rounded");
+
     })
 
     if (nodesList) {
@@ -471,7 +483,9 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         path.target(nodesList[tindex].node);
         path.addTo(graph);
         path.vertices(vertices);
-        path.connector("rounded");
+        path.connector("rounded", {
+            radius: 15
+        });
     })
 
     if (nodesList) {

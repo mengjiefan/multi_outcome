@@ -2,12 +2,7 @@
   <div class="sub-graph">
     <div class="group-graphs">
       <div class="son-svg">
-        <div
-          v-for="index in sonNum"
-          :key="index"
-          :class="'paper' + index"
-          class="paper-svg"
-        >
+        <div v-for="index in sonNum" :key="index" class="paper-svg">
           <div class="one-line-operator">
             <div class="son-title">
               <div
@@ -35,27 +30,30 @@
               >
             </div>
           </div>
-          <div :id="'paper' + index" class="svg-content">
-            <svg></svg>
-          </div>
+          <div
+            :id="'paper' + index"
+            :class="'paper' + index"
+            class="svg-content"
+          ></div>
         </div>
       </div>
     </div>
   </div>
 </template>
-  <script>
+    <script>
 import axios from "axios";
 import * as d3 from "d3";
-import * as dagreD3 from "dagre-d3";
-import dagre from "@/plugin/dagre/dagre";
 import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
-import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawExtractedGraph } from "@/plugin/superGraph";
+import {
+  drawSonCharts,
+  addHighLight,
+  removeHighLight,
+} from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
+import { countSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
   data() {
@@ -64,7 +62,6 @@ export default {
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
-      gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -99,11 +96,7 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
-        this.sonGraphs[i] = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
-        );
-        this.setSonGraph(i);
+        this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
         let link = this.multipleSearchValue.linksList[i];
@@ -177,6 +170,7 @@ export default {
     },
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips.length, number, "tooltip");
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -208,234 +202,143 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
-      this.gaps = [];
-      for (let i = 0; i < this.sonNum; i++) {
+
+      for (let i = 1; i <= this.sonNum; i++) {
         let ans = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
+          this.finalPos[i],
+          this.finalPos[0].nodesList,
+          this.multipleSearchValue.selections[i - 1].linksList
         );
-        console.log(ans);
-        this.sonGraphs.push(ans);
-        this.gaps.push(1);
+        this.sonGraphs.push({
+          nodes: ans.sonPos,
+          links: ans.linksPos,
+        });
       }
-
-      for (let i = 0; i < this.sonNum; i++) {
-        this.setSonGraph(i);
-      }
-      //this.setSonGraph(1);
-    },
-    traversal(list, value) {
-      if (list.includes(value)) return list;
-      let i;
-      for (i = 0; i < list.length; i++) {
-        if (value < list[i]) {
-          if (i === 0) {
-            list.unshift(value);
-            break;
-          } else {
-            list.splice(i, 0, value);
-            break;
-          }
-        }
-      }
-      if (i === list.length) {
-        list.push(value);
+      d3.select("svg").select("g").selectAll("*").remove();
+      for (let i = 1; i <= this.sonNum; i++) {
+        this.drawSonGraph(i - 1);
       }
     },
-    setSonGraph(index) {
-      var data = this.sonGraphs[index];
-      var states = data.nodesList;
-      var edges = data.linksList;
-      //const oriL = edges.length;
-      let g = new dagreD3.graphlib.Graph({}).setGraph({});
-
-      let that = this;
-      let y = [];
-      let x = [];
-      this.finalPos.nodesList.forEach((node) => {
-        that.traversal(y, node.y);
-        that.traversal(x, node.x);
-      });
-      let nodes = states.map(function (state) {
-        return {
-          id: state.id,
-          opos: x.indexOf(state.x),
-          orank: y.indexOf(state.y) * 2,
-          fixed: state.indexes.length > 1,
-          type: state.type,
-          shape: "circle", // 设置节点形状为圆形
-          width: 10,
-          height: 10,
-        };
-      });
-      let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      for (let index = 1; index < fixedNodes.length; index++) {
-        let node = fixedNodes[index];
-        if (node.orank === fixedNodes[0].orank) continue;
-        else {
-          let flag = false;
-          for (
-            let i = 0;
-            i < fixedNodes.length &&
-            fixedNodes[i].orank === fixedNodes[0].orank;
-            i++
-          ) {
-            if (fixedNodes[i].opos === node.opos) {
-              flag = true;
-              break;
-            }
-          }
-          if (!flag) {
-            g.setNode(node.id + "_TEMP", {
-              opos: node.opos,
-              orank: fixedNodes[0].orank,
-              fixed: true,
-              type: node.type,
-            });
-          }
-        }
-      }
-      fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      if (fixedNodes.length > 1)
-        for (let index = 1; index < fixedNodes.length; index++) {
-          let node = fixedNodes[index];
-          if (node.orank === fixedNodes[0].orank) continue;
-          else {
-            let flag = false;
-            for (
-              let i = 0;
-              i < fixedNodes.length &&
-              fixedNodes[i].orank === fixedNodes[0].orank;
-              i++
-            ) {
-              if (fixedNodes[i].opos === node.opos) {
-                flag = true;
-                break;
-              }
-            }
-            if (!flag) {
-              g.setNode(node.id + "_TEMP2", {
-                opos: node.opos,
-                orank: fixedNodes[0].orank,
-                fixed: true,
-                type: node.type,
-              });
-            }
-          }
-        }
-      nodes.forEach(function (state) {
-        g.setNode(state.id, state);
-      });
-      edges.forEach(function (edge) {
-        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
-        var valString = edgeValue.toString() + "px";
-        var widthStr = "stroke-width: " + valString;
-        var edgeColor = "stroke: black";
-        let completeStyle =
-          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
-        if (edge.hidden) {
-          g.setEdge(edge.source, edge.target, {
-            style:
-              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
-            curve: d3.curveBasis,
-          });
-        } else {
-          g.setEdge(edge.source, edge.target, {
-            style: completeStyle,
-            arrowhead: "undirected",
-          });
-        }
-      });
-
-      // Set some general styles
-      g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        node.rx = node.ry = 20;
-        node.style = "fill:" + that.cmap[0];
-      });
-      dagre.layout(g);
-      //data.linksList = edges.slice(0, oriL);
-      let simplePos = countSimplePos(g, data.nodesList, data.linksList);
-      this.drawSonGraph(index, simplePos);
-      /*
-      if (index === 3) {
-        let render = new dagreD3.render();
-        // 选择 svg 并添加一个g元素作为绘图容器.
-        let svgGroup = d3.select("svg").append("g");
-        // 在绘图容器上运行渲染器生成流程图.
-        render(svgGroup, g);
-      }*/
-    },
-    getNodeIndex(id) {
-      let indexes = [];
-      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        if (selection.outcome === id) indexes.push(i);
-        else if (selection.variable.includes(id)) indexes.push(i);
-      }
-      return indexes;
-    },
-    drawSonGraph(index, simplePos) {
+    drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
-      for (let i = 0; i < simplePos.nodesList.length; i++) {
-        simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
-          simplePos.nodesList[i].id
+      for (let i = 0; i < this.sonGraphs[index].nodes.length; i++)
+        this.sonGraphs[index].nodes[i]["indexes"] = this.getNodeIndex(
+          this.sonGraphs[index].nodes[i].id
         );
-      }
+
       let minW = 150000;
       let maxW = 0;
       let minH = 15000;
       let maxH = 0;
-      simplePos.nodesList.forEach((node) => {
+      this.sonGraphs[index].nodes.forEach((node) => {
         if (node.x > maxW) maxW = node.x;
         if (node.x < minW) minW = node.x;
         if (node.y > maxH) maxH = node.y;
         if (node.y < minH) minH = node.y;
       });
-      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-      if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-        gap = (dom.clientHeight - 96) / (maxH - minH + 24);
+      this.sonGraphs[index].links.forEach((link) => {
+        link.points.forEach((node) => {
+          if (node.x > maxW) maxW = node.x;
+          if (node.x < minW) minW = node.x;
+          if (node.y > maxH) maxH = node.y;
+          if (node.y < minH) minH = node.y;
+        });
+      });
+      let gap = (dom.clientWidth - 40) / (maxW - minW);
+      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+        gap = (dom.clientHeight - 120) / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
-        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
-      this.gaps[index] = gap;
+        (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
 
-      let paper = drawExtractedGraph(
+      let paper = drawSonCharts(
         dom,
-        simplePos.nodesList,
-        simplePos.linksList,
+        this.sonGraphs[index].nodes,
+        this.multipleSearchValue.selections[index].linksList,
         {
           gap,
           startX,
           startY,
         },
-        index
+        this.sonGraphs[index].links
       );
-
       if (!this.papers[index]) {
         this.papers.push(paper);
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
+      var svg = d3.select(".paper" + (index + 1)).select("svg");
+      var g = svg.append("g"); //添加第一个g
+
+      for (let i = 0; i < this.sonGraphs[index].links.length; i++) {
+        let link = this.sonGraphs[index].links[i];
+        let source = link.source;
+        let target = link.target;
+        let sIndex = this.sonGraphs[index].nodes.findIndex(
+          (node) => node.id === source
+        );
+        let tIndex = this.sonGraphs[index].nodes.findIndex(
+          (node) => node.id === target
+        );
+        source = this.sonGraphs[index].nodes[sIndex];
+        target = this.sonGraphs[index].nodes[tIndex];
+        var Gen = d3
+          .line()
+          .x((p) => startX + gap * p.x)
+          .y((p) => startY + gap * p.y)
+          .curve(d3.curveBasis);
+        g.append("path")
+          .attr("d", Gen([source].concat(link.points).concat([target])))
+          .attr("fill", "none")
+          .attr("stroke", "green");
+        /*
+        let path = d3.path();
+        let now = { x: startX + source.x * gap, y: startY + source.y * gap };
+        path.moveTo(now.x, now.y);
+        let j;
+        for (j = -1; j + 3 < link.points.length; j = j + 2) {
+          let nextPos = {
+            x: link.points[j + 2].x * gap + startX,
+            y: link.points[j + 2].y * gap + startY,
+          };
+          let tempPos = {
+            x: link.points[j + 1].x * gap + startX,
+            y: link.points[j + 1].y * gap + startY,
+          };
+          path.quadraticCurveTo(tempPos.x, tempPos.y, nextPos.x, nextPos.y);
+        }
+        let nextPos = {
+          x: target.x * gap + startX,
+          y: target.y * gap + startY,
+        };
+        if (link.points.length === j + 3) {
+          let temp1Pos = {
+            x: link.points[j + 1].x * gap + startX,
+            y: link.points[j + 1].y * gap + startY,
+          };
+          let temp2Pos = {
+            x: link.points[j + 2].x * gap + startX,
+            y: link.points[j + 2].y * gap + startY,
+          };
+          path.bezierCurveTo(
+            temp1Pos.x,
+            temp1Pos.y,
+            temp2Pos.x,
+            temp2Pos.y,
+            nextPos.x,
+            nextPos.y
+          );
+        } else {
+          let tempPos = {
+            x: link.points[j + 1].x * gap + startX,
+            y: link.points[j + 1].y * gap + startY,
+          };
+          path.quadraticCurveTo(tempPos.x, tempPos.y, nextPos.x, nextPos.y);
+        }
+        g.append("path")
+          .style("stroke", "black")
+          .style("fill", "none")
+          .attr("d", path);*/
+      }
     },
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -472,6 +375,10 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
     getWidth(index, router) {
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
@@ -484,10 +391,6 @@ export default {
           value = link.value;
       });
       return value.toFixed(3);
-    },
-    plotChart(line) {
-      let dom = document.getElementsByClassName(line)[0];
-      createChart(dom, line);
     },
     setPaper(index, paper) {
       const _this = this;
@@ -519,7 +422,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>" +
+                <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -534,8 +437,7 @@ export default {
           _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
-        if (elementView.model.attributes.type === "standard.Rectangle")
-          _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
       });
     },
     highLightAllPaper(id) {
@@ -695,14 +597,14 @@ export default {
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink(i, {
-            source: selection.linksList[index].target,
-            target: selection.linksList[index].source,
+          this.addLink({
+            source: target,
+            target: source,
             value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(i, selection.linksList[index]);
+          this.addLink(selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -718,41 +620,53 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       this.getEdgeValue(i, nodes[0], nodes[1]);
     },
-    addLink(index, link) {
+    checkDirection(source, target) {
+      if (source.y <= target.y) return "DOWN";
+      else return "UP";
+    },
+    addLink(link) {
+      console.log(link, "link");
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
-      const _this = this;
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 * _this.gaps[index],
+          strokeWidth: value * 8 + "",
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7 * _this.gaps[index],
+            "stroke-width": value * 7,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
+
       let source = attributes.target;
       let target = attributes.source;
-
+      let vertices = attributes.vertices.reverse();
       if (attributes.attrs.line.targetMarker)
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
-      let vertices = attributes.vertices.reverse();
       path.vertices(vertices);
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
+      path.connector("rounded");
+    },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
     },
     saveData() {
       localStorage.setItem(
@@ -761,20 +675,21 @@ export default {
       );
     },
   },
+
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+    this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
   },
 };
 </script>
-
-<style scoped>
+      
+    <style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
@@ -832,10 +747,13 @@ export default {
 .svg-content {
   width: 100%;
   height: 90% !important;
+  display: flex;
 }
 .svg-content svg {
-  width: 100%;
   height: 100%;
+  height: 100%;
+  position: relative;
+  top: 0;
 }
 .one-line-operator {
   height: 10%;
@@ -872,9 +790,9 @@ export default {
   line-height: 32px;
 }
 </style>
-<style>
+  <style>
 .joint-link path {
   transition-duration: 0.2s;
 }
 </style>
-   
+     

@@ -42,6 +42,7 @@
           Relayout
         </el-button>
       </div>
+      
       <div id="paper" class="sum-svg"></div>
     </div>
   </div>
