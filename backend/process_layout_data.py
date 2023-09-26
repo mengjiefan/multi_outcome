@@ -102,7 +102,7 @@ def get_grouped_data(nodes,edges):
 
     return grouped_data  # 所有组dag的字典
 
-def get_each_dag_nodes_order_new(grouped_data):
+def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
     final_nodes_new = []  # 用于存储最终的节点列表
 
     # 遍历每一个组内的所有节点
@@ -132,14 +132,45 @@ def get_each_dag_nodes_order_new(grouped_data):
         for rank, nodes in sorted(rank_to_nodes.items()):
             # 对相同rank值的节点按照order进行排序
             sorted_nodes = sorted(nodes, key=lambda x: x['order'])
+            # print(sorted_nodes)
 
             # 初始化新的order为0
             new_order = 0
+            # 初始化新的order为nodes_centerx
+            new_order_relative_centerx = nodes_centerx
 
-            # 遍历排序后的节点
-            for node_data in sorted_nodes:
-                # 如果rank值唯一，将new_order赋值为0；否则按索引重新赋值
-                node_data['new_order'] = 0 if len(nodes) == 1 else new_order
+            # 计算具有相同rank的节点数量
+            num_nodes_with_same_rank = len(sorted_nodes)
+
+            # 计算具有相同rank的节点的中心索引
+            center_index = num_nodes_with_same_rank // 2
+
+            # 确定节点数量是奇数还是偶数
+            is_even = num_nodes_with_same_rank % 2 == 0
+
+            # 计算每个节点的 new_order_relative_centerx
+            for i, node_data in enumerate(sorted_nodes):
+                # 如果rank值唯一，将new_order_relative_centerx赋值为nodes_centerx
+                if num_nodes_with_same_rank == 1:
+                    node_data['new_order_relative_centerx'] = nodes_centerx
+                else:
+                    # 根据奇偶性计算 new_order_relative_centerx
+                    if is_even:  #偶数
+                        if i < (center_index - 0.5):
+                            node_data['new_order_relative_centerx'] = nodes_centerx - ((center_index - 0.5) - i)
+                        else:
+                            node_data['new_order_relative_centerx'] = nodes_centerx + (i - (center_index - 0.5))
+                    else:  #奇数
+                        # node_data['new_order_relative_centerx'] = nodes_centerx + ((i - center_index)  )
+                        if i == center_index:
+                            node_data['new_order_relative_centerx'] = nodes_centerx
+                        elif i < center_index:
+                            node_data['new_order_relative_centerx'] = nodes_centerx - (center_index - i)
+                        else:
+                            node_data['new_order_relative_centerx'] = nodes_centerx + (i - center_index)
+                # 如果rank值唯一，将new_order赋值为0
+                # 否则按索引重新赋值
+                node_data['new_order'] = 0 if num_nodes_with_same_rank == 1 else new_order
                 new_order += 1
 
                 # 插入新属性new_order到节点数据中的特定位置（例如，在 'order' 后面）
@@ -150,18 +181,27 @@ def get_each_dag_nodes_order_new(grouped_data):
                 values.insert(index_to_insert, new_order)
                 node_data = dict(zip(keys, values))
 
+                # 插入新属性new_order_relative_centerx到节点数据中的特定位置（例如，在 'rank' 后面）
+                index_to_insert = 2  # 在 'rank' 后面插入 'new_order_relative_centerx'，可以根据需要进行调整
+                keys = list(node_data.keys())
+                keys.insert(index_to_insert, 'new_order_relative_centerx')
+                values = list(node_data.values())
+                values.insert(index_to_insert, new_order_relative_centerx)
+                node_data = dict(zip(keys, values))
+
                 # 打印节点信息
                 node = node_data['node']
-                # print(f'Node {node}: Rank: {rank}, New Order: {node_data["new_order"]}')
+                print(f'节点 {node}: Rank: {rank}, 新的顺序: {node_data["new_order"]}, 相对于中心的新顺序: {node_data["new_order_relative_centerx"]}')
 
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
+
         # print("当前组的节点列表为：\n{}".format(current_group_nodes))
 
         # 将当前组的节点列表添加到最终的节点列表中
         # 通过使用 copy.deepcopy，你创建了 current_group_nodes 列表的完全独立副本，确保对它的任何修改都不会影响已附加到 final_nodes_new 的列表。
         final_nodes_new.append(copy.deepcopy(current_group_nodes))  # 使用深拷贝来避免修改原始列表的问题
-    #
+
     # # 最终的节点列表包含了所有组的数据
     return final_nodes_new
 
@@ -190,5 +230,5 @@ print(grouped_data_supergraph)
 print("----------------------------------------")
 
 # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
-all_groups_nodes_new = get_each_dag_nodes_order_new(grouped_data_supergraph)  # 为按组区分的dag，每个dag内均有新生成的的nodes列表
+all_groups_nodes_new = get_each_dag_nodes_order_new(grouped_data_supergraph, fixed_order_ori_center_supergraph)  # 为按组区分的dag，每个dag内均有新生成的的nodes列表
 print(all_groups_nodes_new)
