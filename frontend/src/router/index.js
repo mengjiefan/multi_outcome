@@ -73,7 +73,7 @@ export default new VueRouter({
 									name: 'ExtractedSubGraph',
 									path: '/AppMainPlot/DirectedGraphView/multiple/extracted-sub-graph',
 									component: () => import(
-										"../views/DirectedGraph/ExtractedSubGraph.vue"
+										"../views/DirectedGraph/TreeSubGraph.vue"
 									),
 								},
 								{
