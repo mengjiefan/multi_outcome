@@ -73,7 +73,7 @@ export default new VueRouter({
 									name: 'ExtractedSubGraph',
 									path: '/AppMainPlot/DirectedGraphView/multiple/extracted-sub-graph',
 									component: () => import(
-										"../views/DirectedGraph/TreeSubGraph.vue"
+										"../views/DirectedGraph/ExtractedSubGraph.vue"
 									),
 								},
 								{
@@ -94,7 +94,7 @@ export default new VueRouter({
 									name: 'OptimalSubGraph',
 									path: '/AppMainPlot/DirectedGraphView/multiple/optimal-sub-graph',
 									component: () => import(
-										"../views/DirectedGraph/OptimalSubGraph.vue"
+										"../views/DirectedGraph/TreeSubGraph.vue"
 									),
 								},
 								{
