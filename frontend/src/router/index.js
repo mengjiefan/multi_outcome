@@ -91,8 +91,8 @@ export default new VueRouter({
 									),
 								},
 								{
-									name: 'OptimalSubGraph',
-									path: '/AppMainPlot/DirectedGraphView/multiple/optimal-sub-graph',
+									name: 'TreeSubGraph',
+									path: '/AppMainPlot/DirectedGraphView/multiple/Tree-sub-graph',
 									component: () => import(
 										"../views/DirectedGraph/TreeSubGraph.vue"
 									),

@@ -20,10 +20,10 @@
         Tightened Subgraphs
       </div>
       <div
-        :class="name === 'OptimalSubGraph' ? 'active-tab' : 'normal-tab'"
-        @click="routeTo('OptimalSubGraph')"
+        :class="name === 'TreeSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('TreeSubGraph')"
       >
-        Optimal Subgraphs
+        Tree Subgraphs
       </div>
       <div
         :class="name === 'ConstraintSubGraph' ? 'active-tab' : 'normal-tab'"

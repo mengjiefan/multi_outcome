@@ -53,6 +53,7 @@ import {
 } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
+import { findLink } from "@/plugin/links";
 
 export default {
   data() {
@@ -169,7 +170,6 @@ export default {
     },
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
-      console.log(tooltips.length, number, "tooltip");
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -224,7 +224,6 @@ export default {
       let x = [];
       let y = [];
       let that = this;
-      console.log(this.simplePos);
       this.simplePos.nodesList.forEach((node) => {
         that.traversal(x, node.x);
         that.traversal(y, node.y);
@@ -266,19 +265,23 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
-        this.sonGraphs = response.data.graph;
+        this.sonGraphs = [];
+        response.data.graph.forEach((graph) => {
+          this.sonGraphs.push({
+            nodesList: graph,
+            linksList: [],
+          });
+        });
         this.drawSonGraphs();
       });
     },
     drawSonGraphs() {
-      console.log(this.sonGraphs);
-
       for (let i = 0; i < this.sonNum; i++) {
         this.drawSonGraph(i);
       }
     },
     drawSonGraph(index) {
-      let nodes = this.sonGraphs[index].map((node) => {
+      let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
           id: node.node,
           x: node.new_order_relative_centerx,
@@ -293,37 +296,30 @@ export default {
       let maxW = 0;
       let minH = 15000;
       let maxH = 0;
-      let mid = (minW + maxW) / 2;
       nodes.forEach((node) => {
         if (node.x > maxW) maxW = node.x;
         if (node.x < minW) minW = node.x;
         if (node.y > maxH) maxH = node.y;
         if (node.y < minH) minH = node.y;
       });
-      let gap = (dom.clientWidth - 40) / (maxW - minW);
+      let mid = (minW + maxW) / 2;
+      if (maxW - minW > 0 && maxW - minW < maxH - minH - 1) {
+        let scale = Math.floor((maxH - minH - 1) / (maxW - minW));
+        nodes.map((node) => {
+          node.x = mid + (node.x - mid) * scale;
+        });
+        maxW = mid + (maxW - mid) * scale;
+        minW = mid + (minW - mid) * scale;
+      }
+
+      let gap = (dom.clientWidth - 50) / (maxW - minW);
       if ((dom.clientHeight - 120) / (maxH - minH) < gap)
         gap = (dom.clientHeight - 120) / (maxH - minH);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
+      let startX =
+        (dom.clientWidth  - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
-        (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
+        (dom.clientHeight - 70 - gap * (maxH - minH)) / 2 - minH * gap;
 
-      let paper = drawSonCharts(
-        dom,
-        nodes,
-        [],
-        {
-          gap,
-          startX,
-          startY,
-        },
-        []
-      );
-      if (!this.papers[index]) {
-        this.papers.push(paper);
-      } else this.papers[index] = paper;
-      this.setPaper(index, paper);
-      var svg = d3.select(".paper" + (index + 1)).select("svg");
-      var g = svg.append("g"); //添加第一个g
       let links = this.multipleSearchValue.selections[index].linksList.filter(
         (link) => !link.hidden
       );
@@ -343,21 +339,29 @@ export default {
         let source = nodes[sIndex];
         let target = nodes[tIndex];
         let point = this.countControl(source, target, mid);
-        var Gen = d3
-          .line()
-          .x((p) => startX + gap * p.x)
-          .y((p) => startY + gap * p.y)
-          .curve(d3.curveBasis);
-        g.append("path")
-          .attr("d", Gen([source, point, target]))
-          .attr("fill", "none")
-          .attr("stroke", "green");
+        link["points"] = [source, point, target];
       }
+      let paper = drawSonCharts(
+        dom,
+        nodes,
+        {
+          gap,
+          startX,
+          startY,
+        },
+        links
+      );
+      this.sonGraphs[index].linksList = links;
+      if (!this.papers[index]) {
+        this.papers.push(paper);
+      } else this.papers[index] = paper;
+      this.setPaper(index, paper);
     },
     countControl(source, target, mid) {
       let x = (source.x + target.x) / 2;
       let y = (source.y + target.y) / 2;
-      let offset = (target.y - source.y) * 0.3;
+
+      let offset = (target.y - source.y) * 0.15;
       if (source.x !== target.x) {
         offset = Math.abs(offset);
         if (x < mid) x = x - offset;
@@ -622,14 +626,14 @@ export default {
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink({
+          this.addLink(i, {
             source: target,
             target: source,
             value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(selection.linksList[index]);
+          this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -652,8 +656,7 @@ export default {
       if (source.y <= target.y) return "DOWN";
       else return "UP";
     },
-    addLink(link) {
-      console.log(link, "link");
+    addLink(i, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
       let value = Math.abs(link.value);
@@ -672,17 +675,19 @@ export default {
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-
+      let index = findLink.sameNodeLink(link, this.sonGraphs[i].linksList);
+      let points = [];
+      points = this.sonGraphs[i].linksList[index].points;
+      if (this.sonGraphs[i].linksList[index].source !== link.source)
+        points.reverse();
       let source = attributes.target;
       let target = attributes.source;
-      let vertices = attributes.vertices.reverse();
       if (attributes.attrs.line.targetMarker)
         path.attr("line/targetMarker", null);
-      path.vertices(vertices);
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
-      path.connector("rounded");
+      path.connector("curveBasis", { points: points });
     },
     getNodeIndex(id) {
       let indexes = [];

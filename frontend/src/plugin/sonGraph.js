@@ -272,20 +272,11 @@ export const removeHighLight = (elementView) => {
         elementView.model.attr("body/fill", 'transparent')
     }
 }
-export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
+export const drawSonCharts = (dom, nodesList, scale, linksList) => {
 
     let maxX = 0;
     let maxY = 0;
-    let linksList = links.filter(link => !link.hidden);
-    linksList = linksList.map(link => {
-        if (link.reverse) return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-            reverse: true
-        };
-        else return link;
-    })
+
     let paperScale = scale.gap / gap;
 
     let startX = scale.startX;
@@ -310,14 +301,13 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
             maxY = nodesList[nodeI].y
     }
     linksList.forEach(link => {
-        let points = findLink(linksPos, link);
-        for (let i = 0; i < points.points.length; i++) {
-            let point = points.points[i];
+        for (let i = 0; i < link.points.length; i++) {
+            let point = link.points[i];
             if (point.x > maxX) maxX = point.x;
             if (point.y > maxY) maxY = point.y;
         }
     })
-    addIndexOfGrid(graph, maxX, maxY);
+    //addIndexOfGrid(graph, maxX, maxY);
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
         let faRect = new joint.shapes.standard.Rectangle();
 
@@ -370,16 +360,32 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
         faRect.addTo(graph);
         addTool(faRect, paper)
     }
+    var Gen = d3
+        .line()
+        .x((p) => p.x)
+        .y((p) => p.y)
+        .curve(d3.curveNatural);
+    joint.connectors.curveBasis = function (sourcePoint, targetPoint, vertices, args) {
+        let points = args.points.map(point => {
+            return {
+                x: countXPos(point.x),
+                y: countXPos(point.y)
+            }
+        })
+        if (points[0].y < points[points.length - 1].y) {
+            points[0].y = points[0].y + 16;
+            points[points.length - 1].y = points[points.length - 1].y - 16;
+        } else if (points[0].y > points[points.length - 1].y) {
+            points[0].y = points[0].y - 16;
+            points[points.length - 1].y = points[points.length - 1].y + 16;
+        }
+        return Gen(points);
+    };
+
     linksList.forEach(link => {
-        let points = findLink(linksPos, link);
         let path = new joint.shapes.standard.Link({
         });
-        let vertices = [];
-        for (let i = 0; i < points.points.length; i++) {
-            let point = points.points[i];
-            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
-        }
-        if (link.reverse) vertices.reverse();
+
         let sindex = nodesList.findIndex(item => {
             if (item.id === link.source) return true;
             else return false;
@@ -389,10 +395,12 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
             else return false;
         })
         let value = Math.abs(link.value);
+
         if (value > 1) value = 1;
         path.attr({
             id: '(' + link.source + ', ' + link.target + ')',
             line: {
+                class: link.source + ',' + link.target,
                 strokeWidth: (value * 8) + '',
                 targetMarker: { // minute hand
                     'type': 'path',
@@ -412,8 +420,9 @@ export const drawSonCharts = (dom, nodesList, links, scale, linksPos) => {
         path.source(nodesList[sindex].node);
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        path.vertices(vertices);
-        path.connector("rounded");
+        //path.vertices(vertices);
+
+        path.connector("curveBasis", { points: link.points });
     })
 
     paper.scale(paperScale);
