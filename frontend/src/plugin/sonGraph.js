@@ -365,7 +365,7 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
         .x((p) => p.x)
         .y((p) => p.y)
         .curve(d3.curveNatural);
-    joint.connectors.curveBasis = function (sourcePoint, targetPoint, vertices, args) {
+    joint.connectors.curveNatural = function (sourcePoint, targetPoint, vertices, args) {
         let points = args.points.map(point => {
             return {
                 x: countXPos(point.x),
@@ -422,7 +422,7 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
         path.addTo(graph);
         //path.vertices(vertices);
 
-        path.connector("curveBasis", { points: link.points });
+        path.connector("curveNatural", { points: link.points });
     })
 
     paper.scale(paperScale);

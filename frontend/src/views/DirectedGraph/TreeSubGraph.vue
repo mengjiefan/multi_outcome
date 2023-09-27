@@ -315,8 +315,7 @@ export default {
       let gap = (dom.clientWidth - 50) / (maxW - minW);
       if ((dom.clientHeight - 120) / (maxH - minH) < gap)
         gap = (dom.clientHeight - 120) / (maxH - minH);
-      let startX =
-        (dom.clientWidth  - gap * (maxW - minW)) / 2 - minW * gap;
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
         (dom.clientHeight - 70 - gap * (maxH - minH)) / 2 - minH * gap;
 
@@ -687,7 +686,7 @@ export default {
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
-      path.connector("curveBasis", { points: points });
+      path.connector("curveNatural", { points: points });
     },
     getNodeIndex(id) {
       let indexes = [];

@@ -11,24 +11,13 @@ export const countSimplePos = (g, nodes, links) => {
             y: pos.y,
         })
     })
-    /*
-    g.nodes().forEach(v => {
-        if (v.includes("TEMP")) {
-            nodesList.push({
-                type: -1,
-                id: v,
-                x: g.node(v).x,
-                y: g.node(v).y
-            })
-        }
-    })*/
     let linksList = [];
     g.edges().forEach((v) => {
         let pos = g.edge(v);
         let points = []
         if (pos.points)
-            points = pos.points.slice(1, pos.points.length - 1);
-        //if ('draw', v.v.includes('score') && v.w.includes('fam')) console.log(pos.points)
+            points = pos.points;//.slice(1, pos.points.length - 1);
+
         let index = links.findIndex(link => {
             if (link.source === v.v && link.target === v.w) return true;
             else if (link.target === v.w && link.source === v.v) return true;

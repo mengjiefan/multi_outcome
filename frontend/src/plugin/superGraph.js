@@ -1,6 +1,7 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import { g } from "jointjs";
+import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
 import { getAnchoredGraph } from "@/plugin/super/anchor.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
@@ -27,6 +28,12 @@ const countXPos = (x) => {
 const countYPos = (y) => {
     return startY + y * gap;
 };
+const countAnchor = (last, center, radius) => {
+    let distance = Math.sqrt((center.x - last.x) * (center.x - last.x) + (center.y - last.y) * (center.y - last.y));
+    let x = center.x + (last.x - center.x) * radius / distance;
+    let y = center.y + (last.y - center.y) * radius / distance;
+    return { x, y }
+}
 const addTool = (element, paper) => {
     function getMarkup(angle = 0) {
         return [
@@ -162,8 +169,6 @@ export const showHiddenEdge = (paper, orlink, scale, data) => {
     path.source(realLink.source);
     path.target(realLink.target);
     path.addTo(paper.model.attributes.cells.graph);
-    path.vertices(vertices);
-    path.connector("rounded");
 }
 export const setSuperGraph = (g, data) => {
     var states = data.nodesList;
@@ -222,8 +227,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             source: link.target,
             target: link.source,
             value: link.value,
-            points: link.points,
-            reverse: true
+            points: link.points.reverse(),
         };
         else return link;
     })
@@ -242,10 +246,6 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         connectionStrategy: joint.connectionStrategies.pinAbsolute,
         interactive: function (cellView, method) {
             return null
-        },
-        defaultConnector: {
-            name: "rounded",
-            args: { radius: 50 }
         },
     });
     for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
@@ -298,15 +298,29 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         faRect.addTo(graph);
         addTool(faRect, paper)
     }
+    var Gen = d3
+        .line()
+        .x((p) => p.x)
+        .y((p) => p.y)
+        .curve(d3.curveBasis);
+    joint.connectors.curveBasis = function (sourcePoint, targetPoint, vertices, args) {
+        let points = args.points.map(point => {
+            return {
+                x: countXPos(point.x),
+                y: countYPos(point.y)
+            }
+        })
+        if (points.length > 1) {
+            points[0] = countAnchor(points[1], points[0], 6 * gap);
+            points[points.length - 1] = countAnchor(points[points.length - 2], points[points.length - 1], 6 * gap)
+        }
+
+        return Gen(points);
+    };
     linksList.forEach(link => {
         let path = new joint.shapes.standard.Link({
         });
-        let vertices = [];
-        for (let i = 0; i < link.points.length; i++) {
-            let point = link.points[i];
-            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
-        }
-        if (link.reverse) vertices.reverse();
+
         let sindex = nodesList.findIndex(item => {
             if (item.id === link.source) return true;
             else return false;
@@ -347,8 +361,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         });
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        path.vertices(vertices);
-
+        path.connector("curveBasis", { points: link.points });
     })
 
     if (nodesList) {
@@ -444,11 +457,6 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         let points = link.points;
         let path = new joint.shapes.standard.Link({
         });
-        let vertices = [];
-        for (let i = 0; i < points.length; i++) {
-            let point = points[i];
-            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
-        }
         if (link.reverse) vertices.reverse();
         let sindex = nodesList.findIndex(item => {
             if (item.id === link.source) return true;
