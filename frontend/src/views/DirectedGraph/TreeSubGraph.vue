@@ -677,8 +677,7 @@ export default {
       let index = findLink.sameNodeLink(link, this.sonGraphs[i].linksList);
       let points = [];
       points = this.sonGraphs[i].linksList[index].points;
-      if (this.sonGraphs[i].linksList[index].source !== link.source)
-        points.reverse();
+
       let source = attributes.target;
       let target = attributes.source;
       if (attributes.attrs.line.targetMarker)

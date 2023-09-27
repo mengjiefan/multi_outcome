@@ -227,7 +227,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             source: link.target,
             target: link.source,
             value: link.value,
-            points: link.points.reverse(),
+            points: link.points,
         };
         else return link;
     })

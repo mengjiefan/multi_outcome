@@ -559,6 +559,8 @@ export default {
           },
         },
       });
+      let index = findLink.sameNodeLink(link, this.simplePos.linksList);
+      let points = this.simplePos.linksList[index].points;
       if (link.value < 0) {
         path.attr("line/strokeWidth", -link.value * 8 + "");
         path.attr("line/strokeDasharray", "4 4");
@@ -568,11 +570,7 @@ export default {
         nodesList[tIndex].node.attributes.position.y
       )
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
-      let vertices = [];
-      if (this.deleteLinkView.model.attributes.vertices)
-        vertices = this.deleteLinkView.model.attributes.vertices.reverse();
-      path.vertices(vertices);
+      path.connector("curveBasis", { points: points });
       path.source(nodesList[sIndex].node);
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);
