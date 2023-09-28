@@ -473,7 +473,6 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         return Gen(points);
     };
     linksList.forEach(link => {
-        let points = link.points;
         let path = new joint.shapes.standard.Link({
         });
         let sindex = nodesList.findIndex(item => {

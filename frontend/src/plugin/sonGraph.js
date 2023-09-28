@@ -137,7 +137,12 @@ const countXPos = (x) => {
 const countYPos = (y) => {
     return y * gap;
 };
-
+const countAnchor = (last, center, radius) => {
+    let distance = Math.sqrt((center.x - last.x) * (center.x - last.x) + (center.y - last.y) * (center.y - last.y));
+    let x = center.x + (last.x - center.x) * radius / distance;
+    let y = center.y + (last.y - center.y) * radius / distance;
+    return { x, y }
+}
 const addIndexOfGrid = (graph, maxX, maxY) => {
     console.log(maxX, maxY);
     for (let i = 1; i <= maxX; i++) {
@@ -372,13 +377,18 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
                 y: countXPos(point.y)
             }
         })
+        if (points.length > 1) {
+            points[0] = countAnchor(points[1], points[0], 16);
+            points[points.length - 1] = countAnchor(points[points.length - 2], points[points.length - 1], 16)
+        }
+        /*
         if (points[0].y < points[points.length - 1].y) {
             points[0].y = points[0].y + 16;
             points[points.length - 1].y = points[points.length - 1].y - 16;
         } else if (points[0].y > points[points.length - 1].y) {
             points[0].y = points[0].y - 16;
             points[points.length - 1].y = points[points.length - 1].y + 16;
-        }
+        }*/
         return Gen(points);
     };
 
@@ -423,6 +433,191 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
         //path.vertices(vertices);
 
         path.connector("curveNatural", { points: link.points });
+    })
+
+    paper.scale(paperScale);
+    paper.translate(startX, startY)
+
+    paper.on('cell:mousewheel', function (cellView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('link:mousewheel', function (linkView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('element:mousewheel', function (elementView, evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+    paper.on('blank:mousewheel', function (evt, x, y, delta) {
+        handleCellMouseWheel(paper, x, y, delta)
+    });
+
+    paper.on("blank:pointermove", function (evt, x, y) {
+        handleMouseMove(paper, evt, x, y);
+    })
+    paper.on("cell:pointermove", function (cellView, evt, x, y) {
+        handleMouseMove(paper, evt, x, y);
+    })
+
+    paper.on("blank:pointerup", function (evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("link:pointerup", function (linkView, evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("cell:pointerup", function (cellView, evt, x, y) {
+        handleMouseUp();
+    })
+    paper.on("element:pointerup", function (elementView, evt, x, y) {
+        handleMouseUp();
+    })
+    /* scale  SVG
+    if (nodesList) {
+        svgZoom(name);
+    }*/
+    return paper;
+};
+export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
+
+    let maxX = 0;
+    let maxY = 0;
+    let linksList = links.filter(link => !link.hidden);
+    linksList = linksList.map(link => {
+        if (link.reverse) return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+            reverse: true
+        };
+        else return link;
+    })
+    let paperScale = scale.gap / gap;
+
+    let startX = scale.startX;
+    let startY = scale.startY;
+    let graph = new joint.dia.Graph({});
+
+    let paper = new joint.dia.Paper({
+        el: dom,
+        model: graph,
+        width: "100%",
+        height: "100%",
+        drawGrid: { name: 'mesh', args: { color: '#bbbbbb' } },
+        gridSize: 80,
+        interactive: function (cellView, method) {
+            return null
+        }
+    });
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+        if (nodesList[nodeI].x > maxX)
+            maxX = nodesList[nodeI].x;
+        if (nodesList[nodeI].y > maxY)
+            maxY = nodesList[nodeI].y
+    }
+    linksList.forEach(link => {
+        let points = findLink(linksPos, link);
+        for (let i = 0; i < points.points.length; i++) {
+            let point = points.points[i];
+            if (point.x > maxX) maxX = point.x;
+            if (point.y > maxY) maxY = point.y;
+        }
+    })
+    //addIndexOfGrid(graph, maxX, maxY);
+    for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+        let faRect = new joint.shapes.standard.Rectangle();
+
+        faRect.resize(32, 32);
+        faRect.position(
+            countXPos(nodesList[nodeI].x) - 16,
+            countYPos(nodesList[nodeI].y) - 16
+        );
+        let indexes = nodesList[nodeI].indexes;
+        faRect.attr({
+            body: {
+                strokeWidth: 0,
+                stroke: 'white',
+                strokeDasharray: 2,
+                rx: 20,
+                ry: 20,
+                fill: 'transparent'
+            },
+            label: {
+                text: nodesList[nodeI].id,
+                fill: "black",
+                y: 0,
+                fontSize: 10,
+            },
+            title: nodesList[nodeI].id
+        });
+        if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
+        for (let i = 0; i < indexes.length; i++) {
+            let circle = new joint.shapes.standard.Circle();
+            let offset = 360 / indexes.length;
+            circle.attr({
+                body: {
+                    strokeDasharray: 16 * 3.1415926,
+                    strokeDashoffset: 16 * 3.1415926 / 360 * (offset * i),
+                    fill: "transparent",
+                    stroke: cmap[indexes[i]],
+                    strokeWidth: 16
+                }
+            })
+            circle.resize(16, 16);
+            circle.position(
+                countXPos(nodesList[nodeI].x) - 8,
+                countYPos(nodesList[nodeI].y) - 8
+            );
+            circle.addTo(graph);
+        }
+
+        nodesList[nodeI]["node"] = faRect;
+
+        faRect.addTo(graph);
+        addTool(faRect, paper)
+    }
+    linksList.forEach(link => {
+        let points = findLink(linksPos, link);
+        let path = new joint.shapes.standard.Link({
+        });
+        let vertices = [];
+        for (let i = 0; i < points.points.length; i++) {
+            let point = points.points[i];
+            vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
+        }
+        if (link.reverse) vertices.reverse();
+        let sindex = nodesList.findIndex(item => {
+            if (item.id === link.source) return true;
+            else return false;
+        })
+        let tindex = nodesList.findIndex(item => {
+            if (item.id === link.target) return true;
+            else return false;
+        })
+        let value = Math.abs(link.value);
+        if (value > 1) value = 1;
+        path.attr({
+            id: '(' + link.source + ', ' + link.target + ')',
+            line: {
+                strokeWidth: (value * 8) + '',
+                targetMarker: { // minute hand
+                    'type': 'path',
+                    'stroke': 'black',
+                    'stroke-width': value * 7,
+                    'fill': 'transparent',
+                    'd': 'M 10 -5 0 0 10 5 '
+                }
+            }
+        })
+        if (link.value < 0) {
+            path.attr('line/strokeDasharray', "4 4")
+        }
+        if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
+            path.attr('line/targetMarker', null)
+
+        path.source(nodesList[sindex].node);
+        path.target(nodesList[tindex].node);
+        path.addTo(graph);
+        path.vertices(vertices);
+        path.connector("rounded");
     })
 
     paper.scale(paperScale);

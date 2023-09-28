@@ -48,7 +48,7 @@ import { ref } from "vue";
 import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import {
-  drawSonCharts,
+  drawTightenedGraph,
   addHighLight,
   removeHighLight,
 } from "@/plugin/sonGraph";
@@ -251,7 +251,7 @@ export default {
       let startY =
         (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
 
-      let paper = drawSonCharts(
+      let paper = drawTightenedGraph(
         dom,
         this.sonGraphs[index].nodes,
         this.multipleSearchValue.selections[index].linksList,
