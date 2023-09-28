@@ -479,13 +479,6 @@ export default {
     },
     drawGraph() {
       this.chartsValue = new Map();
-      /*
-      let ids = this.multipleSearchValue.nodesList
-        .map((node) => node.id)
-        .join(",");
-      nodeRequest.getNodeValue(ids).then((response) => {
-        console.log(response);
-      });*/
 
       this.ifGroup = false;
       let that = this;
@@ -561,16 +554,14 @@ export default {
       });
       let index = findLink.sameNodeLink(link, this.simplePos.linksList);
       let points = this.simplePos.linksList[index].points;
+      path.connector("curveBasis", { points: points });
       if (link.value < 0) {
         path.attr("line/strokeWidth", -link.value * 8 + "");
         path.attr("line/strokeDasharray", "4 4");
       }
-      if (
-        nodesList[sIndex].node.attributes.position.y <
-        nodesList[tIndex].node.attributes.position.y
-      )
+      if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
-      path.connector("curveBasis", { points: points });
+
       path.source(nodesList[sIndex].node);
       path.target(nodesList[tIndex].node);
       path.addTo(this.paper.model);

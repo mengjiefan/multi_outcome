@@ -223,11 +223,12 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     gap = scale.gap;
     let linksList = links.filter(link => !link.hidden);
     linksList = linksList.map(link => {
+        let points = link.points.concat([]);
         if (link.reverse) return {
             source: link.target,
             target: link.source,
             value: link.value,
-            points: link.points,
+            points: points.reverse(),
         };
         else return link;
     })
@@ -304,12 +305,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         .y((p) => p.y)
         .curve(d3.curveBasis);
     joint.connectors.curveBasis = function (sourcePoint, targetPoint, vertices, args) {
-        let points = args.points.map(point => {
-            return {
-                x: countXPos(point.x),
-                y: countYPos(point.y)
-            }
-        })
+        let points = args.points.concat([]);
         if (points.length > 1) {
             points[0] = countAnchor(points[1], points[0], 6 * gap);
             points[points.length - 1] = countAnchor(points[points.length - 2], points[points.length - 1], 6 * gap)
@@ -347,6 +343,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         if (link.value < 0) {
             path.attr('line/strokeDasharray', "4 4")
         }
+        if (link.source === 'BMI' && link.target === 'Sex') console.log(link)
         if (nodesList[sindex].node.attributes.position.y < nodesList[tindex].node.attributes.position.y)
             path.attr('line/targetMarker', null)
 
@@ -361,7 +358,15 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         });
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        path.connector("curveBasis", { points: link.points });
+
+        path.connector("curveBasis", {
+            points: link.points.map(point => {
+                return {
+                    x: countXPos(point.x),
+                    y: countYPos(point.y)
+                }
+            })
+        });
     })
 
     if (nodesList) {
@@ -374,12 +379,12 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
     let linksList = links.map(link => {
         if (!link.points)
             link.points = [];
+        let points = link.points.concat([]);
         if (link.reverse) return {
             source: link.target,
             target: link.source,
             value: link.value,
-            points: link.points,
-            reverse: true
+            points: points.reverse()
         };
         else return link;
     })
@@ -453,11 +458,24 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         faRect.addTo(graph);
         addTool(faRect, paper)
     }
+    var Gen = d3
+        .line()
+        .x((p) => p.x)
+        .y((p) => p.y)
+        .curve(d3.curveBasis);
+    joint.connectors.curveBasis = function (sourcePoint, targetPoint, vertices, args) {
+        let points = args.points.concat([]);
+        if (points.length > 1) {
+            points[0] = countAnchor(points[1], points[0], 10);
+            points[points.length - 1] = countAnchor(points[points.length - 2], points[points.length - 1], 10)
+        }
+
+        return Gen(points);
+    };
     linksList.forEach(link => {
         let points = link.points;
         let path = new joint.shapes.standard.Link({
         });
-        if (link.reverse) vertices.reverse();
         let sindex = nodesList.findIndex(item => {
             if (item.id === link.source) return true;
             else return false;
@@ -490,9 +508,13 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         path.source(nodesList[sindex].node);
         path.target(nodesList[tindex].node);
         path.addTo(graph);
-        path.vertices(vertices);
-        path.connector("rounded", {
-            radius: 15
+        path.connector("curveBasis", {
+            points: link.points.map(point => {
+                return {
+                    x: countXPos(point.x),
+                    y: countYPos(point.y)
+                }
+            })
         });
     })
 

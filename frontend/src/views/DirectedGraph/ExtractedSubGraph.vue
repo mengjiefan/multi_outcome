@@ -45,7 +45,6 @@
 import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
-import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph, showHiddenEdge } from "@/plugin/superGraph";
@@ -625,7 +624,6 @@ export default {
     },
     addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
-      let attributes = this.deleteLinkView.model.attributes;
       const _this = this;
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
@@ -649,9 +647,9 @@ export default {
       if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
       path.connector("rounded");
-      let vertices = [];
-      if (attributes.vertices) vertices = attributes.vertices.reverse();
-      path.vertices(vertices);
+      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
+      let points = this.sonGraphs[index].linksList[i].points;
+      path.connector("curveBasis", { points: points });
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
