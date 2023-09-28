@@ -95,6 +95,9 @@ g text {
   padding-left: 16px;
   gap: 16px;
 }
+.directed-tabs div{ 
+  overflow: hidden;
+}
 .active-tab {
   background-color: white;
   border-radius: 4px 4px 0 0;

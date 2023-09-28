@@ -47,7 +47,7 @@ import * as d3 from "d3";
 import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawOriginalGraph } from "@/plugin/superGraph";
+import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/original/CountPos";
@@ -261,7 +261,7 @@ export default {
         (dom.clientHeight - 80 - gap * (maxH - minH)) / 2 - minH * gap;
       this.gaps[index] = gap;
 
-      let paper = drawOriginalGraph(
+      let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
         this.sonGraphs[index].linksList,
