@@ -52,6 +52,7 @@ import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";
+import { drawTightenedGraph } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
@@ -251,7 +252,6 @@ export default {
 
       states.forEach(function (state) {
         g.setNode(state.id, {
-          x: state.x,
           orank: y.indexOf(state.y) * 2,
           fixed: state.indexes.length > 1,
           type: state.type,
@@ -289,6 +289,7 @@ export default {
       });
       dagre.layout(g);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
+
       this.drawSonGraph(index, simplePos);
       /*
       if (index === 0) {
@@ -332,7 +333,6 @@ export default {
       let startY =
         (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
       this.gaps[index] = gap;
-
       let paper = drawExtractedGraph(
         dom,
         simplePos.nodesList,

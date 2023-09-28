@@ -469,7 +469,6 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
             points[0] = countAnchor(points[1], points[0], 10);
             points[points.length - 1] = countAnchor(points[points.length - 2], points[points.length - 1], 10)
         }
-
         return Gen(points);
     };
     linksList.forEach(link => {
@@ -507,13 +506,22 @@ export const drawExtractedGraph = (dom, nodesList, links, scale, sonindex) => {
         path.source(nodesList[sindex].node);
         path.target(nodesList[tindex].node);
         path.addTo(graph);
+        let points = link.points.map(point => {
+            return {
+                x: countXPos(point.x),
+                y: countYPos(point.y)
+            }
+        });
+        if (isNaN(points[0].y)) points[0] = {
+            x: countXPos(nodesList[sindex].x),
+            y: countYPos(nodesList[sindex].y)
+        }
+        if (isNaN(points[points.length - 1].y)) points[points.length - 1] = {
+            x: countXPos(nodesList[tindex].x),
+            y: countYPos(nodesList[tindex].y)
+        }
         path.connector("curveBasis", {
-            points: link.points.map(point => {
-                return {
-                    x: countXPos(point.x),
-                    y: countYPos(point.y)
-                }
-            })
+            points
         });
     })
 
