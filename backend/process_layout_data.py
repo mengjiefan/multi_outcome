@@ -4,25 +4,25 @@ import copy
 from scipy.spatial import distance
 
 # 原始数据
-nodes = [
- {'node': 'Hypertension','rank': 3, 'order': 2, 'fixed': False, 'group': [0], 'outcome': True},
- {'node': 'famHisHypertension','rank': 1, 'order': 0, 'fixed': False, 'group': [0], 'outcome': False},
- {'node': 'Smoke','rank': 2, 'order': 1, 'fixed': False, 'group': [0], 'outcome': False},
- {'node': 'Sex','rank': 0, 'order': 5, 'fixed': True, 'group': [0, 1, 2, 3], 'outcome': False},
- {'node': 'Income score','rank': 1, 'order': 4, 'fixed': True, 'group': [0, 1], 'outcome': False},
- {'node': 'Index of Multiple Deprivation','rank': 1, 'order': 3, 'fixed': True, 'group': [0, 1], 'outcome': False},
- {'node': 'Diabetes','rank': 3, 'order': 6, 'fixed': False, 'group': [1], 'outcome': True},
- {'node': 'BMI','rank': 2, 'order': 7, 'fixed': True, 'group': [1, 2], 'outcome': False},
- {'node': 'famHisDiabetes','rank': 1, 'order': 8, 'fixed': False, 'group': [1], 'outcome': False},
- {'node': 'BreastMalignancy','rank': 3, 'order': 9, 'fixed': False, 'group': [2], 'outcome': True},
- {'node': 'famHisBreastMalignancy','rank': 2, 'order': 10, 'fixed': False, 'group': [2], 'outcome': False},
- {'node': 'Education score','rank': 0, 'order': 11, 'fixed': False, 'group': [2], 'outcome': False},
- {'node': 'Processed meat intake','rank': 1, 'order': 12, 'fixed': True, 'group': [2, 3], 'outcome': False},
- {'node': 'ProstateMalignancy','rank': 3, 'order': 13, 'fixed': False, 'group': [3], 'outcome': True},
- {'node': 'Age','rank': 1, 'order': 14, 'fixed': False, 'group': [3], 'outcome': False},
- {'node': 'famHisProstateMalignancy','rank': 1, 'order': 16, 'fixed': False, 'group': [3], 'outcome': False},
- {'node': 'Health score','rank': 2, 'order': 15, 'fixed': False, 'group': [3], 'outcome': False}
-]
+# nodes = [
+#  {'node': 'Hypertension','rank': 3, 'order': 2, 'fixed': False, 'group': [0], 'outcome': True},
+#  {'node': 'famHisHypertension','rank': 1, 'order': 0, 'fixed': False, 'group': [0], 'outcome': False},
+#  {'node': 'Smoke','rank': 2, 'order': 1, 'fixed': False, 'group': [0], 'outcome': False},
+#  {'node': 'Sex','rank': 0, 'order': 5, 'fixed': True, 'group': [0, 1, 2, 3], 'outcome': False},
+#  {'node': 'Income score','rank': 1, 'order': 4, 'fixed': True, 'group': [0, 1], 'outcome': False},
+#  {'node': 'Index of Multiple Deprivation','rank': 1, 'order': 3, 'fixed': True, 'group': [0, 1], 'outcome': False},
+#  {'node': 'Diabetes','rank': 3, 'order': 6, 'fixed': False, 'group': [1], 'outcome': True},
+#  {'node': 'BMI','rank': 2, 'order': 7, 'fixed': True, 'group': [1, 2], 'outcome': False},
+#  {'node': 'famHisDiabetes','rank': 1, 'order': 8, 'fixed': False, 'group': [1], 'outcome': False},
+#  {'node': 'BreastMalignancy','rank': 3, 'order': 9, 'fixed': False, 'group': [2], 'outcome': True},
+#  {'node': 'famHisBreastMalignancy','rank': 2, 'order': 10, 'fixed': False, 'group': [2], 'outcome': False},
+#  {'node': 'Education score','rank': 0, 'order': 11, 'fixed': False, 'group': [2], 'outcome': False},
+#  {'node': 'Processed meat intake','rank': 1, 'order': 12, 'fixed': True, 'group': [2, 3], 'outcome': False},
+#  {'node': 'ProstateMalignancy','rank': 3, 'order': 13, 'fixed': False, 'group': [3], 'outcome': True},
+#  {'node': 'Age','rank': 1, 'order': 14, 'fixed': False, 'group': [3], 'outcome': False},
+#  {'node': 'famHisProstateMalignancy','rank': 1, 'order': 16, 'fixed': False, 'group': [3], 'outcome': False},
+#  {'node': 'Health score','rank': 2, 'order': 15, 'fixed': False, 'group': [3], 'outcome': False}
+# ]
 
 edges = [{'target': 'Smoke', 'source': 'famHisHypertension', 'value': -0.037},
  {'target': 'Hypertension', 'source': 'famHisHypertension', 'value': 0.094},
@@ -56,6 +56,28 @@ edges = [{'target': 'Smoke', 'source': 'famHisHypertension', 'value': -0.037},
  {'target': 'ProstateMalignancy', 'source': 'famHisProstateMalignancy', 'value': 0.07287073811414913},
  {'target': 'ProstateMalignancy', 'source': 'Health score', 'value': -0.020301125470085113}]
 
+nodes = [
+    {'node': 'Hypertension', 'rank': 1, 'order': 2, 'fixed': False, 'group': [0], 'outcome': True},
+    {'node': 'famHisHypertension', 'rank': 0, 'order': 0, 'fixed': False, 'group': [0], 'outcome': False},
+    {'node': 'Smoke', 'rank': 2, 'order': 1, 'fixed': False, 'group': [0], 'outcome': False},
+    {'node': 'Sex', 'rank': 0, 'order': 4, 'fixed': True, 'group': [0, 1, 2, 3], 'outcome': False},
+    {'node': 'Income score', 'rank': 0, 'order': 3, 'fixed': True, 'group': [0, 1], 'outcome': False},
+    {'node': 'Index of Multiple Deprivation', 'rank': 1, 'order': 4, 'fixed': True, 'group': [0, 1], 'outcome': False},
+    {'node': 'Diabetes', 'rank': 3, 'order': 5, 'fixed': False, 'group': [1], 'outcome': True},
+    {'node': 'BMI', 'rank': 2, 'order': 7, 'fixed': True, 'group': [1, 2], 'outcome': False},
+    {'node': 'famHisDiabetes', 'rank': 1, 'order': 6, 'fixed': False, 'group': [1], 'outcome': False},
+    {'node': 'BreastMalignancy', 'rank': 3, 'order': 9, 'fixed': False, 'group': [2], 'outcome': True},
+    {'node': 'famHisBreastMalignancy', 'rank': 2, 'order': 8, 'fixed': False, 'group': [2], 'outcome': False},
+    {'node': 'Education score', 'rank': 0, 'order': 10, 'fixed': False, 'group': [2], 'outcome': False},
+    {'node': 'Processed meat intake', 'rank': 1, 'order': 11, 'fixed': True, 'group': [2, 3], 'outcome': False},
+    {'node': 'ProstateMalignancy', 'rank': 3, 'order': 12, 'fixed': False, 'group': [3], 'outcome': True},
+    {'node': 'Age', 'rank': 1, 'order': 13, 'fixed': False, 'group': [3], 'outcome': False},
+    {'node': 'famHisProstateMalignancy', 'rank': 1, 'order': 15, 'fixed': False, 'group': [3], 'outcome': False},
+    {'node': 'Health score', 'rank': 2, 'order': 14, 'fixed': False, 'group': [3], 'outcome': False}
+]
+
+
+
 def get_fixedNodes(nodes):
     # 根据fixed属性获取超图得到的固定节点
     fixed_nodes = []
@@ -63,6 +85,14 @@ def get_fixedNodes(nodes):
         if node['fixed'] == True:
             fixed_nodes.append(node)
     return fixed_nodes
+
+def get_nonFixedNodes(nodes):
+    # 根据fixed属性获取非固定节点
+    non_fixed_nodes = []
+    for node in nodes:
+        if node['fixed'] == False:
+            non_fixed_nodes.append(node)
+    return non_fixed_nodes
 
 def get_fixedNodes_order(fixed_nodes):
     # 根据传入的fixed_nodes列表获取其内的固定节点的原始order
@@ -111,22 +141,83 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
         group_nodes = data['nodes']  # 获取该组的节点列表，用于后续操作获取新的节点order
         group_edges = data['edges']
 
-        # print(f'Nodes in Group {group}:')
+        print(f'Nodes in Group {group}: {group_nodes}')
+        # 调用函数并获取返回值
+        current_group_fixed_nodes = get_fixedNodes(group_nodes)
+        current_group_non_fixed_nodes = get_nonFixedNodes(group_nodes)
+        max_order_current_group_fixed_nodes, min_order_current_group_fixed_nodes = get_fixedNodes_order(current_group_fixed_nodes)
+        # 执行数值运算，计算最大和最小order值的差,即原固定节点水平跨度的距离fixed_order_ori_diff_supergraph
+        fixed_order_ori_diff_current_group = max_order_current_group_fixed_nodes - min_order_current_group_fixed_nodes
+        # 执行数值运算，计算最大和最小order值的和的一半,即原固定节点水平方向上的中心值
+        fixed_order_ori_center_current_group = (max_order_current_group_fixed_nodes + min_order_current_group_fixed_nodes) / 2
+        # print(fixed_order_ori_diff_current_group, fixed_order_ori_center_current_group)
+        print("当前组的固定节点的水平中心点为：\n{}".format(fixed_order_ori_center_current_group))
 
-        # 创建一个字典来存储每个rank值对应的节点列表
+        # 创建一个字典来存储每个rank值对应的全部节点列表
         rank_to_nodes = {}
+        # 创建一个字典来存储每个rank值对应的非固定节点列表
+        rank_to_non_fixed_nodes = {}
 
-        # 将节点按照rank值分组
+        # 将全部节点按照rank值分组
         for node_data in group_nodes:
             rank = node_data['rank']
             if rank not in rank_to_nodes:
                 rank_to_nodes[rank] = []
             rank_to_nodes[rank].append(node_data)
 
-        # 初始化序号为0
-        order = 0
+        # 将非固定节点按照rank值分组
+        for node_data in current_group_non_fixed_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_non_fixed_nodes:
+                rank_to_non_fixed_nodes[rank] = []
+            rank_to_non_fixed_nodes[rank].append(node_data)
 
         current_group_nodes = []  # 用于存储当前组的所有节点
+
+        # 遍历节点, 计算每个节点的 order_relative_sub_centerx
+        for node_data in group_nodes:
+            if node_data['fixed'] == True:
+                # node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group
+                node_data['order_relative_sub_centerx'] = node_data['order']
+            else:
+                # node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group
+                # 遍历非固定节点的rank值分组
+                for rank, nodes in sorted(rank_to_non_fixed_nodes.items()):
+                    # 对相同rank值的节点按照order进行排序
+                    sorted_non_fixed_nodes = sorted(nodes, key=lambda x: x['order'])
+
+                    # 初始化新的 order_relative_sub_centerx 为 fixed_order_ori_center_current_group
+                    order_relative_sub_centerx = fixed_order_ori_center_current_group
+
+                    # 计算具有相同rank的非固定节点数量
+                    num_non_fixed_nodes_with_same_rank = len(sorted_non_fixed_nodes)
+
+                    # 计算具有相同rank的非固定节点的中心索引
+                    center_index_non_fixed = num_non_fixed_nodes_with_same_rank // 2
+
+                    # 确定节点数量是奇数还是偶数
+                    is_even_non_fixed = num_non_fixed_nodes_with_same_rank % 2 == 0
+
+                    # 计算每个节点的 order_relative_sub_centerx
+                    for i, node_data in enumerate(sorted_non_fixed_nodes):
+                        # 如果rank值唯一，将order_relative_sub_centerx赋值为nodes_centerx
+                        if num_non_fixed_nodes_with_same_rank == 1:
+                            node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group
+                        else:
+                            # 根据奇偶性计算 order_relative_sub_centerx
+                            if is_even_non_fixed:  # 偶数
+                                if i < (center_index_non_fixed - 0.5):
+                                    node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group - ((center_index_non_fixed - 0.5) - i)
+                                else:
+                                    node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group + (i - (center_index_non_fixed - 0.5))
+                            else:  # 奇数
+                                # node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group + ((i - center_index_non_fixed)  )
+                                if i == center_index_non_fixed:
+                                    node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group
+                                elif i < center_index_non_fixed:
+                                    node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group - (center_index_non_fixed - i)
+                                else:
+                                    node_data['order_relative_sub_centerx'] = fixed_order_ori_center_current_group + (i - center_index_non_fixed)
 
         # 遍历rank值分组
         for rank, nodes in sorted(rank_to_nodes.items()):
@@ -136,7 +227,7 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
             # 初始化新的order为0
             new_order = 0
-            # 初始化新的order为nodes_centerx
+            # 初始化新的 new_order_relative_centerx 为nodes_centerx
             new_order_relative_centerx = nodes_centerx
 
             # 计算具有相同rank的节点数量
@@ -147,6 +238,7 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
             # 确定节点数量是奇数还是偶数
             is_even = num_nodes_with_same_rank % 2 == 0
+
 
             # 计算每个节点的 new_order_relative_centerx
             for i, node_data in enumerate(sorted_nodes):
@@ -191,12 +283,13 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
                 # 打印节点信息
                 node = node_data['node']
-                print(f'节点 {node}: Rank: {rank}, 新的顺序: {node_data["new_order"]}, 相对于中心的新顺序: {node_data["new_order_relative_centerx"]}')
+                print(f'节点 {node}: Rank: {rank}, 子图内同层级的顺序: {node_data["new_order"]}, 相对于超图固定节点中心的新顺序: {node_data["new_order_relative_centerx"]}, 相对于子图固定节点中心的新顺序: {node_data["order_relative_sub_centerx"]}')
 
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
 
-        # print("当前组的节点列表为：\n{}".format(current_group_nodes))
+        print("当前组的节点列表为：\n{}".format(current_group_nodes))
+        print("***********************************************************")
 
         # 将当前组的节点列表添加到最终的节点列表中
         # 通过使用 copy.deepcopy，你创建了 current_group_nodes 列表的完全独立副本，确保对它的任何修改都不会影响已附加到 final_nodes_new 的列表。
