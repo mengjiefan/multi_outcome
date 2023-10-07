@@ -142,6 +142,21 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
         group_edges = data['edges']
 
         print(f'Nodes in Group {group}: {group_nodes}')
+        # 对子图内所有节点按'order'值从小到大排序，用于保持相对位置并压缩子图
+        sorted_all_nodes_subgraph = sorted(group_nodes, key=lambda x: x['order'])
+        # 生成新的'order_relative_sub_all_nodes'值
+        order_relative_sub_all_nodes = 0
+        current_order = None
+
+        for node in sorted_all_nodes_subgraph:
+            if node['order'] != current_order:
+                order_relative_sub_all_nodes += 1
+                current_order = node['order']
+            node['order_relative_sub_all_nodes'] = order_relative_sub_all_nodes
+        # # 打印排序后的节点列表
+        # for node in sorted_all_nodes_subgraph:
+        #     print(node)
+
         # 调用函数并获取返回值
         current_group_fixed_nodes = get_fixedNodes(group_nodes)
         current_group_non_fixed_nodes = get_nonFixedNodes(group_nodes)
@@ -227,8 +242,8 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
             # 初始化新的order为0
             new_order = 0
-            # 初始化新的 new_order_relative_centerx 为nodes_centerx
-            new_order_relative_centerx = nodes_centerx
+            # # 初始化新的 new_order_relative_centerx 为nodes_centerx
+            # new_order_relative_centerx = nodes_centerx
 
             # 计算具有相同rank的节点数量
             num_nodes_with_same_rank = len(sorted_nodes)
@@ -265,25 +280,25 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
                 node_data['new_order'] = 0 if num_nodes_with_same_rank == 1 else new_order
                 new_order += 1
 
-                # 插入新属性new_order到节点数据中的特定位置（例如，在 'order' 后面）
-                index_to_insert = 3  # 在 'order' 后面插入 'new_order'，可以根据需要进行调整
-                keys = list(node_data.keys())
-                keys.insert(index_to_insert, 'new_order')
-                values = list(node_data.values())
-                values.insert(index_to_insert, new_order)
-                node_data = dict(zip(keys, values))
+                # # 插入新属性new_order到节点数据中的特定位置（例如，在 'order' 后面）
+                # index_to_insert = 3  # 在 'order' 后面插入 'new_order'，可以根据需要进行调整
+                # keys = list(node_data.keys())
+                # keys.insert(index_to_insert, 'new_order')
+                # values = list(node_data.values())
+                # values.insert(index_to_insert, new_order)
+                # node_data = dict(zip(keys, values))
 
-                # 插入新属性new_order_relative_centerx到节点数据中的特定位置（例如，在 'rank' 后面）
-                index_to_insert = 2  # 在 'rank' 后面插入 'new_order_relative_centerx'，可以根据需要进行调整
-                keys = list(node_data.keys())
-                keys.insert(index_to_insert, 'new_order_relative_centerx')
-                values = list(node_data.values())
-                values.insert(index_to_insert, new_order_relative_centerx)
-                node_data = dict(zip(keys, values))
+                # # 插入新属性new_order_relative_centerx到节点数据中的特定位置（例如，在 'rank' 后面）
+                # index_to_insert = 2  # 在 'rank' 后面插入 'new_order_relative_centerx'，可以根据需要进行调整
+                # keys = list(node_data.keys())
+                # keys.insert(index_to_insert, 'new_order_relative_centerx')
+                # values = list(node_data.values())
+                # values.insert(index_to_insert, new_order_relative_centerx)
+                # node_data = dict(zip(keys, values))
 
                 # 打印节点信息
                 node = node_data['node']
-                print(f'节点 {node}: Rank: {rank}, 子图内同层级的顺序: {node_data["new_order"]}, 相对于超图固定节点中心的新顺序: {node_data["new_order_relative_centerx"]}, 相对于子图固定节点中心的新顺序: {node_data["order_relative_sub_centerx"]}')
+                print(f'节点 {node}: Rank: {rank}, 子图内所有节点的横向相对顺序（保持各节点在子图中相对于超图的相对位置，紧致；用于tighten graph）: {node_data["order_relative_sub_all_nodes"]},子图内同层级的顺序: {node_data["new_order"]}, 相对于超图固定节点中心的新顺序（用于tree graph）: {node_data["new_order_relative_centerx"]}, 相对于子图固定节点中心的新顺序（共用点固定order，非共用点向子图中心移动，用于新 graph）: {node_data["order_relative_sub_centerx"]}')
 
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
