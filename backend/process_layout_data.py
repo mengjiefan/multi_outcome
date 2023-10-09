@@ -157,6 +157,25 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
         # for node in sorted_all_nodes_subgraph:
         #     print(node)
 
+        # 初始化最小和最大值为第一个节点的"order_relative_sub_all_nodes"值
+        min_order_current_rela = sorted_all_nodes_subgraph[0]['order_relative_sub_all_nodes']
+        max_order_current_rela = sorted_all_nodes_subgraph[0]['order_relative_sub_all_nodes']
+
+        # 遍历节点列表以找到节点的最小和最大的原始"order"值（此处的原始order是针对的所有层级内的节点的水平的排序顺序）
+        for node in sorted_all_nodes_subgraph:
+            current_order = node['order_relative_sub_all_nodes']
+            if current_order < min_order_current_rela:
+                min_order_current_rela = current_order  # 通过遍历得到最小order值
+            if current_order > max_order_current_rela:
+                max_order_current_rela = current_order  # 通过遍历得到最大order值
+            center_current_rela = (max_order_current_rela + min_order_current_rela)/2
+        print("当前组节点的相对水平中心点为：\n{}".format(center_current_rela))
+        for node in sorted_all_nodes_subgraph:
+            node['order_relative_sub_centerx_tran_sup_fixed_center'] = node['order_relative_sub_all_nodes'] - center_current_rela + nodes_centerx
+            node['distance'] = node['order_relative_sub_centerx_tran_sup_fixed_center'] - node['order']
+        print(sorted_all_nodes_subgraph)
+
+
         # 调用函数并获取返回值
         current_group_fixed_nodes = get_fixedNodes(group_nodes)
         current_group_non_fixed_nodes = get_nonFixedNodes(group_nodes)
@@ -298,7 +317,7 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
                 # 打印节点信息
                 node = node_data['node']
-                print(f'节点 {node}: Rank: {rank}, 子图内所有节点的横向相对顺序（保持各节点在子图中相对于超图的相对位置，紧致；用于tighten graph）: {node_data["order_relative_sub_all_nodes"]},子图内同层级的顺序: {node_data["new_order"]}, 相对于超图固定节点中心的新顺序（用于tree graph）: {node_data["new_order_relative_centerx"]}, 相对于子图固定节点中心的新顺序（共用点固定order，非共用点向子图中心移动，用于新 graph）: {node_data["order_relative_sub_centerx"]}')
+                print(f'节点 {node}: Rank: {rank}, 子图内所有节点的横向相对顺序（保持各节点在子图中相对于超图的相对位置，紧致；同时向超图的固定节点中心点平移；用于tighten graph）: {node_data["order_relative_sub_centerx_tran_sup_fixed_center"]},子图内同层级的顺序: {node_data["new_order"]}, 相对于超图固定节点中心的新顺序（用于tree graph）: {node_data["new_order_relative_centerx"]}, 相对于子图固定节点中心的新顺序（共用点固定order，非共用点向子图中心移动，用于新 graph）: {node_data["order_relative_sub_centerx"]}')
 
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
