@@ -172,9 +172,7 @@ export default {
     },
     setGraph() {
       this.chartsValue = new Map();
-      this.multipleSearchValue.nodesList.forEach((node) => {
-
-      });
+      this.multipleSearchValue.nodesList.forEach((node) => {});
 
       var data = this.multipleSearchValue;
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
@@ -251,9 +249,9 @@ export default {
           if (node.y < minH) minH = node.y;
         });
       });
-      let gap = 1000 / (maxW - minW);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
-      let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
+      let gap = 900 / (maxW - minW);
+      let startX = (dom.clientWidth / gap - (maxW - minW)) / 2;
+      let startY = (dom.clientHeight / gap - (maxH - minH)) / 3;
       this.scale = {
         startX,
         startY,
@@ -586,8 +584,13 @@ export default {
         },
       });
       let index = findLink.sameNodeLink(link, this.simplePos.linksList);
-      let points = this.simplePos.linksList[index].points;
-      path.connector("curveBasis", { points: points });
+      let points = this.simplePos.linksList[index].points.concat([]);
+      if (link.source !== this.simplePos.linksList[index].source)
+        points.reverse();
+      path.connector("SuperCurve", {
+        points,
+        value: value * 8,
+      });
       if (link.value < 0) {
         path.attr("line/strokeWidth", -link.value * 8 + "");
         path.attr("line/strokeDasharray", "4 4");

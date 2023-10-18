@@ -52,7 +52,6 @@ import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";
-import { drawTightenedGraph } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";

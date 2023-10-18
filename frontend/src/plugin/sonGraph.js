@@ -143,64 +143,6 @@ const countAnchor = (last, center, radius) => {
   let y = center.y + ((last.y - center.y) * radius) / distance;
   return { x, y };
 };
-const addIndexOfGrid = (graph, maxX, maxY) => {
-  console.log(maxX, maxY);
-  for (let i = 1; i <= maxX; i++) {
-    let numberRect = new joint.shapes.standard.Rectangle();
-    numberRect.attr({
-      body: {
-        strokeWidth: 0,
-        fill: "transparent",
-      },
-      label: {
-        text: i,
-        fill: "black",
-        y: (-maxY * gap) / 2 - 8,
-        fontSize: 10,
-      },
-      title: "x" + i,
-    });
-    numberRect.resize(2, maxY * gap);
-    numberRect.position(countXPos(i), countYPos(0));
-    numberRect.addTo(graph);
-  }
-  let zeroRect = new joint.shapes.standard.Rectangle();
-  zeroRect.attr({
-    body: {
-      strokeWidth: 0,
-      fill: "transparent",
-    },
-    label: {
-      text: 0,
-      fill: "black",
-      y: 0,
-      fontSize: 10,
-    },
-    title: 0,
-  });
-  zeroRect.position(countXPos(0) - 8, countYPos(0) - 8);
-  zeroRect.addTo(graph);
-  for (let i = 1; i <= maxY; i++) {
-    let numberRect = new joint.shapes.standard.Rectangle();
-    numberRect.attr({
-      body: {
-        strokeWidth: 0,
-        fill: "transparent",
-      },
-      label: {
-        text: i,
-        fill: "black",
-        y: 0,
-        x: (-maxX * gap) / 2 - 8,
-        fontSize: 10,
-      },
-      title: "y" + i,
-    });
-    numberRect.resize(maxX * gap, 2);
-    numberRect.position(countXPos(0), countYPos(i));
-    numberRect.addTo(graph);
-  }
-};
 
 export const checkDirection = (source, target) => {
   if (source.y <= target.y) return "DOWN";
@@ -343,7 +285,7 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
     .x((p) => p.x)
     .y((p) => p.y)
     .curve(d3.curveNatural);
-  joint.connectors.curveNatural = function (
+  joint.connectors.TreeCurve = function (
     sourcePoint,
     targetPoint,
     vertices,
@@ -356,21 +298,16 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
       };
     });
     if (points.length > 1) {
-      points[0] = countAnchor(points[1], points[0], 16);
+      let radius = 16;
+      points[0] = countAnchor(points[1], points[0], radius);
+
+      if (points[points.length - 1].y < points[0].y) radius = 16 + args.value;
       points[points.length - 1] = countAnchor(
         points[points.length - 2],
         points[points.length - 1],
-        16
+        radius
       );
     }
-    /*
-        if (points[0].y < points[points.length - 1].y) {
-            points[0].y = points[0].y + 16;
-            points[points.length - 1].y = points[points.length - 1].y - 16;
-        } else if (points[0].y > points[points.length - 1].y) {
-            points[0].y = points[0].y - 16;
-            points[points.length - 1].y = points[points.length - 1].y + 16;
-        }*/
     return Gen(points);
   };
 
@@ -417,7 +354,7 @@ export const drawSonCharts = (dom, nodesList, scale, linksList) => {
     path.addTo(graph);
     //path.vertices(vertices);
 
-    path.connector("curveNatural", { points: link.points });
+    path.connector("TreeCurve", { points: link.points, value: value * 7 });
   });
 
   paper.scale(paperScale);
@@ -570,15 +507,10 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   };
 
   linksList.forEach((link) => {
-    let points = findLink(linksPos, link);
+    let points = findLink(linksPos, link).points.concat([]);
     let path = new joint.shapes.standard.Link({});
-    /*
-    let vertices = [];
-    for (let i = 0; i < points.points.length; i++) {
-      let point = points.points[i];
-      vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
-    }*/
-    if (link.reverse) points.points.reverse();
+
+    if (link.reverse) points.reverse();
     let sindex = nodesList.findIndex((item) => {
       if (item.id === link.source) return true;
       else return false;
@@ -615,19 +547,9 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
     path.source(nodesList[sindex].node);
     path.target(nodesList[tindex].node);
     path.addTo(graph);
-    let vertices = [
-      {
-        x: nodesList[sindex].x,
-        y: nodesList[sindex].y,
-      },
-    ]
-      .concat(points.points)
-      .concat({
-        x: nodesList[tindex].x,
-        y: nodesList[tindex].y,
-      });
+
     path.connector("TightenedCurve", {
-      points: vertices.map((point) => {
+      points: points.map((point) => {
         return {
           x: countXPos(point.x),
           y: countYPos(point.y),
@@ -635,7 +557,6 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
       }),
       value: value * 7,
     });
-    //path.connector("rounded");
   });
 
   paper.scale(paperScale);

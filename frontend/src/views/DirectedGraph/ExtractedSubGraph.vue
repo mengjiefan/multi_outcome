@@ -211,11 +211,6 @@ export default {
           this.multipleSearchValue.selections[i]
         );
         this.sonGraphs.push(ans);
-        this.scale.push({
-          startX: 0,
-          startY: 0,
-          gap: 1,
-        });
       }
       for (let i = 0; i < this.sonNum; i++) {
         this.drawSonGraph(i);
@@ -245,21 +240,18 @@ export default {
       let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
       if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
         gap = (dom.clientHeight - 96) / (maxH - minH + 24);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY =
-        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
-      this.scale.splice(index, 1, {
-        startX,
-        startY,
-        gap,
-      });
+      let startX = dom.clientWidth / 2 - ((maxW + minW) / 2) * gap;
+      let startY = (dom.clientHeight - (maxH + 2 * minH) * gap) / 3;
 
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
         this.sonGraphs[index].linksList,
-        this.scale[index],
-        index
+        {
+          startX,
+          startY,
+          gap,
+        }
       );
 
       if (!this.papers[index]) {
@@ -624,17 +616,17 @@ export default {
     },
     addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
-      const _this = this;
+
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 * _this.scale[index].gap,
+          strokeWidth: value * 8,
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7 * _this.scale[index].gap,
+            "stroke-width": value * 7,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
@@ -646,10 +638,16 @@ export default {
       let target = realLink.target;
       if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
+
       let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
-      let points = this.sonGraphs[index].linksList[i].points;
-      path.connector("curveBasis", { points: points });
+      let points = this.sonGraphs[index].linksList[i].points.concat([]);
+
+      if (link.source !== this.sonGraphs[index].linksList[i].source)
+        points.reverse();
+      path.connector("ExtractedCurve", {
+        points,
+        value: value * 7,
+      });
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);

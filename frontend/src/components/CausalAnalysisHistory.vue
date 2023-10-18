@@ -348,14 +348,6 @@ export default {
                 target: linksList[index].target,
                 value: linksList[index].value,
               };
-            } else if (!linksList[index].hidden && !link.hidden) {
-              //需要都转为同向，否则布局不同；对于带reverse的特别处理
-              if (link.source !== linksList[index].source) {
-                link.source = linksList[index].source;
-                link.target = linksList[index].target;
-                if (!link.reverse) link["reverse"] = true;
-                else link.reverse = false; //这个可以不要，因为Redo的时候去除了所有的reverse
-              }
             }
           }
         }

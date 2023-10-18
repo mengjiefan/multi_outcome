@@ -42,10 +42,11 @@
   </div>
 </template>
   <script>
-import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
-import { Loading } from "element-ui";
+import { LinksManagement } from "@/plugin/joint/linkAndNode";
+import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge";
 import { createChart } from "@/plugin/charts";
 import {
   drawTightenedGraph,
@@ -476,26 +477,10 @@ export default {
       }
     },
     getEdgeValue(i, source, target) {
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/recaculate_Links",
-        //参数
-        params: {
-          dataset: localStorage.getItem("DATATYPE"),
-          source: target,
-          target: source,
-        },
-      })
-        .then((response) => {
-          console.log("value", response.data.value);
-          let value = response.data.value;
-          this.changeEdge(i, source, target, value);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
+      console.log(i, source, target);
+      linkRequest.getLinkValue(target, source).then((response) => {
+        this.changeEdge(i, source, target, response.data.value);
+      });
     },
     changeEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
@@ -524,14 +509,14 @@ export default {
         selection.linksList[index].value = value;
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
-          this.addLink({
+          this.addLink(i, {
             source: target,
             target: source,
             value,
           });
         } else {
           selection.linksList[index].reverse = false;
-          this.addLink(selection.linksList[index]);
+          this.addLink(i, selection.linksList[index]);
         }
         this.tip2Hidden();
         this.saveData();
@@ -554,10 +539,9 @@ export default {
       if (source.y <= target.y) return "DOWN";
       else return "UP";
     },
-    addLink(link) {
-      console.log(link, "link");
+    addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
-      let attributes = this.deleteLinkView.model.attributes;
+
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
@@ -574,17 +558,32 @@ export default {
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
+      let realLink = LinksManagement.getNodeByName(this.paper, link);
+      let source = realLink.source;
+      let target = realLink.target;
 
-      let source = attributes.target;
-      let target = attributes.source;
-      let vertices = attributes.vertices.reverse();
-      if (attributes.attrs.line.targetMarker)
+      if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
-      path.vertices(vertices);
+
+      let i = findLink.sameNodeLink(link, this.sonGraphs[index].links);
+      let points = this.sonGraphs[index].links[i].points.concat([]);
+
+      if (link.source !== this.sonGraphs[index].links[i].source)
+        points.reverse();
+      console.log(points);
+      path.connector("TightenedCurve", {
+        points: points.map((point) => {
+          return {
+            x: point.x * 80,
+            y: point.y * 80,
+          };
+        }),
+        value: value * 7,
+      });
+
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
-      path.connector("rounded");
     },
     getNodeIndex(id) {
       let indexes = [];
