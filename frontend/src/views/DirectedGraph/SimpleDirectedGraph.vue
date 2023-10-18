@@ -47,8 +47,6 @@
     </div>
   </div>
 </template>
-    
-</template>
 
 <script>
 import * as d3 from "d3";
@@ -530,7 +528,7 @@ export default {
     //add document click listener
     handleCheckAllChange(val) {
       if (val === true) {
-        this.checkedVariables = VariablesOptions;
+        this.checkedVariables = this.VariablesOptions;
         this.checkedVariables.forEach((factor) => {
           let ifIndex = this.multipleSearchValue.nodesList.findIndex(function (
             row

@@ -1,4 +1,5 @@
 import * as echarts from "echarts";
+import { nodeRequest } from "@/plugin/request/node";
 const tooltip = {
     trigger: 'axis',
     axisPointer: {
@@ -12,15 +13,18 @@ const grid = {
     top: '6%',
     containLabel: true
 };
-export const createChart = (dom, data) => {
-    console.log(data);
+export const createChart = (dom, values) => {
     echarts.dispose(dom);
     var myChart = echarts.init(dom);
 
+    let axis = values.map(value => value.id);
+    let data = values.map(value => value.value);
     let option = {
+        grid,
         xAxis: {
             type: "category",
             boundaryGap: false,
+            data: axis
         },
         yAxis: {
             type: "value",
@@ -52,22 +56,12 @@ export const createChart = (dom, data) => {
                     color: "#5470C6",
                     width: 5,
                 },
-                markLine: {
-                    symbol: ["none", "none"],
-                    label: { show: false },
-                    data: [{ xAxis: 1 }, { xAxis: 3 }, { xAxis: 5 }, { xAxis: 7 }],
-                },
                 areaStyle: {},
-                data: [
-                    ["1", 200],
-                    ["2", 560],
-                    ["3", 750],
-                    ["4", 580],
-                ],
+                data
             },
         ],
     };
-    myChart.setOption(option);
+    myChart.setOption(option)
 }
 export const creatAllChart = (dom, data) => {
     echarts.dispose(dom);

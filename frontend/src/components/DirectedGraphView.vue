@@ -4,8 +4,6 @@
     <router-view></router-view>
   </div>
 </template>
-    
-</template>
 
 <script>
 import { ref } from "vue";

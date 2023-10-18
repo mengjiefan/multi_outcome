@@ -159,8 +159,23 @@ export default {
       son.linksList = linksList;
       return son;
     },
-
+    getNodeValues(data) {
+      nodeRequest
+        .getNodeValue(data)
+        .then((response) => {
+          let values = response.data.values;
+          this.chartsValue.set(data, values);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error);
+        });
+    },
     setGraph() {
+      this.chartsValue = new Map();
+      this.multipleSearchValue.nodesList.forEach((node) => {
+
+      });
+
       var data = this.multipleSearchValue;
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
@@ -458,10 +473,16 @@ export default {
       });
       paper.on("element:mouseover", function (elementView, d) {
         addHighLight(elementView);
-        _this.tipVisible(elementView.model.attributes.attrs.title, {
+      });
+      paper.on("element: pointerclick", function (elementView, d) {
+        //TODO
+        _this.chartVisible(elementView.model.attributes.attrs.title, {
           pageX: d.pageX,
           pageY: d.pageY,
         });
+        setTimeout(() => {
+          document.addEventListener("click", _this.listener2);
+        }, 0);
       });
       paper.on("element:mouseout", function (elementView, evt) {
         removeHighLight(elementView);
@@ -478,8 +499,6 @@ export default {
       return indexes;
     },
     drawGraph() {
-      this.chartsValue = new Map();
-
       this.ifGroup = false;
       let that = this;
       this.sonNum = 0;
@@ -501,7 +520,21 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
-
+    listener2(e) {
+      let _this = this;
+      let clickDOM = e.target.className;
+      _this.tip2Hidden();
+      if (
+        clickDOM !== "chart-box" &&
+        clickDOM !== "chart-hint" &&
+        clickDOM !== "hint-list" &&
+        clickDOM !== "tooltip" &&
+        clickDOM !== "operate-header" &&
+        clickDOM !== "son-header"
+      ) {
+        document.removeEventListener("click", _this.listener2);
+      }
+    },
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
@@ -723,18 +756,20 @@ export default {
           if (i === number - 1) return this;
         });
     },
-    // display hover-line tooltip
-    tipVisible(textContent, event) {
+    chartVisible(textContent, event) {
       this.tip2Hidden();
+      this.tipHidden();
       document.removeEventListener("click", this.listener);
-      this.tooltip
+      document.removeEventListener("click", this.listener2);
+      this.tooltip2
         .transition()
         .duration(0)
         .style("opacity", 1)
         .style("display", "block");
-      this.tooltip
+      this.tooltip2
         .html(
-          '<div class="chart-box">' +
+          "<div class='operate-header'><div class='hint-list'>Effect Value</div><div class='close-button'>x</div></div><hr/>" +
+            '<div class="chart-box">' +
             textContent +
             '<div class="chart-hint ' +
             textContent +
@@ -748,6 +783,32 @@ export default {
         try {
           _this.plotChart(textContent);
         } catch (err) {
+          console.log(err);
+          console.log("too fast, the chart is not prepared");
+        }
+      }, 100);
+    },
+    // display hover-line tooltip
+    tipVisible(textContent, event) {
+      this.tip2Hidden();
+      document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
+      this.tooltip
+        .transition()
+        .duration(0)
+        .style("opacity", 1)
+        .style("display", "block");
+      this.tooltip
+        .html('<div class="chart-box">' + textContent + "</div>")
+        .style("left", `${event.pageX + 15}px`)
+        .style("top", `${event.pageY + 15}px`);
+
+      const _this = this;
+      setTimeout(() => {
+        try {
+          _this.plotChart(textContent);
+        } catch (err) {
+          console.log(err);
           console.log("too fast, the chart is not prepared");
         }
       }, 100);
@@ -755,7 +816,9 @@ export default {
     //display delete-menu tooltip
     tip2Visible(textContent, event) {
       this.tip2Hidden();
+      this.tipHidden();
       document.removeEventListener("click", this.listener);
+      document.removeEventListener("click", this.listener2);
       this.tip2Show = true;
       this.tooltip2
         .transition()

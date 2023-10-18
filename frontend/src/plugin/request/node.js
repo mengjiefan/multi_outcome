@@ -1,6 +1,6 @@
 import axios from "axios";
 export class nodeRequest {
-    static async getNodeValue(ids) {
+    static async getNodeValue(id) {
         return await axios({
             //请求类型
             method: "GET",
@@ -9,7 +9,7 @@ export class nodeRequest {
             //参数
             params: {
                 dataset: localStorage.getItem("DATATYPE"),
-                ids
+                id
             },
         })
     }

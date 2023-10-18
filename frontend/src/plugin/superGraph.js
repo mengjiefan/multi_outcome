@@ -3,7 +3,7 @@ import "/node_modules/jointjs/dist/joint.css";
 import { g } from "jointjs";
 import * as d3 from "d3";
 import svgPanZoom from "svg-pan-zoom";
-import { getAnchoredGraph } from "@/plugin/super/anchor.js";
+//import { getAnchoredGraph } from "@/plugin/super/anchor.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import dagre from "dagre";
 
@@ -276,6 +276,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
             title: nodesList[nodeI].id
         });
         if (nodesList[nodeI].type === 0) faRect.attr('body/strokeWidth', 3)
+        console.log(indexes)
         for (let i = 0; i < indexes.length; i++) {
             let circle = new joint.shapes.standard.Circle();
             let offset = 360 / indexes.length;
