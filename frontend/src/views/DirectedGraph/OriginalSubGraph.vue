@@ -51,6 +51,8 @@ import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/original/CountPos";
+import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { findLink } from "@/plugin/links";
 
 export default {
   data() {
@@ -73,17 +75,17 @@ export default {
         linksList: [],
       }),
       cmap: [
-    "#FF595E",
-    "#FF924C",
-    "#FFCA3A",
-    "#C5CA30",
-    "#8AC926",
-    "#36949D",
-    "#1982C4",
-    "#4267AC",
-    "#565AA0",
-    "#6A4C93",
-]
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
     };
   },
   methods: {
@@ -565,8 +567,7 @@ export default {
     },
     addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
-      let attributes = this.deleteLinkView.model.attributes;
-      const _this = this;
+
       let value = Math.abs(link.value);
       if (value > 1.5) value = 1.5;
       path.attr({
@@ -583,14 +584,22 @@ export default {
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let source = attributes.target;
-      let target = attributes.source;
-
-      if (attributes.attrs.line.targetMarker)
+      let realLink = LinksManagement.getNodeByName(this.paper, link);
+      let source = realLink.source;
+      let target = realLink.target;
+      if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
-      let vertices = attributes.vertices.reverse();
-      path.vertices(vertices);
+
+      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
+      let points = this.sonGraphs[index].linksList[i].points.concat([]);
+
+      if (link.source !== this.sonGraphs[index].linksList[i].source)
+        points.reverse();
+      path.connector("ExtractedCurve", {
+        points,
+        value: value * 7,
+      });
+
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);

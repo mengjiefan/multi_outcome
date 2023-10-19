@@ -396,7 +396,6 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     if (link.value < 0) {
       path.attr("line/strokeDasharray", "4 4");
     }
-    if (link.source === "BMI" && link.target === "Sex") console.log(link);
     if (
       nodesList[sindex].node.attributes.position.y <
       nodesList[tindex].node.attributes.position.y
