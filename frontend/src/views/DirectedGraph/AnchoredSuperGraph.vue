@@ -139,7 +139,7 @@ export default {
           id: node.id,
           rank: y.indexOf(node.y),
           order: x.indexOf(node.x),
-          fixed: that.getNodeIndex(node.id).length > 0,
+          fixed: node.indexes.length > 1,,
           group: node.indexes,
           outcome: node.type === 0,
         });

@@ -231,11 +231,12 @@ export default {
       });
 
       this.simplePos.nodesList.forEach((node) => {
+        console.log(node.indexes.length)
         nodes.push({
           node: node.id,
           rank: y.indexOf(node.y),
           order: x.indexOf(node.x),
-          fixed: that.getNodeIndex(node.id).length > 0,
+          fixed: node.indexes.length > 1,
           group: node.indexes,
           outcome: node.type === 0,
         });
@@ -266,7 +267,7 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
-        console.log(response.data.graph[0].map(node => node.new_order));
+        console.log(response.data.graph[0].map((node) => node.new_order));
         this.sonGraphs = [];
         response.data.graph.forEach((graph) => {
           this.sonGraphs.push({
