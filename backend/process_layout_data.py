@@ -399,21 +399,6 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx, fixed_nodes_superg
                 node_data['new_order'] = 0 if num_nodes_with_same_rank == 1 else new_order
                 new_order += 1
 
-                # # 插入新属性new_order到节点数据中的特定位置（例如，在 'order' 后面）
-                # index_to_insert = 3  # 在 'order' 后面插入 'new_order'，可以根据需要进行调整
-                # keys = list(node_data.keys())
-                # keys.insert(index_to_insert, 'new_order')
-                # values = list(node_data.values())
-                # values.insert(index_to_insert, new_order)
-                # node_data = dict(zip(keys, values))
-
-                # # 插入新属性new_order_relative_centerx到节点数据中的特定位置（例如，在 'rank' 后面）
-                # index_to_insert = 2  # 在 'rank' 后面插入 'new_order_relative_centerx'，可以根据需要进行调整
-                # keys = list(node_data.keys())
-                # keys.insert(index_to_insert, 'new_order_relative_centerx')
-                # values = list(node_data.values())
-                # values.insert(index_to_insert, new_order_relative_centerx)
-                # node_data = dict(zip(keys, values))
 
                 # 打印节点信息
                 node = node_data['node']

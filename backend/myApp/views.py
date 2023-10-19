@@ -357,8 +357,8 @@ def get_causal_edges(request):
 
 #modify graph and recaculate effect_value
 def get_values_for_node(request):
-    targets = request.GET.get("ids").split(',')
-    print(targets)
+    outcome = request.GET.get("id")
+
     dataset = request.GET.get('dataset')
     fileName = "./myApp/MissingValue_fill_data_all.csv"
     outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
@@ -372,48 +372,20 @@ def get_values_for_node(request):
 
     # 读取CSV文件
     data = pd.read_csv(fileName)
-    all_values = []
-    for outcome in targets:
-        # 获取除了outcomes列表中指定的变量之外的其他变量
-        factors = [col for col in data.columns if col not in outcomes]
-        G = nx.DiGraph()
-        G.add_node(outcome)
 
-        outcome_vars = [col for col in data.columns if col not in outcomes]
-        outcome_vars.append(outcome)
-        outcome_data_df = data[outcome_vars]
-        for factor in factors:
-            G.add_node(factor)
-            G.add_edge(factor, outcome)
-        values = []
-        for factor in factors:
-            model = CausalModel(
-                data=outcome_data_df,
-                treatment=factor,
-                outcome=outcome,
-            )
-            effect_value = 0
-            # Step 4: 识别因果效应
-            identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
-            if identified_estimand is not None:
-                # Step 5: 估计因果效应
-                estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
-                if estimate is not None:
-                    effect_value = estimate.value
-            values.append({
-                'id': factor,
-                'value': effect_value
-            })
-        all_values.append({
-            'target': outcome,
-            'values': values
+    outcomes.append(outcome)
+    factors = [col for col in data.columns if col not in outcomes]
+
+    values = []
+    for factor in factors:
+        value = count_value(factor, outcome, dataset)
+        values.append({
+            'id': factor,
+            'value': value
         })
-    return JsonResponse({'value': all_values})
-def get_value_of_graph(request):
+    return JsonResponse({'target':outcome, 'values': values})
+def count_value(source, target, dataset):
     G = nx.DiGraph()
-    source = request.GET.get('source')
-    target = request.GET.get('target')
-    dataset = request.GET.get('dataset')
     fileName = "./myApp/MissingValue_fill_data_all.csv"
 
     if dataset == 'ukb':
@@ -445,8 +417,15 @@ def get_value_of_graph(request):
         estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
         if estimate is not None:
             effect_value = estimate.value
+    return effect_value
+def get_value_of_graph(request):
+    source = request.GET.get('source')
+    target = request.GET.get('target')
+    dataset = request.GET.get('dataset')
+    value = count_value(source, target,dataset)
 
-    return JsonResponse({'value': effect_value})
+
+    return JsonResponse({'value': value})
 
 # 定义一个去列表(列表元素是字典)重复的函数
 def list_dict_duplicate_removal(request):
@@ -489,37 +468,59 @@ def variable_show(request):
     outcome = "death"
     print(CovariantNum)
     return JsonResponse({'CovariantNum': CovariantNum, 'outcome': outcome, 'message': 'success'})
-
-def calculate_layout(request):
+def pre_process(nodesList):
+    fixed_nodes_supergraph = get_fixedNodes(nodesList)
+    max_order_ori_supergraph_fixedNodes, min_order_ori_supergraph_fixedNodes = get_fixedNodes_order(
+        fixed_nodes_supergraph)
+    fixed_order_ori_center_supergraph = (max_order_ori_supergraph_fixedNodes + min_order_ori_supergraph_fixedNodes) / 2
+    return fixed_order_ori_center_supergraph
+def calculate_tree_layout(request):
     postBody = request.body
     json_result = json.loads(postBody)
     nodesList = np.array(json_result['nodesList'])
     linksList = np.array(json_result['linksList'])
-    fixed_nodes_supergraph = get_fixedNodes(nodesList)
-    print(fixed_nodes_supergraph)
-
-    # 调用 get_fixedNodes_order(fixed_nodes)函数，获取超图的原始order（此处的原始order是针对的所有层级内的节点的水平的排序顺序）
-    # 调用函数并获取返回值
-    max_order_ori_supergraph_fixedNodes, min_order_ori_supergraph_fixedNodes = get_fixedNodes_order(
-        fixed_nodes_supergraph)
-    # 执行数值运算，计算最大和最小order值的差,即原固定节点水平跨度的距离fixed_order_ori_diff_supergraph
-    fixed_order_ori_diff_supergraph = max_order_ori_supergraph_fixedNodes - min_order_ori_supergraph_fixedNodes
-    # 执行数值运算，计算最大和最小order值的和的一半,即原固定节点水平方向上的中心值
-    fixed_order_ori_center_supergraph = (max_order_ori_supergraph_fixedNodes + min_order_ori_supergraph_fixedNodes) / 2
-
-    print(fixed_order_ori_diff_supergraph, fixed_order_ori_center_supergraph)
-
-    # 调用get_grouped_data(nodes,edges)函数，获取按组区分的超图的所有包含node和edge列表的dag，其中的order为原始的
-    grouped_data_supergraph = get_grouped_data(nodesList, linksList)  # 为按组区分的dag，每个dag内均有其原先的node和edge列表
-    print(grouped_data_supergraph)
-
-    print("----------------------------------------")
-
+    grouped_data_subgraph = grouped_data_supergraph = get_grouped_data(nodesList, linksList)
+    fixed_order_ori_center_supergraph = pre_process(nodesList)
     # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
-    all_groups_nodes_new = get_each_dag_nodes_order_new(grouped_data_supergraph, fixed_order_ori_center_supergraph) # 为按组区分的dag，每个dag内均有新生成的的nodes列表
+    all_groups_nodes_new = get_tree_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph) # 为按组区分的dag，每个dag内均有新生成的的nodes列表
 
     return JsonResponse({'graph': all_groups_nodes_new})
 
+def calculate_aggregate_layout(request):
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    linksList = np.array(json_result['linksList'])
+    grouped_data_subgraph = get_grouped_data(nodesList, linksList)
+    fixed_order_ori_center_supergraph = pre_process(nodesList)
+    fixed_nodes_supergraph = get_fixedNodes(nodesList)
+    # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
+    all_groups_nodes_new = get_aggregate_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph, fixed_nodes_supergraph)
+    return JsonResponse({'graph': all_groups_nodes_new})
+def calculate_center_layout(request):
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    linksList = np.array(json_result['linksList'])
+    grouped_data_subgraph = get_grouped_data(nodesList, linksList)
+    fixed_order_ori_center_supergraph = pre_process(nodesList)
+    # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
+    all_groups_nodes_new = get_center_order_new(grouped_data_subgraph)  # 为按组区分的dag，每个dag内均有新生成的的nodes列表
+    print(all_groups_nodes_new)  # 为按组区分的dag，每个dag内均有新生成的的nodes列表
+
+    return JsonResponse({'graph': all_groups_nodes_new})
+
+def calculate_relative_layout(request):
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    linksList = np.array(json_result['linksList'])
+    grouped_data_subgraph = get_grouped_data(nodesList, linksList)
+    fixed_order_ori_center_supergraph = pre_process(nodesList)
+    fixed_nodes_supergraph = get_fixedNodes(nodesList)
+    # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
+    all_groups_nodes_new = get_relative_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph, fixed_nodes_supergraph)
+    return JsonResponse({'graph': all_groups_nodes_new})
 def get_fixedNodes(nodes):
     # 根据fixed属性获取超图得到的固定节点
     fixed_nodes = []
@@ -566,18 +567,343 @@ def get_grouped_data(nodes,edges):
 
     return grouped_data  # 所有组dag的字典
 
-def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
+def get_nonFixedNodes(nodes):
+    # 根据fixed属性获取非固定节点
+    non_fixed_nodes = []
+    for node in nodes:
+        if node['fixed'] == False:
+            non_fixed_nodes.append(node)
+    return non_fixed_nodes
+
+def get_center_order_new(grouped_data):
+    final_nodes_new = []  # 用于存储最终的节点列表
+    # 遍历每一个组内的所有节点
+    for group, data in grouped_data.items():
+        group_nodes = data['nodes']  # 获取该组的节点列表，用于后续操作获取新的节点order
+        current_group_fixed_nodes = get_fixedNodes(group_nodes)
+        current_group_non_fixed_nodes = get_nonFixedNodes(group_nodes)
+        max_order_current_group_fixed_nodes, min_order_current_group_fixed_nodes = get_fixedNodes_order(
+            current_group_fixed_nodes)
+
+        fixed_order_ori_center_current_group = (max_order_current_group_fixed_nodes + min_order_current_group_fixed_nodes) / 2
+
+        print("当前组的固定节点的水平中心点为：\n{}".format(fixed_order_ori_center_current_group))
+
+
+        # 创建一个字典来存储每个rank值对应的全部节点列表
+        rank_to_nodes = {}
+        # 创建一个字典来存储每个rank值对应的非固定节点列表
+        rank_to_non_fixed_nodes = {}
+
+        # 将全部节点按照rank值分组
+        for node_data in group_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_nodes:
+                rank_to_nodes[rank] = []
+            rank_to_nodes[rank].append(node_data)
+
+        # 将非固定节点按照rank值分组
+        for node_data in current_group_non_fixed_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_non_fixed_nodes:
+                rank_to_non_fixed_nodes[rank] = []
+            rank_to_non_fixed_nodes[rank].append(node_data)
+
+        current_group_nodes = []  # 用于存储当前组的所有节点
+
+        # 遍历节点, 计算每个节点的 new_order
+        for node_data in group_nodes:
+            if node_data['fixed'] == True:
+                # node_data['new_order'] = fixed_order_ori_center_current_group
+                node_data['new_order'] = node_data['order']
+            else:
+                # node_data['new_order'] = fixed_order_ori_center_current_group
+                # 遍历非固定节点的rank值分组
+                for rank, nodes in sorted(rank_to_non_fixed_nodes.items()):
+                    # 对相同rank值的节点按照order进行排序
+                    sorted_non_fixed_nodes = sorted(nodes, key=lambda x: x['order'])
+
+                    # 计算具有相同rank的非固定节点数量
+                    num_non_fixed_nodes_with_same_rank = len(sorted_non_fixed_nodes)
+
+                    # 计算具有相同rank的非固定节点的中心索引
+                    center_index_non_fixed = num_non_fixed_nodes_with_same_rank // 2
+
+                    # 确定节点数量是奇数还是偶数
+                    is_even_non_fixed = num_non_fixed_nodes_with_same_rank % 2 == 0
+
+                    # 方法四：计算每个节点的 new_order
+                    for i, node_data in enumerate(sorted_non_fixed_nodes):
+                        # 如果rank值唯一，将new_order赋值为nodes_centerx
+                        if num_non_fixed_nodes_with_same_rank == 1:
+                            node_data['new_order'] = fixed_order_ori_center_current_group
+                        else:
+                            # 根据奇偶性计算 new_order
+                            if is_even_non_fixed:  # 偶数
+                                if i < (center_index_non_fixed - 0.5):
+                                    node_data['new_order'] = fixed_order_ori_center_current_group - (
+                                                (center_index_non_fixed - 0.5) - i)
+                                else:
+                                    node_data['new_order'] = fixed_order_ori_center_current_group + (
+                                                i - (center_index_non_fixed - 0.5))
+                            else:  # 奇数
+                                # node_data['new_order'] = fixed_order_ori_center_current_group + ((i - center_index_non_fixed)  )
+                                if i == center_index_non_fixed:
+                                    node_data['new_order'] = fixed_order_ori_center_current_group
+                                elif i < center_index_non_fixed:
+                                    node_data['new_order'] = fixed_order_ori_center_current_group - (
+                                                center_index_non_fixed - i)
+                                else:
+                                    node_data['new_order'] = fixed_order_ori_center_current_group + (
+                                                i - center_index_non_fixed)
+
+        # 遍历rank值分组
+        for rank, nodes in sorted(rank_to_nodes.items()):
+            # 对相同rank值的节点按照order进行排序
+            sorted_nodes = sorted(nodes, key=lambda x: x['order'])
+
+            for i, node_data in enumerate(sorted_nodes):
+
+                print(node_data)
+                # 将节点添加到当前组的节点列表中
+                current_group_nodes.append(node_data)
+
+        # 将当前组的节点列表添加到最终的节点列表中
+        # 通过使用 copy.deepcopy，你创建了 current_group_nodes 列表的完全独立副本，确保对它的任何修改都不会影响已附加到 final_nodes_new 的列表。
+        final_nodes_new.append(copy.deepcopy(current_group_nodes))  # 使用深拷贝来避免修改原始列表的问题
+
+    # # 最终的节点列表包含了所有组的数据
+    return final_nodes_new
+def get_aggregate_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
+    final_nodes_new = []  # 用于存储最终的节点列表
+
+    for group, data in grouped_data.items():
+        group_nodes = data['nodes']  # 获取该组的节点列表，用于后续操作获取新的节点order
+
+        # 对子图内所有节点按'order'值从小到大排序，用于保持相对位置并压缩子图
+        sorted_all_nodes_subgraph = sorted(group_nodes, key=lambda x: x['order'])
+        # 生成新的'order_relative_sub_all_nodes'值
+        order_relative_sub_all_nodes = 0
+        current_order = None
+
+        for node in sorted_all_nodes_subgraph:
+            if node['order'] != current_order:
+                order_relative_sub_all_nodes += 1
+                current_order = node['order']
+            node['order_relative_sub_all_nodes'] = order_relative_sub_all_nodes
+
+        # 初始化最小和最大值为第一个节点的"order_relative_sub_all_nodes"值
+        min_order_current_rela = sorted_all_nodes_subgraph[0]['order_relative_sub_all_nodes']
+        max_order_current_rela = sorted_all_nodes_subgraph[0]['order_relative_sub_all_nodes']
+
+        # 遍历节点列表以找到节点的最小和最大的原始"order"值（此处的原始order是针对的所有层级内的节点的水平的排序顺序）
+        for node in sorted_all_nodes_subgraph:
+            current_order = node['order_relative_sub_all_nodes']
+            if current_order < min_order_current_rela:
+                min_order_current_rela = current_order  # 通过遍历得到最小order值
+            if current_order > max_order_current_rela:
+                max_order_current_rela = current_order  # 通过遍历得到最大order值
+            center_current_rela = (max_order_current_rela + min_order_current_rela)/2
+        print("当前组节点的相对水平中心点为：\n{}".format(center_current_rela))
+        for node in sorted_all_nodes_subgraph:
+            # 方法三：获取了每个子图中所有节点的水平相对顺序 order_relative_sub_all_nodes 之后，保持相对顺序不变的情况下，计算所有节点相对于超图中心点的顺序 new_order
+            node['new_order'] = node['order_relative_sub_all_nodes'] - center_current_rela + nodes_centerx
+            node['distance'] = node['new_order'] - node['order']
+
+
+        rank_to_nodes = {}
+        # 创建一个字典来存储每个rank值对应的非固定节点列表
+        rank_to_non_fixed_nodes = {}
+        current_group_nodes = []  # 用于存储当前组的所有节点
+        # 将全部节点按照rank值分组
+        for node_data in group_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_nodes:
+                rank_to_nodes[rank] = []
+            rank_to_nodes[rank].append(node_data)
+
+        # 遍历rank值分组
+        for rank, nodes in sorted(rank_to_nodes.items()):
+            # 对相同rank值的节点按照order进行排序
+            sorted_nodes = sorted(nodes, key=lambda x: x['order'])
+
+            for i, node_data in enumerate(sorted_nodes):
+
+                print(node_data)
+                # 将节点添加到当前组的节点列表中
+                current_group_nodes.append(node_data)
+        # 将当前组的节点列表添加到最终的节点列表中
+        # 通过使用 copy.deepcopy，你创建了 current_group_nodes 列表的完全独立副本，确保对它的任何修改都不会影响已附加到 final_nodes_new 的列表。
+        final_nodes_new.append(copy.deepcopy(current_group_nodes))  # 使用深拷贝来避免修改原始列表的问题
+
+    # # 最终的节点列表包含了所有组的数据
+    return final_nodes_new
+def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
     final_nodes_new = []  # 用于存储最终的节点列表
 
     # 遍历每一个组内的所有节点
     for group, data in grouped_data.items():
-        group_nodes_ori = data['nodes']  # 获取该组的节点列表
-        group_nodes = data['nodes']  # 获取该组的节点列表，用于后续操作获取新的节点order
-        group_edges = data['edges']
+        sorted_all_fixed_nodes = sorted(fixed_nodes_supergraph, key=lambda x: x['order'])
+        order_sup_fixed_nodes_rela = 0
+        order_sup_fixed = None
+        for node in sorted_all_fixed_nodes:
+            if node['order'] != order_sup_fixed:
+                order_sup_fixed_nodes_rela += 1
+                order_sup_fixed = node['order']
+            node['order_sup_fixed_nodes_rela'] = order_sup_fixed_nodes_rela
+        # 1.2 超图的共用节点按顺序匹配与超图中心点靠近的值
+        # 初始化最小和最大值为第一个节点的"order_relative_sub_all_nodes"值
+        min_order_sup_fixed = sorted_all_fixed_nodes[0]['order_sup_fixed_nodes_rela']
+        max_order_sup_fixed = sorted_all_fixed_nodes[0]['order_sup_fixed_nodes_rela']
 
-        # print(f'Nodes in Group {group}:')
+        # 遍历节点列表以找到节点的最小和最大的原始"order"值（此处的原始order是针对的所有层级内的节点的水平的排序顺序）
+        for node in sorted_all_fixed_nodes:
+            current_order = node['order_sup_fixed_nodes_rela']
+            if current_order < min_order_sup_fixed:
+                min_order_sup_fixed = current_order  # 通过遍历得到最小order值
+            if current_order > max_order_sup_fixed:
+                max_order_sup_fixed = current_order  # 通过遍历得到最大order值
+            center_sup_fixed = (min_order_sup_fixed + max_order_sup_fixed) / 2
+        print("超图固定节点的相对水平中心点为：\n{}".format(center_sup_fixed))
+        for node in sorted_all_fixed_nodes:
+            node['order_fixed_relative_compact'] = node['order_sup_fixed_nodes_rela'] - center_sup_fixed + nodes_centerx
 
-        # 创建一个字典来存储每个rank值对应的节点列表
+
+        group_nodes = data['nodes']
+        sorted_all_nodes_subgraph = sorted(group_nodes, key=lambda x: x['order'])
+        # 生成新的'order_relative_sub_all_nodes'值
+        order_relative_sub_all_nodes = 0
+        current_order = None
+
+        for node in sorted_all_nodes_subgraph:
+            if node['order'] != current_order:
+                order_relative_sub_all_nodes += 1
+                current_order = node['order']
+            node['order_relative_sub_all_nodes'] = order_relative_sub_all_nodes
+
+
+        print(sorted_all_nodes_subgraph)
+
+
+        # 调用函数并获取返回值
+        current_group_fixed_nodes = get_fixedNodes(group_nodes)
+        print('current_group_fixed_nodes:\n{}'.format(current_group_fixed_nodes))
+        current_group_non_fixed_nodes = get_nonFixedNodes(group_nodes)
+
+        # 获取当前组固定节点order_relative_sub_all_nodes值的最小和最大值
+        # 初始化最小和最大值为第一个节点的"order"值
+        min_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
+        max_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
+        # 遍历当前组固定节点列表以找到固定节点的最小和最大的"order_relative_sub_all_nodes"值
+        for node in current_group_fixed_nodes:
+            current_order = node['order_relative_sub_all_nodes']
+            if current_order < min_order_current_fixed:
+                min_order_current_fixed = current_order  # 通过遍历得到最小order值
+            if current_order > max_order_current_fixed:
+                max_order_current_fixed = current_order  # 通过遍历得到最大order值
+
+        # 获取当前组固定节点order_fixed_relative_compact值的最小和最大值
+        # 初始化最小和最大值为第一个节点的"order"值
+        min_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
+        max_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
+
+        # 遍历当前组固定节点列表以找到固定节点的最小和最大的"order_fixed_relative_compact"值
+        for node in current_group_fixed_nodes:
+            current_order = node['order_fixed_relative_compact']
+            if current_order < min_order_current_fixed_optimal:
+                min_order_current_fixed_optimal = current_order  # 通过遍历得到最小order值
+            if current_order > max_order_current_fixed_optimal:
+                max_order_current_fixed_optimal = current_order  # 通过遍历得到最大order值
+
+        for node in sorted_all_nodes_subgraph:
+            # 方法五：获取了每个子图中所有节点的水平相对顺序 order_relative_sub_all_nodes 之后，保持所有节点水平方向相对顺序不变且固定节点紧致之后再锚定的条件下，计算所有节点相对于超图中心点的顺序 new_order
+            if node['fixed'] == True:
+                # print(node['node'])
+                # print(f"固定节点：{node['node']}")
+                node['new_order'] = node['order_fixed_relative_compact']
+            else:
+                if node['order_relative_sub_all_nodes'] <= min_order_current_fixed:
+                    node['new_order'] = min_order_current_fixed_optimal + node['order_relative_sub_all_nodes'] - min_order_current_fixed
+                if node['order_relative_sub_all_nodes'] >= max_order_current_fixed:
+                    node['new_order'] = max_order_current_fixed_optimal + node['order_relative_sub_all_nodes'] - max_order_current_fixed
+                else:
+                    # node['new_order'] = nodes_centerx
+                    # 生成间隔为1的区间列表
+                    # 从current_group_fixed_nodes列表中提取'order_relative_sub_all_nodes'的值
+                    order_relative_sub_all_nodes_values = [item['order_relative_sub_all_nodes'] for item in current_group_fixed_nodes]
+
+                    # 去除重复值并排序
+                    unique_sorted_values = sorted(set(order_relative_sub_all_nodes_values))
+
+                    # 初始化区间列表
+                    intervals = []
+
+                    # 生成区间
+                    for i in range(len(unique_sorted_values) - 1):
+                        start = unique_sorted_values[i]
+                        end = unique_sorted_values[i + 1]
+                        intervals.append((start, end))
+
+                    print("interval为：\n{}".format(intervals))
+                    # 遍历区间列表并检查值的位置
+                    for interval in intervals:
+                        if interval[0] < node['order_relative_sub_all_nodes'] < interval[1]:
+                            # 遍历节点列表，查找匹配的节点
+                            for fixed_node in current_group_fixed_nodes:
+                                if fixed_node['order_relative_sub_all_nodes'] == interval[0]:
+                                    order_fixed_rela_start = fixed_node['order_fixed_relative_compact']
+                                    print(f"找到匹配的节点：{node['node']}，order_fixed_rela_start值为 {order_fixed_rela_start}")
+                                    # 计算逻辑：起点的值加上倍数个间隔
+                                    node['new_order'] = order_fixed_rela_start + (node['order_relative_sub_all_nodes'] - interval[0])/(interval[1] - interval[0])
+                                # else:
+                                #     print(f"未找到匹配的节点")
+
+        # 创建一个字典来存储每个rank值对应的全部节点列表
+        rank_to_nodes = {}
+        # 创建一个字典来存储每个rank值对应的非固定节点列表
+        rank_to_non_fixed_nodes = {}
+
+        # 将全部节点按照rank值分组
+        for node_data in group_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_nodes:
+                rank_to_nodes[rank] = []
+            rank_to_nodes[rank].append(node_data)
+
+        # 将非固定节点按照rank值分组
+        for node_data in current_group_non_fixed_nodes:
+            rank = node_data['rank']
+            if rank not in rank_to_non_fixed_nodes:
+                rank_to_non_fixed_nodes[rank] = []
+            rank_to_non_fixed_nodes[rank].append(node_data)
+
+        current_group_nodes = []  # 用于存储当前组的所有节点
+
+        for rank, nodes in sorted(rank_to_nodes.items()):
+            # 对相同rank值的节点按照order进行排序
+            sorted_nodes = sorted(nodes, key=lambda x: x['order'])
+
+            for i, node_data in enumerate(sorted_nodes):
+
+                print(node_data)
+                # 将节点添加到当前组的节点列表中
+                current_group_nodes.append(node_data)
+        print("当前组的节点列表为：\n{}".format(current_group_nodes))
+        print("***********************************************************")
+
+        # 将当前组的节点列表添加到最终的节点列表中
+        # 通过使用 copy.deepcopy，你创建了 current_group_nodes 列表的完全独立副本，确保对它的任何修改都不会影响已附加到 final_nodes_new 的列表。
+        final_nodes_new.append(copy.deepcopy(current_group_nodes))  # 使用深拷贝来避免修改原始列表的问题
+
+    # # 最终的节点列表包含了所有组的数据
+    return final_nodes_new
+
+def get_tree_order_new(grouped_data, nodes_centerx):
+    final_nodes_new = []  # 用于存储最终的节点列表
+
+    # 遍历每一个组内的所有节点
+    for group, data in grouped_data.items():
+        group_nodes = data['nodes']
         rank_to_nodes = {}
 
         # 将节点按照rank值分组
@@ -602,7 +928,6 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
 
             new_order_relative_centerx = nodes_centerx
 
-            # 计算具有相同rank的节点数量
             num_nodes_with_same_rank = len(sorted_nodes)
 
             # 计算具有相同rank的节点的中心索引
@@ -611,26 +936,26 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
             # 确定节点数量是奇数还是偶数
             is_even = num_nodes_with_same_rank % 2 == 0
 
-            # 计算每个节点的 new_order_relative_centerx
+            # 计算每个节点的 new_order
             for i, node_data in enumerate(sorted_nodes):
-                # 如果rank值唯一，将new_order_relative_centerx赋值为nodes_centerx
+                # 如果rank值唯一，将new_order赋值为nodes_centerx
                 if num_nodes_with_same_rank == 1:
-                    node_data['new_order_relative_centerx'] = nodes_centerx
+                    node_data['new_order'] = nodes_centerx
                 else:
                     # 根据奇偶性计算 new_order_relative_centerx
                     if is_even:  # 偶数
                         if i < (center_index - 0.5):
-                            node_data['new_order_relative_centerx'] = nodes_centerx - ((center_index - 0.5) - i)
+                            node_data['new_order'] = nodes_centerx - ((center_index - 0.5) - i)
                         else:
-                            node_data['new_order_relative_centerx'] = nodes_centerx + (i - (center_index - 0.5))
+                            node_data['new_order'] = nodes_centerx + (i - (center_index - 0.5))
                     else:  # 奇数
-                        # node_data['new_order_relative_centerx'] = nodes_centerx + ((i - center_index)  )
+                        # node_data['new_order'] = nodes_centerx + ((i - center_index)  )
                         if i == center_index:
-                            node_data['new_order_relative_centerx'] = nodes_centerx
+                            node_data['new_order'] = nodes_centerx
                         elif i < center_index:
-                            node_data['new_order_relative_centerx'] = nodes_centerx - (center_index - i)
+                            node_data['new_order'] = nodes_centerx - (center_index - i)
                         else:
-                            node_data['new_order_relative_centerx'] = nodes_centerx + (i - center_index)
+                            node_data['new_order'] = nodes_centerx + (i - center_index)
                 # 如果rank值唯一，将new_order赋值为0
                 # 否则按索引重新赋值
                 node_data['new_order'] = 0 if num_nodes_with_same_rank == 1 else new_order
@@ -643,15 +968,6 @@ def get_each_dag_nodes_order_new(grouped_data, nodes_centerx):
                 values = list(node_data.values())
                 values.insert(index_to_insert, new_order)
                 node_data = dict(zip(keys, values))
-
-                # 插入新属性new_order_relative_centerx到节点数据中的特定位置（例如，在 'rank' 后面）
-                index_to_insert = 2  # 在 'rank' 后面插入 'new_order_relative_centerx'，可以根据需要进行调整
-                keys = list(node_data.keys())
-                keys.insert(index_to_insert, 'new_order_relative_centerx')
-                values = list(node_data.values())
-                values.insert(index_to_insert, new_order_relative_centerx)
-                node_data = dict(zip(keys, values))
-
                 # 打印节点信息
                 node = node_data['node']
                 # print(f'Node {node}: Rank: {rank}, New Order: {node_data["new_order"]}')
