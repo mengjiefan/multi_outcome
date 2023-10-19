@@ -14,6 +14,20 @@ export const countSimplePos = (g, nodes, links) => {
     let pos = g.edge(v);
     let points = [];
     if (pos.points) points = pos.points; //.slice(1, pos.points.length - 1);
+    if (isNaN(points[0].x) || isNaN(points[0].y)) {
+      let sindex = nodesList.findIndex((node) => node.id === v.v);
+      points.splice(0, 1, { x: nodesList[sindex].x, y: nodesList[sindex].y });
+    }
+    if (
+      isNaN(points[points.length - 1].x) ||
+      isNaN(points[points.length - 1].y)
+    ) {
+      let tindex = nodesList.findIndex((node) => node.id === v.w);
+      points.splice(points.length - 1, 1, {
+        x: nodesList[tindex].x,
+        y: nodesList[tindex].y,
+      });
+    }
 
     let index = links.findIndex((link) => {
       if (link.source === v.v && link.target === v.w) return true;
@@ -22,6 +36,7 @@ export const countSimplePos = (g, nodes, links) => {
     });
     if (index > -1) {
       let edge = links[index];
+      // simplePos: dagre中点的顺序和数组中一样，无需反向
       edge["points"] = points;
       linksList.push(edge);
     }

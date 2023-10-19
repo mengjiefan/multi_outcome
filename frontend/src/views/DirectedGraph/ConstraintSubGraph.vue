@@ -55,6 +55,9 @@ import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
+import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge.js";
 
 export default {
   data() {
@@ -63,7 +66,6 @@ export default {
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
-      gaps: [],
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -207,14 +209,12 @@ export default {
     },
     drawSonGraphs() {
       this.sonGraphs = [];
-      this.gaps = [];
       for (let i = 0; i < this.sonNum; i++) {
         let ans = countSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );
         this.sonGraphs.push(ans);
-        this.gaps.push(1);
       }
       for (let i = 0; i < this.sonNum; i++) {
         this.setSonGraph(i);
@@ -289,6 +289,8 @@ export default {
       dagre.layout(g);
       let simplePos = countSimplePos(g, data.nodesList, data.linksList);
 
+      this.sonGraphs[index] = simplePos;
+
       this.drawSonGraph(index, simplePos);
       /*
       if (index === 0) {
@@ -328,10 +330,9 @@ export default {
       let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
       if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
         gap = (dom.clientHeight - 96) / (maxH - minH + 24);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY =
-        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
-      this.gaps[index] = gap;
+      let startX = dom.clientWidth / 2 - ((maxW + minW) / 2) * gap;
+      let startY = (dom.clientHeight - (maxH + 2 * minH) * gap) / 3;
+
       let paper = drawExtractedGraph(
         dom,
         simplePos.nodesList,
@@ -636,32 +637,41 @@ export default {
     },
     addLink(index, link) {
       var path = new joint.shapes.standard.Link({});
-      let attributes = this.deleteLinkView.model.attributes;
-      const _this = this;
+
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 * _this.gaps[index],
+          strokeWidth: value * 8,
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7 * _this.gaps[index],
+            "stroke-width": value * 7,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let source = attributes.target;
-      let target = attributes.source;
 
-      if (attributes.attrs.line.targetMarker)
+      let realLink = LinksManagement.getNodeByName(this.paper, link);
+      let source = realLink.source;
+      let target = realLink.target;
+      if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
-      let vertices = attributes.vertices.reverse();
-      path.vertices(vertices);
+
+      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
+      console.log(this.sonGraphs[index].linksList[i]);
+      let points = this.sonGraphs[index].linksList[i].points.concat([]);
+
+      if (link.source !== this.sonGraphs[index].linksList[i].source)
+        points.reverse();
+      path.connector("ExtractedCurve", {
+        points,
+        value: value * 7,
+      });
+
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);

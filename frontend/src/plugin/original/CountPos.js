@@ -61,11 +61,6 @@ export const countSonPos = (outcome, variables, linksList) => {
         nodesList,
         linksList
     );
-    linksList.forEach((link => {
-        if (link.source === 'Sex' && link.target === 'Smoke')
-            console.log(link)
-        else if (link.source === 'Smoke' && link.target === 'Sex')
-            console.log(link)
-    }))
+
     return simplePos;
 }

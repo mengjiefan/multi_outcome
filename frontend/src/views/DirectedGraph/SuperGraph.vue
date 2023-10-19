@@ -587,6 +587,7 @@ export default {
       let points = this.simplePos.linksList[index].points.concat([]);
       if (link.source !== this.simplePos.linksList[index].source)
         points.reverse();
+      console.log(points);
       path.connector("SuperCurve", {
         points,
         value: value * 8,
