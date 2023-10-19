@@ -286,7 +286,7 @@ export default {
       let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
           id: node.node,
-          x: node.order_fixed_relative_optimal,
+          x: node.new_order,
           y: node.rank,
           indexes: node.group,
           type: node.outcome ? 0 : 1,
