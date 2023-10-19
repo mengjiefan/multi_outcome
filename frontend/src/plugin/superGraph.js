@@ -212,7 +212,7 @@ export const showHiddenEdge = (paper, orlink, scale, data) => {
 };
 export const setSuperGraph = (g, data) => {
   var states = data.nodesList;
-  var edges = data.linksList.filter((edge) => !edge.add);//待定
+  var edges = data.linksList.filter((edge) => !edge.add); //待定
   states.forEach(function (state) {
     let node = {
       label: "",
@@ -611,15 +611,15 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
         y: countYPos(point.y),
       };
     });
-      points[0] = {
-        x: countXPos(nodesList[sindex].x),
-        y: countYPos(nodesList[sindex].y),
-      };
+    points[0] = {
+      x: countXPos(nodesList[sindex].x),
+      y: countYPos(nodesList[sindex].y),
+    };
 
-      points[points.length - 1] = {
-        x: countXPos(nodesList[tindex].x),
-        y: countYPos(nodesList[tindex].y),
-      };
+    points[points.length - 1] = {
+      x: countXPos(nodesList[tindex].x),
+      y: countYPos(nodesList[tindex].y),
+    };
     path.connector("ExtractedCurve", {
       points,
       value: value * 7,

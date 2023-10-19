@@ -675,9 +675,10 @@ export default {
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
       let index = findLink.sameNodeLink(link, this.sonGraphs[i].linksList);
-      let points = [];
-      points = this.sonGraphs[i].linksList[index].points;
 
+      let points = this.sonGraphs[i].linksList[index].points.concat([]);
+      if (link.source !== this.sonGraphs[i].linksList[index].source)
+        points.reverse();
       let source = attributes.target;
       let target = attributes.source;
       if (attributes.attrs.line.targetMarker)
@@ -685,7 +686,7 @@ export default {
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
-      path.connector("curveNatural", { points: points });
+      path.connector("TreeCurve", { points: points, value: value * 7 });
     },
     getNodeIndex(id) {
       let indexes = [];
