@@ -1,3 +1,4 @@
+<!--方法五-->
 <template>
   <div class="sub-graph">
     <div class="group-graphs">
@@ -35,27 +36,25 @@
               >
             </div>
           </div>
-          <div :id="'paper' + index" class="svg-content">
-            <svg></svg>
-          </div>
+          <div :id="'paper' + index" class="svg-content"></div>
         </div>
       </div>
     </div>
   </div>
 </template>
-  <script>
+          <script>
 import axios from "axios";
 import * as d3 from "d3";
-import * as dagreD3 from "dagre-d3";
-import dagre from "@/plugin/dagre/dagre";
 import { ref } from "vue";
-import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
-import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawExtractedGraph } from "@/plugin/superGraph";
+import {
+  drawSonCharts,
+  addHighLight,
+  removeHighLight,
+} from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
+import { findLink } from "@/plugin/links";
 
 export default {
   data() {
@@ -63,8 +62,7 @@ export default {
       papers: ref([]),
       paper: ref(),
       sonGraphs: ref([]),
-      finalPos: ref(),
-      gaps: [],
+      simplePos: ref(),
       ifGroup: ref(false),
       loadingInstance: ref(null),
       countingGraph: ref(false),
@@ -99,11 +97,7 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
-        this.sonGraphs[i] = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
-        );
-        this.setSonGraph(i);
+        this.drawSonGraph(i);
       }
       for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
         let link = this.multipleSearchValue.linksList[i];
@@ -202,27 +196,11 @@ export default {
         if (state.type === -1) that.ifGroup = true;
         else if (state.type === 0) that.sonNum++;
       });
-      setTimeout(() => {
-        this.drawSonGraphs();
-      }, 0);
-    },
-    drawSonGraphs() {
-      this.sonGraphs = [];
-      this.gaps = [];
-      for (let i = 0; i < this.sonNum; i++) {
-        let ans = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
-        );
-        console.log(ans);
-        this.sonGraphs.push(ans);
-        this.gaps.push(1);
-      }
-
-      for (let i = 0; i < this.sonNum; i++) {
-        this.setSonGraph(i);
-      }
-      //this.setSonGraph(1);
+      this.getLayout();
+      /*
+            setTimeout(() => {
+              this.drawSonGraphs();
+            }, 0);*/
     },
     traversal(list, value) {
       if (list.includes(value)) return list;
@@ -242,158 +220,146 @@ export default {
         list.push(value);
       }
     },
-    setSonGraph(index) {
-      var data = this.sonGraphs[index];
-      var states = data.nodesList;
-      var edges = data.linksList;
-      //const oriL = edges.length;
-      let g = new dagreD3.graphlib.Graph({}).setGraph({});
-
-      let that = this;
-      let y = [];
+    getLayout() {
+      let nodes = [];
       let x = [];
-      this.finalPos.nodesList.forEach((node) => {
-        that.traversal(y, node.y);
+      let y = [];
+      let that = this;
+      this.simplePos.nodesList.forEach((node) => {
         that.traversal(x, node.x);
+        that.traversal(y, node.y);
       });
-      let nodes = states.map(function (state) {
+
+      this.simplePos.nodesList.forEach((node) => {
+        nodes.push({
+          node: node.id,
+          rank: y.indexOf(node.y),
+          order: x.indexOf(node.x),
+          fixed: node.indexes.length > 0,
+          group: node.indexes,
+          outcome: node.type === 0,
+        });
+      });
+      let links = this.simplePos.linksList.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+        else
+          return {
+            target: link.target,
+            source: link.source,
+            value: link.value,
+          };
+      });
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/calculate_relative_layout",
+        //参数
+        data: {
+          nodesList: nodes,
+          linksList: links,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((response) => {
+        console.log(response);
+        this.sonGraphs = [];
+        response.data.graph.forEach((graph) => {
+          this.sonGraphs.push({
+            nodesList: graph,
+            linksList: [],
+          });
+        });
+        this.drawSonGraphs();
+      });
+    },
+    drawSonGraphs() {
+      for (let i = 0; i < this.sonNum; i++) {
+        this.drawSonGraph(i);
+      }
+    },
+    drawSonGraph(index) {
+      let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
-          id: state.id,
-          opos: x.indexOf(state.x),
-          orank: y.indexOf(state.y) * 2,
-          fixed: state.indexes.length > 1,
-          type: state.type,
-          shape: "circle", // 设置节点形状为圆形
-          width: 10,
-          height: 10,
+          id: node.node,
+          x: node.new_order,
+          y: node.rank,
+          indexes: node.group,
+          type: node.outcome ? 0 : 1,
         };
       });
-      let fixedNodes = nodes.sort((a, b) => b.orank - a.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      for (let index = 1; index < fixedNodes.length; index++) {
-        let node = fixedNodes[index];
-        if (node.orank === fixedNodes[0].orank) continue;
-        else {
-          let flag = false;
-          for (
-            let i = 0;
-            i < fixedNodes.length &&
-            fixedNodes[i].orank === fixedNodes[0].orank;
-            i++
-          ) {
-            if (fixedNodes[i].opos === node.opos) {
-              flag = true;
-              break;
-            }
-          }
-          if (!flag) {
-            g.setNode(node.id + "_TEMP", {
-              opos: node.opos,
-              orank: fixedNodes[0].orank,
-              fixed: true,
-              type: node.type,
-            });
-          }
-        }
-      }
-      fixedNodes = nodes.sort((a, b) => a.orank - b.orank);
-      fixedNodes.forEach((w) => {
-        if (w.fixed) {
-          let alignNode = nodes.filter((node) => node.opos === w.opos)[0];
-          if (alignNode.id !== w.id) alignNode.fixed = true;
-        }
-      });
-      fixedNodes = fixedNodes.filter(
-        (w) =>
-          w.fixed && nodes.filter((node) => node.opos === w.opos)[0].id === w.id
-      );
-      if (fixedNodes.length > 1)
-        for (let index = 1; index < fixedNodes.length; index++) {
-          let node = fixedNodes[index];
-          if (node.orank === fixedNodes[0].orank) continue;
-          else {
-            let flag = false;
-            for (
-              let i = 0;
-              i < fixedNodes.length &&
-              fixedNodes[i].orank === fixedNodes[0].orank;
-              i++
-            ) {
-              if (fixedNodes[i].opos === node.opos) {
-                flag = true;
-                break;
-              }
-            }
-            if (!flag) {
-              g.setNode(node.id + "_TEMP2", {
-                opos: node.opos,
-                orank: fixedNodes[0].orank,
-                fixed: true,
-                type: node.type,
-              });
-            }
-          }
-        }
-      nodes.forEach(function (state) {
-        g.setNode(state.id, state);
-      });
-      edges.forEach(function (edge) {
-        let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
-        var valString = edgeValue.toString() + "px";
-        var widthStr = "stroke-width: " + valString;
-        var edgeColor = "stroke: black";
-        let completeStyle =
-          edgeColor + ";" + widthStr + ";" + "fill: transparent;";
-        if (edge.hidden) {
-          g.setEdge(edge.source, edge.target, {
-            style:
-              "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
-            curve: d3.curveBasis,
-          });
-        } else {
-          g.setEdge(edge.source, edge.target, {
-            style: completeStyle,
-            arrowhead: "undirected",
-          });
-        }
-      });
+      let dom = document.getElementById("paper" + (index + 1));
 
-      // Set some general styles
-      g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        node.rx = node.ry = 20;
-        node.style = "fill:" + that.cmap[0];
+      let minW = 150000;
+      let maxW = 0;
+      let minH = 15000;
+      let maxH = 0;
+      nodes.forEach((node) => {
+        if (node.x > maxW) maxW = node.x;
+        if (node.x < minW) minW = node.x;
+        if (node.y > maxH) maxH = node.y;
+        if (node.y < minH) minH = node.y;
       });
-      dagre.layout(g);
-      //data.linksList = edges.slice(0, oriL);
-      let simplePos = countSimplePos(g, data.nodesList, data.linksList);
-      this.drawSonGraph(index, simplePos);
-      /*
-      if (index === 3) {
-        let render = new dagreD3.render();
-        // 选择 svg 并添加一个g元素作为绘图容器.
-        let svgGroup = d3.select("svg").append("g");
-        // 在绘图容器上运行渲染器生成流程图.
-        render(svgGroup, g);
-      }*/
-    },
-    getNodeIndex(id) {
-      let indexes = [];
-      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        if (selection.outcome === id) indexes.push(i);
-        else if (selection.variable.includes(id)) indexes.push(i);
+      let mid = (minW + maxW) / 2;
+      if (maxW - minW > 0 && maxW - minW < maxH - minH - 1) {
+        let scale = Math.floor((maxH - minH - 1) / (maxW - minW));
+        nodes.map((node) => {
+          node.x = mid + (node.x - mid) * scale;
+        });
+        maxW = mid + (maxW - mid) * scale;
+        minW = mid + (minW - mid) * scale;
       }
-      return indexes;
+
+      let gap = (dom.clientWidth - 50) / (maxW - minW);
+      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+        gap = (dom.clientHeight - 120) / (maxH - minH);
+      if (!gap || isNaN(gap)) gap = 1;
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
+      let startY =
+        (dom.clientHeight - 70 - gap * (maxH - minH)) / 2 - minH * gap;
+
+      let links = this.multipleSearchValue.selections[index].linksList.filter(
+        (link) => !link.hidden
+      );
+      links = links.map((link) => {
+        if (link.reverse)
+          return {
+            source: link.target,
+            target: link.source,
+            value: link.value,
+          };
+        else return link;
+      });
+      for (let i = 0; i < links.length; i++) {
+        let link = links[i];
+        let sIndex = nodes.findIndex((node) => node.id === link.source);
+        let tIndex = nodes.findIndex((node) => node.id === link.target);
+        let source = nodes[sIndex];
+        let target = nodes[tIndex];
+        if (!source) console.log(link.source, nodes, index);
+        if (!target) console.log(link.target, nodes, index);
+        let point = this.countControl(source, target, mid);
+        link["points"] = [source, point, target];
+      }
+      let paper = drawSonCharts(
+        dom,
+        nodes,
+        {
+          gap,
+          startX,
+          startY,
+        },
+        links
+      );
+      this.sonGraphs[index].linksList = links;
+      if (!this.papers[index]) {
+        this.papers.push(paper);
+      } else this.papers[index] = paper;
+      this.setPaper(index, paper);
     },
     countControl(source, target, mid) {
       let x = (source.x + target.x) / 2;
@@ -406,61 +372,6 @@ export default {
         else x = x + offset;
         return { x, y };
       } else return { x: x + offset, y };
-    },
-    drawSonGraph(index, simplePos) {
-      let dom = document.getElementById("paper" + (index + 1));
-      for (let i = 0; i < simplePos.nodesList.length; i++) {
-        simplePos.nodesList[i]["indexes"] = this.getNodeIndex(
-          simplePos.nodesList[i].id
-        );
-      }
-      let minW = 150000;
-      let maxW = 0;
-      let minH = 15000;
-      let maxH = 0;
-      simplePos.nodesList.forEach((node) => {
-        if (node.x > maxW) maxW = node.x;
-        if (node.x < minW) minW = node.x;
-        if (node.y > maxH) maxH = node.y;
-        if (node.y < minH) minH = node.y;
-      });
-      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-      if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-        gap = (dom.clientHeight - 96) / (maxH - minH + 24);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY =
-        (dom.clientHeight - 64 - gap * (maxH - minH)) / 2 - minH * gap;
-      this.gaps[index] = gap;
-      simplePos.linksList.forEach((link) => {
-        let sindex = simplePos.nodesList.findIndex(
-          (node) => node.id === link.source
-        );
-        let source = simplePos.nodesList[sindex];
-        let tindex = simplePos.nodesList.findIndex(
-          (node) => node.id === link.target
-        );
-        let target = simplePos.nodesList[tindex];
-        link.points = [
-          source,
-          target
-        ];
-      });
-      let paper = drawExtractedGraph(
-        dom,
-        simplePos.nodesList,
-        simplePos.linksList,
-        {
-          gap,
-          startX,
-          startY,
-        },
-        index
-      );
-
-      if (!this.papers[index]) {
-        this.papers.push(paper);
-      } else this.papers[index] = paper;
-      this.setPaper(index, paper);
     },
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -497,6 +408,10 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
     getWidth(index, router) {
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
@@ -509,10 +424,6 @@ export default {
           value = link.value;
       });
       return value.toFixed(3);
-    },
-    plotChart(line) {
-      let dom = document.getElementsByClassName(line)[0];
-      createChart(dom, line);
     },
     setPaper(index, paper) {
       const _this = this;
@@ -544,7 +455,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>" +
+                      <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -559,8 +470,7 @@ export default {
           _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
-        if (elementView.model.attributes.type === "standard.Rectangle")
-          _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
       });
     },
     highLightAllPaper(id) {
@@ -721,8 +631,8 @@ export default {
         if (!selection.linksList[index].reverse) {
           selection.linksList[index]["reverse"] = true;
           this.addLink(i, {
-            source: selection.linksList[index].target,
-            target: selection.linksList[index].source,
+            source: target,
+            target: source,
             value,
           });
         } else {
@@ -743,41 +653,54 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       this.getEdgeValue(i, nodes[0], nodes[1]);
     },
-    addLink(index, link) {
+    checkDirection(source, target) {
+      if (source.y <= target.y) return "DOWN";
+      else return "UP";
+    },
+    addLink(i, link) {
       var path = new joint.shapes.standard.Link({});
       let attributes = this.deleteLinkView.model.attributes;
-      const _this = this;
       let value = Math.abs(link.value);
       if (value > 1) value = 1;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
         line: {
-          strokeWidth: value * 8 * _this.gaps[index],
+          strokeWidth: value * 8 + "",
           targetMarker: {
             type: "path",
             stroke: "black",
-            "stroke-width": value * 7 * _this.gaps[index],
+            "stroke-width": value * 7,
             fill: "transparent",
             d: "M 10 -5 0 0 10 5 ",
           },
         },
       });
       if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
+      let index = findLink.sameNodeLink(link, this.sonGraphs[i].linksList);
+
+      let points = this.sonGraphs[i].linksList[index].points.concat([]);
+      if (link.source !== this.sonGraphs[i].linksList[index].source)
+        points.reverse();
       let source = attributes.target;
       let target = attributes.source;
-
       if (attributes.attrs.line.targetMarker)
         path.attr("line/targetMarker", null);
-      path.connector("rounded");
-      let vertices = attributes.vertices.reverse();
-      path.vertices(vertices);
       path.source(source);
       path.target(target);
       path.addTo(this.paper.model);
+      path.connector("TreeCurve", { points: points, value: value * 7 });
+    },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
     },
     saveData() {
       localStorage.setItem(
@@ -786,20 +709,21 @@ export default {
       );
     },
   },
+
   mounted() {
     this.multipleSearchValue = JSON.parse(
       localStorage.getItem("GET_JSON_RESULT")
     );
     console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+    this.simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
   },
 };
 </script>
-
-<style scoped>
+            
+          <style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
@@ -858,10 +782,6 @@ export default {
   width: 100%;
   height: 90% !important;
 }
-.svg-content svg {
-  width: 100%;
-  height: 100%;
-}
 .one-line-operator {
   height: 10%;
   width: 100%;
@@ -902,4 +822,4 @@ export default {
   transition-duration: 0.2s;
 }
 </style>
-   
+           

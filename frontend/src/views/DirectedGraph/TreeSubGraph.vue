@@ -255,7 +255,7 @@ export default {
       });
       axios({
         method: "post",
-        url: "http://localhost:8000/api/calculate_layout",
+        url: "http://localhost:8000/api/calculate_tree_layout",
         //参数
         data: {
           nodesList: nodes,
@@ -284,7 +284,7 @@ export default {
       let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
           id: node.node,
-          x: node.new_order_relative_centerx,
+          x: node.new_order,
           y: node.rank,
           indexes: node.group,
           type: node.outcome ? 0 : 1,
@@ -315,6 +315,7 @@ export default {
       let gap = (dom.clientWidth - 50) / (maxW - minW);
       if ((dom.clientHeight - 120) / (maxH - minH) < gap)
         gap = (dom.clientHeight - 120) / (maxH - minH);
+      if (!gap || isNaN(gap)) gap = 1;
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
       let startY =
         (dom.clientHeight - 70 - gap * (maxH - minH)) / 2 - minH * gap;

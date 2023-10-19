@@ -20,16 +20,29 @@
         Tightened Subgraphs
       </div>
       <div
+        :class="name === 'CenterSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('CenterSubGraph')"
+      >
+        Center Subgraphs
+      </div>
+
+      <div
+        :class="name === 'AggregateSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('AggregateSubGraph')"
+      >
+        Aggregate Subgraphs
+      </div>
+      <div
         :class="name === 'TreeSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('TreeSubGraph')"
       >
         Tree Subgraphs
       </div>
       <div
-        :class="name === 'ConstraintSubGraph' ? 'active-tab' : 'normal-tab'"
-        @click="routeTo('ConstraintSubGraph')"
+        :class="name === 'RelativeSubGraph' ? 'active-tab' : 'normal-tab'"
+        @click="routeTo('RelativeSubGraph')"
       >
-        Constraint Subgraphs
+        Relative Subgraphs
       </div>
       <div
         :class="name === 'OriginalSubGraph' ? 'active-tab' : 'normal-tab'"
@@ -95,7 +108,7 @@ g text {
   padding-left: 16px;
   gap: 16px;
 }
-.directed-tabs div{ 
+.directed-tabs div {
   overflow: hidden;
 }
 .active-tab {

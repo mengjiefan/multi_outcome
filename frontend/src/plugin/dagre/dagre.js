@@ -2393,6 +2393,7 @@
                 var edge, delta;
                 while (tightTree(t, g) < size) {
                     edge = findMinSlackEdge(t, g);
+                    if(!edge) break;
                     delta = t.hasNode(edge.v) ? slack(g, edge) : -slack(g, edge);
                     shiftRanks(t, g, delta);
                 }
