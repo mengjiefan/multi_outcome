@@ -235,7 +235,7 @@ export default {
           node: node.id,
           rank: y.indexOf(node.y),
           order: x.indexOf(node.x),
-          fixed: node.indexes.length > 0,
+          fixed: that.getNodeIndex(node.id).length > 0,
           group: node.indexes,
           outcome: node.type === 0,
         });
@@ -266,7 +266,7 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
-        console.log(response);
+        console.log(response.data.graph[0].map(node => node.new_order));
         this.sonGraphs = [];
         response.data.graph.forEach((graph) => {
           this.sonGraphs.push({
@@ -286,7 +286,7 @@ export default {
       let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
           id: node.node,
-          x: node.new_order,
+          x: node.order_fixed_relative_optimal,
           y: node.rank,
           indexes: node.group,
           type: node.outcome ? 0 : 1,

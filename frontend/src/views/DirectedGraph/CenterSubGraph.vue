@@ -235,11 +235,12 @@ export default {
           node: node.id,
           rank: y.indexOf(node.y),
           order: x.indexOf(node.x),
-          fixed: node.indexes.length > 0,
+          fixed: that.getNodeIndex(node.id).length > 0,
           group: node.indexes,
           outcome: node.type === 0,
         });
       });
+      console.log(nodes.filter(node => !node.fixed));
       let links = this.simplePos.linksList.map((link) => {
         if (link.reverse)
           return {
@@ -266,7 +267,7 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
-        console.log(response)
+        console.log(response.data.graph[0].map((node) => node.new_order));
         this.sonGraphs = [];
         response.data.graph.forEach((graph) => {
           this.sonGraphs.push({
