@@ -924,7 +924,7 @@ def get_tree_order_new(grouped_data, nodes_centerx):
             sorted_nodes = sorted(nodes, key=lambda x: x['order'])
 
             # 初始化新的order为0
-            new_order = 0
+            new_order11 = 0
 
             new_order_relative_centerx = nodes_centerx
 
@@ -958,19 +958,20 @@ def get_tree_order_new(grouped_data, nodes_centerx):
                             node_data['new_order'] = nodes_centerx + (i - center_index)
                 # 如果rank值唯一，将new_order赋值为0
                 # 否则按索引重新赋值
-                node_data['new_order'] = 0 if num_nodes_with_same_rank == 1 else new_order
-                new_order += 1
+                # 此处的new_order11指的是同层级内的节点都是从0开始，而上述的new_order按照同层级的顺序，围绕共用点中心点两边分布
+                node_data['new_order11'] = 0 if num_nodes_with_same_rank == 1 else new_order11
+                new_order11 += 1
 
                 # 插入新属性new_order到节点数据中的特定位置（例如，在 'order' 后面）
-                index_to_insert = 3  # 在 'order' 后面插入 'new_order'，可以根据需要进行调整
-                keys = list(node_data.keys())
-                keys.insert(index_to_insert, 'new_order')
-                values = list(node_data.values())
-                values.insert(index_to_insert, new_order)
-                node_data = dict(zip(keys, values))
+                # index_to_insert = 2  # 在 'order' 后面插入 'new_order'，可以根据需要进行调整
+                # keys = list(node_data.keys())
+                # keys.insert(index_to_insert, 'new_order')
+                # values = list(node_data.values())
+                # values.insert(index_to_insert, new_order)
+                # node_data = dict(zip(keys, values))
                 # 打印节点信息
                 node = node_data['node']
-                # print(f'Node {node}: Rank: {rank}, New Order: {node_data["new_order"]}')
+                print(f'Node {node}: Rank: {rank}, New Order: {node_data["new_order"]}')
 
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
