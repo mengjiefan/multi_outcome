@@ -78,19 +78,19 @@ export default new VueRouter({
                   name: "CenterSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/center-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/CenterSubGraph.vue"),
+                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
                 },
                 {
                   name: "AggregateSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/aggregate-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/AggregateSubGraph.vue"),
+                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
                 },
                 {
                   name: "RelativeSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/relative-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/RelativeSubGraph.vue"),
+                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
                 },
                 {
                   name: "ConstraintSubGraph",
@@ -102,14 +102,14 @@ export default new VueRouter({
                   name: "TreeSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/tree-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/TreeSubGraph.vue"),
+                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
                 },
 
                 {
                   name: "OriginalSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/original-sub-graph",
                   component: () =>
-                  import("../views/DirectedGraph/raw/ExtractedGraph.vue"),        
+                    import("../views/DirectedGraph/raw/ExtractedGraph.vue"),
                 },
               ],
             },

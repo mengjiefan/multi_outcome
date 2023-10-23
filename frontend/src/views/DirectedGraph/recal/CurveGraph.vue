@@ -1,3 +1,4 @@
+<!--方法四-->
 <template>
   <div class="sub-graph">
     <div class="group-graphs">
@@ -41,7 +42,7 @@
     </div>
   </div>
 </template>
-    <script>
+        <script>
 import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
@@ -56,8 +57,17 @@ import historyManage from "@/plugin/history";
 import { findLink } from "@/plugin/links";
 
 export default {
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      console.log(to.name);
+      vm.graphType = to.name;
+      vm.init();
+    });
+  },
   data() {
     return {
+      scales: ref([]),
+      graphType: ref(),
       papers: ref([]),
       paper: ref(),
       sonGraphs: ref([]),
@@ -90,6 +100,17 @@ export default {
     };
   },
   methods: {
+    init() {
+      this.multipleSearchValue = JSON.parse(
+        localStorage.getItem("GET_JSON_RESULT")
+      );
+      console.log("getItem", this.multipleSearchValue);
+      this.simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+
+      if (this.multipleSearchValue) {
+        this.drawGraph();
+      }
+    },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -197,9 +218,9 @@ export default {
       });
       this.getLayout();
       /*
-      setTimeout(() => {
-        this.drawSonGraphs();
-      }, 0);*/
+          setTimeout(() => {
+            this.drawSonGraphs();
+          }, 0);*/
     },
     traversal(list, value) {
       if (list.includes(value)) return list;
@@ -239,6 +260,7 @@ export default {
           outcome: node.type === 0,
         });
       });
+      console.log(nodes.filter((node) => !node.fixed));
       let links = this.simplePos.linksList.map((link) => {
         if (link.reverse)
           return {
@@ -253,9 +275,25 @@ export default {
             value: link.value,
           };
       });
+      let name = "";
+      console.log(this.graphType);
+      switch (this.graphType) {
+        case "CenterSubGraph":
+          name = "center";
+          break;
+        case "AggregateSubGraph":
+          name = "aggregate";
+          break;
+        case "RelativeSubGraph":
+          name = "relative";
+          break;
+        case "TreeSubGraph":
+          name = "tree";
+          break;
+      }
       axios({
         method: "post",
-        url: "http://localhost:8000/api/calculate_tree_layout",
+        url: "http://localhost:8000/api/calculate_" + name + "_layout",
         //参数
         data: {
           nodesList: nodes,
@@ -265,6 +303,7 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
+        console.log(response.data.graph[0].map((node) => node.new_order));
         this.sonGraphs = [];
         response.data.graph.forEach((graph) => {
           this.sonGraphs.push({
@@ -276,7 +315,50 @@ export default {
       });
     },
     drawSonGraphs() {
+      const graphs = this.sonGraphs;
+      let dom = document.getElementById("paper1");
+      let minGap = 100000;
+
+      let midX = [];
+      let midY = [];
+      graphs.forEach((graph) => {
+        let minW = 150000;
+        let maxW = 0;
+        let minH = 15000;
+        let maxH = 0;
+        graph.nodesList.forEach((node) => {
+          if (node.new_order > maxW) maxW = node.new_order;
+          if (node.new_order < minW) minW = node.new_order;
+          if (node.rank > maxH) maxH = node.rank;
+          if (node.rank < minH) minH = node.rank;
+        });
+        let mid = (minW + maxW) / 2;
+        if (maxW - minW > 0 && maxW - minW < maxH - minH - 1) {
+          let scale = Math.floor((maxH - minH - 1) / (maxW - minW));
+          graph.nodesList.map((node) => {
+            node.new_order = mid + (node.new_order - mid) * scale;
+          });
+          maxW = mid + (maxW - mid) * scale;
+          minW = mid + (minW - mid) * scale;
+        }
+        let gap = (dom.clientWidth - 50) / (maxW - minW);
+        if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+          gap = (dom.clientHeight - 120) / (maxH - minH);
+        if (!gap || isNaN(gap)) gap = 1;
+        if (gap < minGap) minGap = gap;
+        midX.push(maxW + minW);
+        midY.push(maxH + minH);
+      });
+      this.scales = [];
       for (let i = 0; i < this.sonNum; i++) {
+        let startX = (dom.clientWidth - minGap * midX[i]) / 2;
+        let startY = (dom.clientHeight - 70 - minGap * midY[i]) / 2;
+        this.scales.push({
+          mid: { x: midX[i], y: midX[i] },
+          startX,
+          startY,
+          gap: minGap,
+        });
         this.drawSonGraph(i);
       }
     },
@@ -291,34 +373,6 @@ export default {
         };
       });
       let dom = document.getElementById("paper" + (index + 1));
-
-      let minW = 150000;
-      let maxW = 0;
-      let minH = 15000;
-      let maxH = 0;
-      nodes.forEach((node) => {
-        if (node.x > maxW) maxW = node.x;
-        if (node.x < minW) minW = node.x;
-        if (node.y > maxH) maxH = node.y;
-        if (node.y < minH) minH = node.y;
-      });
-      let mid = (minW + maxW) / 2;
-      if (maxW - minW > 0 && maxW - minW < maxH - minH - 1) {
-        let scale = Math.floor((maxH - minH - 1) / (maxW - minW));
-        nodes.map((node) => {
-          node.x = mid + (node.x - mid) * scale;
-        });
-        maxW = mid + (maxW - mid) * scale;
-        minW = mid + (minW - mid) * scale;
-      }
-
-      let gap = (dom.clientWidth - 50) / (maxW - minW);
-      if ((dom.clientHeight - 120) / (maxH - minH) < gap)
-        gap = (dom.clientHeight - 120) / (maxH - minH);
-      if (!gap || isNaN(gap)) gap = 1;
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 - minW * gap;
-      let startY =
-        (dom.clientHeight - 70 - gap * (maxH - minH)) / 2 - minH * gap;
 
       let links = this.multipleSearchValue.selections[index].linksList.filter(
         (link) => !link.hidden
@@ -338,19 +392,10 @@ export default {
         let tIndex = nodes.findIndex((node) => node.id === link.target);
         let source = nodes[sIndex];
         let target = nodes[tIndex];
-        let point = this.countControl(source, target, mid);
+        let point = this.countControl(source, target, this.scales[index].mid);
         link["points"] = [source, point, target];
       }
-      let paper = drawSonCharts(
-        dom,
-        nodes,
-        {
-          gap,
-          startX,
-          startY,
-        },
-        links
-      );
+      let paper = drawSonCharts(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
       if (!this.papers[index]) {
         this.papers.push(paper);
@@ -451,7 +496,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-                <div class='operate-menu'>Delete edge<br/>" +
+                    <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -705,21 +750,10 @@ export default {
       );
     },
   },
-
-  mounted() {
-    this.multipleSearchValue = JSON.parse(
-      localStorage.getItem("GET_JSON_RESULT")
-    );
-    console.log("getItem", this.multipleSearchValue);
-    this.simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-    if (this.multipleSearchValue) {
-      this.drawGraph();
-    }
-  },
 };
 </script>
-      
-    <style scoped>
+          
+        <style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
@@ -813,9 +847,9 @@ export default {
   line-height: 32px;
 }
 </style>
-  <style>
+      <style>
 .joint-link path {
   transition-duration: 0.2s;
 }
 </style>
-     
+         
