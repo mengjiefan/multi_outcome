@@ -532,6 +532,8 @@ def get_fixedNodes(nodes):
 def get_fixedNodes_order(fixed_nodes):
     # 根据传入的fixed_nodes列表获取其内的固定节点的原始order
     # 初始化最小和最大值为第一个节点的"order"值
+    if len(fixed_nodes) == 0:
+        return 0, 0
     min_order = fixed_nodes[0]['order']
     max_order = fixed_nodes[0]['order']
 
@@ -792,8 +794,11 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
 
         # 获取当前组固定节点order_relative_sub_all_nodes值的最小和最大值
         # 初始化最小和最大值为第一个节点的"order"值
-        min_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
-        max_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
+        max_order_current_fixed = 0
+        min_order_current_fixed = 0
+        if len(current_group_fixed_nodes) != 0:
+            min_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
+            max_order_current_fixed = current_group_fixed_nodes[0]['order_relative_sub_all_nodes']
         # 遍历当前组固定节点列表以找到固定节点的最小和最大的"order_relative_sub_all_nodes"值
         for node in current_group_fixed_nodes:
             current_order = node['order_relative_sub_all_nodes']
@@ -804,8 +809,11 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
 
         # 获取当前组固定节点order_fixed_relative_compact值的最小和最大值
         # 初始化最小和最大值为第一个节点的"order"值
-        min_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
-        max_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
+        max_order_current_fixed_optimal = 0
+        min_order_current_fixed_optimal = 0
+        if len(current_group_fixed_nodes) != 0:
+            min_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
+            max_order_current_fixed_optimal = current_group_fixed_nodes[0]['order_fixed_relative_compact']
 
         # 遍历当前组固定节点列表以找到固定节点的最小和最大的"order_fixed_relative_compact"值
         for node in current_group_fixed_nodes:
