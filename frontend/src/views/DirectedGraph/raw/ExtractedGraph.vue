@@ -105,6 +105,7 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+
         switch (this.graphType) {
           case "ExtractedSubGraph":
             this.sonGraphs[i] = countExtractedSonPos(this.finalPos, item);
@@ -129,34 +130,36 @@ export default {
         if (index > -1) this.multipleSearchValue.linksList[index] = link;
         else this.multipleSearchValue.linksList.push(link);
       }
+      selection.linksList = LinksManagement.getFinalLinks(selection.linksList);
       this.saveData();
     },
     applyToSingle(answer, item) {
+      //从当下来找新添加的边，添加到其他图
+      
+      //是从目标来找需要翻转和隐藏的边,永久删除、翻转
       for (let i = 0; i < item.linksList.length; i++) {
         let link = item.linksList[i];
-        let mapLink = link;
-        let index = answer.findIndex((edge) => {
-          if (edge.source === link.source && edge.target === link.target)
-            return true;
-          else return false;
-        });
+        let mapLink;
+        let index = findLink.sameNodeLink(link, answer);
+
         if (index > -1) {
-          mapLink = answer[index];
+          mapLink = answer[index]; //现边
           if (link.hidden) {
-            mapLink = link;
+            mapLink = link; //目标边
           } else if (mapLink.hidden) {
             item.history = historyManage.deleteEdge(item.history, link);
-          } else if (mapLink.reverse && !link.reverse) {
-            historyManage.reverseEdge(item.history, mapLink);
-          } else if (link.reverse && !mapLink.reverse) {
+            item.linksList.splice(index, 1); //永久删除
+          } else if (findLink.showReverseLink(link, answer) > -1) {
             historyManage.reverseEdge(item.history, {
-              target: link.source,
-              source: link.target,
+              source: mapLink.target,
+              target: mapLink.source,
               value: mapLink.value,
             });
+            item.linksList.splice(index, 1, mapLink);
+          } else {
+            item.linksList.splice(index, 1, mapLink);
           }
         }
-        item.linksList[i] = mapLink;
       }
     },
     getNodeIndex(id) {
@@ -387,15 +390,14 @@ export default {
       let nowlink = this.sonGraphs[i].linksList[index];
       index = findLink.showReverseLink({ source, target }, selection.linksList);
       if (index > -1) {
-        if (link.reverse) link.reverse = false;
-        else link["reverse"] = true;
+        LinksManagement.reverseLink(link);
         historyManage.reverseEdge(selection.history, {
           source: target,
           target: source,
           value: link.value,
         });
-        if (nowlink.reverse) nowlink.reverse = false;
-        else nowlink["reverse"] = true;
+        LinksManagement.reverseLink(nowlink);
+
         nowlink.value = link.value;
       }
 
@@ -640,17 +642,9 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
         historyManage.reverseEdge(selection.history, history);
         selection.linksList[index].value = value;
-        if (!selection.linksList[index].reverse) {
-          selection.linksList[index]["reverse"] = true;
-          this.addLink(i, {
-            source: selection.linksList[index].target,
-            target: selection.linksList[index].source,
-            value,
-          });
-        } else {
-          selection.linksList[index].reverse = false;
-          this.addLink(i, selection.linksList[index]);
-        }
+        LinksManagement.reverseLink(selection.linksList[index]);
+        this.addLink(i, selection.linksList[index]);
+
         this.tip2Hidden();
         this.saveData();
       }

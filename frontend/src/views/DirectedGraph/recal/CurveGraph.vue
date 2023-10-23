@@ -320,12 +320,12 @@ export default {
       let minGap = 100000;
 
       let midX = [];
-      let midY = [];
+
+      let minH = 15000;
+      let maxH = 0;
       graphs.forEach((graph) => {
         let minW = 150000;
         let maxW = 0;
-        let minH = 15000;
-        let maxH = 0;
         graph.nodesList.forEach((node) => {
           if (node.new_order > maxW) maxW = node.new_order;
           if (node.new_order < minW) minW = node.new_order;
@@ -342,19 +342,19 @@ export default {
           minW = mid + (minW - mid) * scale;
         }
         let gap = (dom.clientWidth - 50) / (maxW - minW);
-        if ((dom.clientHeight - 120) / (maxH - minH) < gap)
-          gap = (dom.clientHeight - 120) / (maxH - minH);
+
         if (!gap || isNaN(gap)) gap = 1;
         if (gap < minGap) minGap = gap;
         midX.push(maxW + minW);
-        midY.push(maxH + minH);
       });
+      if ((dom.clientHeight - 120) / (maxH - minH) < minGap)
+        minGap = (dom.clientHeight - 120) / (maxH - minH);
       this.scales = [];
       for (let i = 0; i < this.sonNum; i++) {
         let startX = (dom.clientWidth - minGap * midX[i]) / 2;
-        let startY = (dom.clientHeight - 70 - minGap * midY[i]) / 2;
+        let startY = (dom.clientHeight - 70 - minGap * (maxH + minH)) / 2;
         this.scales.push({
-          mid: { x: midX[i], y: midX[i] },
+          mid: { x: midX[i] / 2, y: (maxH + minH) / 2 },
           startX,
           startY,
           gap: minGap,

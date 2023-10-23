@@ -568,6 +568,7 @@ export default {
         else return false;
       });
       let value = Math.abs(link.value);
+      console.log(value);
       if (value > 1.2) value = 1.2;
       path.attr({
         id: "(" + link.source + ", " + link.target + ")",
@@ -584,10 +585,13 @@ export default {
         },
       });
       let index = findLink.sameNodeLink(link, this.simplePos.linksList);
-      let points = this.simplePos.linksList[index].points.concat([]);
-      if (link.source !== this.simplePos.linksList[index].source)
-        points.reverse();
-      console.log(points);
+      let points = [nodesList[sIndex], nodesList[tIndex]];
+      if (index > -1) {
+        let points = this.simplePos.linksList[index].points.concat([]);
+        if (link.source !== this.simplePos.linksList[index].source)
+          points.reverse();
+      }
+
       path.connector("SuperCurve", {
         points,
         value: value * 8,
@@ -617,7 +621,7 @@ export default {
       });
     },
     addNewEdge(source, target, value) {
-      let newLink = { source, target, value, add: true };
+      let newLink = { source, target, value };
       this.multipleSearchValue.linksList.push(newLink);
       this.deleteLinkView.model.remove({ ui: true });
       this.addLink(this.simplePos.nodesList, newLink);

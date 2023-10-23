@@ -440,9 +440,6 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   paper.on("blank:pointermove", function (evt, x, y) {
     handleMouseMove(paper, evt, x, y);
   });
-  paper.on("cell:pointermove", function (cellView, evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
-  });
 
   paper.on("blank:pointerup", function (evt, x, y) {
     handleMouseUp();
@@ -453,9 +450,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
     handleMouseUp();
   });
-  paper.on("element:pointerup", function (elementView, evt, x, y) {
-    handleMouseUp();
-  });
+
   return paper;
 };
 export const drawExtractedGraph = (dom, nodesList, links, scale) => {
