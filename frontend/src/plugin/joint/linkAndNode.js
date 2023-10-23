@@ -78,4 +78,18 @@ export class LinksManagement {
     link.target = source;
     link.source = target;
   }
+  static getPoints(paper, link, points) {
+    if (points.length < 2) return points;
+    if (
+      this.isLinkDown(paper, link) &&
+      points[0].y > points[points.length - 1].y
+    )
+      points.reverse();
+    else if (
+      !this.isLinkDown(paper, link) &&
+      points[0].y < points[points.length - 1].y
+    )
+      points.reverse();
+    return points;
+  }
 }

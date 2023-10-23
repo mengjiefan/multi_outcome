@@ -76,8 +76,7 @@
 // 引入axios
 import axios from "axios";
 import { ref } from "vue";
-import bus from "../componentsInteraction/bus.js";
-import { node } from "dagre-d3/lib/intersect/index.js";
+import { LinksManagement } from "@/plugin/joint/linkAndNode";
 import historyManage from "@/plugin/history";
 export default {
   name: "CausalAnalysisHistory",
@@ -265,6 +264,9 @@ export default {
             }
           });
         }
+        selectionNow.linksList = LinksManagement.getFinalLinks(
+          selectionNow.linksList
+        );
         selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
         console.log(outcome, selectionNow.history);
         console.log("redo");

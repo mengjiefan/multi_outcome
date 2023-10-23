@@ -55,6 +55,8 @@ import {
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { findLink } from "@/plugin/links";
+import { linkRequest } from "@/plugin/request/edge.js";
+import { LinksManagement } from "@/plugin/joint/linkAndNode";
 
 export default {
   beforeRouteEnter(to, from, next) {
@@ -117,47 +119,40 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
+
         this.drawSonGraph(i);
       }
-      for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
-        let link = this.multipleSearchValue.linksList[i];
-        let mapLink = link;
-        let index = selection.linksList.findIndex((edge) => {
-          if (edge.source === link.source && edge.target === link.target)
-            return true;
-          else return false;
-        });
-        if (index > -1) mapLink = selection.linksList[index];
-        this.multipleSearchValue.linksList[i] = mapLink;
+      for (let i = 0; i < selection.linksList.length; i++) {
+        let link = selection.linksList[i];
+        let index = findLink.sameNodeLink(
+          link,
+          this.multipleSearchValue.linksList
+        );
+        if (index > -1) this.multipleSearchValue.linksList[index] = link;
+        else this.multipleSearchValue.linksList.push(link);
       }
+
       this.saveData();
     },
     applyToSingle(answer, item) {
+      //新添加的边方向不一致在以下会再进行翻转
+      //是从目标来找需要翻转和隐藏的边,永久删除、翻转
       for (let i = 0; i < item.linksList.length; i++) {
         let link = item.linksList[i];
-        let mapLink = link;
-        let index = answer.findIndex((edge) => {
-          if (edge.source === link.source && edge.target === link.target)
-            return true;
-          else return false;
-        });
+        let mapLink;
+        let index = findLink.sameNodeLink(link, answer);
+
         if (index > -1) {
-          mapLink = answer[index];
-          if (link.hidden) {
-            mapLink = link;
-          } else if (mapLink.hidden) {
-            item.history = historyManage.deleteEdge(item.history, link);
-          } else if (mapLink.reverse && !link.reverse) {
-            historyManage.reverseEdge(item.history, mapLink);
-          } else if (link.reverse && !mapLink.reverse) {
+          mapLink = answer[index]; //现边
+          if (findLink.showReverseLink(link, answer) > -1) {
             historyManage.reverseEdge(item.history, {
-              target: link.source,
-              source: link.target,
+              source: link.source,
+              target: link.target,
               value: mapLink.value,
             });
+            item.linksList.splice(index, 1, mapLink);
           }
         }
-        item.linksList[i] = mapLink;
       }
     },
     saveSingleToTable(index) {
@@ -261,20 +256,7 @@ export default {
         });
       });
       console.log(nodes.filter((node) => !node.fixed));
-      let links = this.simplePos.linksList.map((link) => {
-        if (link.reverse)
-          return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-          };
-        else
-          return {
-            target: link.target,
-            source: link.source,
-            value: link.value,
-          };
-      });
+      let links = this.simplePos.linksList;
       let name = "";
       console.log(this.graphType);
       switch (this.graphType) {
@@ -332,15 +314,7 @@ export default {
           if (node.rank > maxH) maxH = node.rank;
           if (node.rank < minH) minH = node.rank;
         });
-        let mid = (minW + maxW) / 2;
-        if (maxW - minW > 0 && maxW - minW < maxH - minH - 1) {
-          let scale = Math.floor((maxH - minH - 1) / (maxW - minW));
-          graph.nodesList.map((node) => {
-            node.new_order = mid + (node.new_order - mid) * scale;
-          });
-          maxW = mid + (maxW - mid) * scale;
-          minW = mid + (minW - mid) * scale;
-        }
+
         let gap = (dom.clientWidth - 50) / (maxW - minW);
 
         if (!gap || isNaN(gap)) gap = 1;
@@ -350,9 +324,10 @@ export default {
       if ((dom.clientHeight - 120) / (maxH - minH) < minGap)
         minGap = (dom.clientHeight - 120) / (maxH - minH);
       this.scales = [];
+      let startY = (dom.clientHeight - 70 - minGap * (maxH + minH)) / 2;
       for (let i = 0; i < this.sonNum; i++) {
         let startX = (dom.clientWidth - minGap * midX[i]) / 2;
-        let startY = (dom.clientHeight - 70 - minGap * (maxH + minH)) / 2;
+
         this.scales.push({
           mid: { x: midX[i] / 2, y: (maxH + minH) / 2 },
           startX,
@@ -374,18 +349,8 @@ export default {
       });
       let dom = document.getElementById("paper" + (index + 1));
 
-      let links = this.multipleSearchValue.selections[index].linksList.filter(
-        (link) => !link.hidden
-      );
-      links = links.map((link) => {
-        if (link.reverse)
-          return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-          };
-        else return link;
-      });
+      let links = this.multipleSearchValue.selections[index].linksList;
+
       for (let i = 0; i < links.length; i++) {
         let link = links[i];
         let sIndex = nodes.findIndex((node) => node.id === link.source);
@@ -469,6 +434,36 @@ export default {
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
+      let graph = paper.model.attributes.cells.graph;
+      graph.on("change:source change:target", function (link) {
+        if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = link.findView(paper);
+          _this.paper = paper;
+          let realLink = LinksManagement.getLinkNode(paper, link);
+          let flag = true;
+          graph.getCells().forEach((item) => {
+            if (item.attributes.type.includes("Link")) {
+              if (LinksManagement.dubplicateLink(paper, link, item)) {
+                //原来就有边,什么也不做
+                flag = false;
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.$message({
+                  showClose: true,
+                  message: "Duplicate Edge!",
+                  type: "warning",
+                });
+              } else if (LinksManagement.reversedLink(paper, link, item)) {
+                flag = false;
+                //原来边方向相反，相当于反转边
+                _this.deleteLinkView.model.remove({ ui: true });
+                _this.deleteLinkView = item.findView(paper);
+                _this.getEdgeValue(index, realLink.target, realLink.source);
+              }
+            }
+          });
+          if (flag) _this.getNewEdge(index, realLink.source, realLink.target);
+        }
+      });
 
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
@@ -611,75 +606,48 @@ export default {
           source: nodes[0],
           target: nodes[1],
         });
-        selection.linksList[index] = {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
-          value: selection.linksList[index].value,
-          hidden: true,
-        };
+        selection.linksList.splice(index, 1);
+
         selection.history = history;
         this.tip2Hidden();
         this.saveData();
       }
     },
+
+    getNewEdge(i, source, target) {
+      linkRequest.getLinkValue(source, target).then((response) => {
+        this.addNewEdge(i, source, target, response.data.value);
+      });
+    },
+    addNewEdge(i, source, target, value) {
+      let selection = this.multipleSearchValue.selections[i];
+      let newLink = { source, target, value };
+      selection.linksList.push({ source, target, value });
+      selection.history = historyManage.addEdge(selection.history, newLink);
+      this.deleteLinkView.model.remove({ ui: true });
+      this.addLink(i, newLink);
+      this.saveData();
+    },
     getEdgeValue(i, source, target) {
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/recaculate_Links",
-        //参数
-        params: {
-          dataset: localStorage.getItem("DATATYPE"),
-          source: target,
-          target: source,
-        },
-      })
-        .then((response) => {
-          console.log("value", response.data.value);
-          let value = response.data.value;
-          this.changeEdge(i, source, target, value);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
+      linkRequest.getLinkValue(target, source).then((response) => {
+        this.changeEdge(i, source, target, response.data.value);
+      });
     },
     changeEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
-      let index = selection.linksList.findIndex(function (row) {
-        if (
-          (row.source === source &&
-            row.target === target &&
-            !row.hidden &&
-            !row.reverse) ||
-          (row.source === target &&
-            row.target === source &&
-            !row.hidden &&
-            row.reverse)
-        ) {
-          return true;
-        } else return false;
-      });
+      let history = {
+        source,
+        target,
+        value,
+      };
+      let index = findLink.showSameDireLink(history, selection.linksList);
       if (index > -1) {
         this.deleteLinkView.model.remove({ ui: true });
-
-        historyManage.reverseEdge(selection.history, {
-          source,
-          target,
-          value,
-        });
+        historyManage.reverseEdge(selection.history, history);
         selection.linksList[index].value = value;
-        if (!selection.linksList[index].reverse) {
-          selection.linksList[index]["reverse"] = true;
-          this.addLink(i, {
-            source: target,
-            target: source,
-            value,
-          });
-        } else {
-          selection.linksList[index].reverse = false;
-          this.addLink(i, selection.linksList[index]);
-        }
+        LinksManagement.reverseLink(selection.linksList[index]);
+        this.addLink(i, selection.linksList[index]);
+
         this.tip2Hidden();
         this.saveData();
       }

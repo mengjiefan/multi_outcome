@@ -42,7 +42,7 @@
           Relayout
         </el-button>
       </div>
-      
+
       <div id="paper" class="sum-svg"></div>
     </div>
   </div>
@@ -142,12 +142,6 @@ export default {
           return {
             source: link.target,
             target: link.source,
-            value: link.value,
-          };
-        else if (link.add)
-          return {
-            source: link.source,
-            target: link.target,
             value: link.value,
           };
         else return link;
@@ -645,7 +639,7 @@ export default {
       });
     },
     addNewEdge(source, target, value) {
-      let newLink = { source, target, value, add: true };
+      let newLink = { source, target, value };
       this.multipleSearchValue.linksList.push(newLink);
       this.multipleSearchValue.history = historyManage.addEdge(
         this.multipleSearchValue.history,
@@ -685,8 +679,7 @@ export default {
           this.addLink(this.simplePos.nodesList, {
             source: target,
             target: source,
-            value: value,
-            add: true,
+            value: value
           });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;

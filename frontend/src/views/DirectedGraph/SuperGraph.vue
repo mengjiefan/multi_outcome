@@ -587,7 +587,7 @@ export default {
       let index = findLink.sameNodeLink(link, this.simplePos.linksList);
       let points = [nodesList[sIndex], nodesList[tIndex]];
       if (index > -1) {
-        let points = this.simplePos.linksList[index].points.concat([]);
+        points = this.simplePos.linksList[index].points.concat([]);
         if (link.source !== this.simplePos.linksList[index].source)
           points.reverse();
       }

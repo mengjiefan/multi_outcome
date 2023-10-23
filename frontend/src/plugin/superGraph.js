@@ -430,9 +430,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
-  paper.on("element:mousewheel", function (elementView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+
   paper.on("blank:mousewheel", function (evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -550,7 +548,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
   ) {
     let points = args.points.concat([]);
     if (points.length > 1) {
-      let radius = 12;
+      let radius = args.radius;
       points[0] = countAnchor(points[1], points[0], radius);
       if (points[points.length - 1].y < points[0].y)
         radius = radius + args.value;
@@ -618,28 +616,21 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
     path.connector("ExtractedCurve", {
       points,
       value: value * 7,
+      radius: 12,
     });
   });
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
-  paper.on("cell:mousewheel", function (cellView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
-  paper.on("element:mousewheel", function (elementView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+
   paper.on("blank:mousewheel", function (evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
-  });
-  paper.on("cell:pointermove", function (cellView, evt, x, y) {
     handleMouseMove(paper, evt, x, y);
   });
 
@@ -652,8 +643,6 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
     handleMouseUp();
   });
-  paper.on("element:pointerup", function (elementView, evt, x, y) {
-    handleMouseUp();
-  });
+
   return paper;
 };

@@ -101,25 +101,10 @@ export default {
   methods: {
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
+
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
         if (i == index) continue;
-        let item = this.multipleSearchValue.selections[i];
-        this.applyToSingle(selection.linksList, item);
-
-        switch (this.graphType) {
-          case "ExtractedSubGraph":
-            this.sonGraphs[i] = countExtractedSonPos(this.finalPos, item);
-            break;
-          case "OriginalSubGraph":
-            this.sonGraphs[i] = countOriginalSonPos(
-              item.outcome,
-              item.variable,
-              item.linksList
-            );
-            break;
-        }
-
-        this.drawSonGraph(i);
+        this.applyToSingle(selection.linksList, i);
       }
       for (let i = 0; i < selection.linksList.length; i++) {
         let link = selection.linksList[i];
@@ -130,36 +115,50 @@ export default {
         if (index > -1) this.multipleSearchValue.linksList[index] = link;
         else this.multipleSearchValue.linksList.push(link);
       }
-      selection.linksList = LinksManagement.getFinalLinks(selection.linksList);
+
       this.saveData();
     },
-    applyToSingle(answer, item) {
-      //从当下来找新添加的边，添加到其他图
-      
-      //是从目标来找需要翻转和隐藏的边,永久删除、翻转
+    applyToSingle(answer, index) {
+      let item = this.multipleSearchValue.selections[index];
+      let flag = false;
       for (let i = 0; i < item.linksList.length; i++) {
         let link = item.linksList[i];
-        let mapLink;
-        let index = findLink.sameNodeLink(link, answer);
-
-        if (index > -1) {
-          mapLink = answer[index]; //现边
-          if (link.hidden) {
-            mapLink = link; //目标边
-          } else if (mapLink.hidden) {
-            item.history = historyManage.deleteEdge(item.history, link);
-            item.linksList.splice(index, 1); //永久删除
-          } else if (findLink.showReverseLink(link, answer) > -1) {
+        let linkIndex = findLink.sameNodeLink(link, answer); //目标边在本图中有
+        console.log(index, linkIndex);
+        if (linkIndex > -1) {
+          console.log(link);
+          let mapLink = answer[linkIndex]; //现边
+          if (findLink.showReverseLink(link, answer) > -1) {
+            flag = true;
             historyManage.reverseEdge(item.history, {
-              source: mapLink.target,
-              target: mapLink.source,
+              source: link.source,
+              target: link.target,
               value: mapLink.value,
             });
-            item.linksList.splice(index, 1, mapLink);
-          } else {
-            item.linksList.splice(index, 1, mapLink);
+            item.linksList.splice(i, 1, mapLink);
           }
+
+          if (findLink.sameNodeLink(link, this.sonGraphs[index].linksList) < 0)
+            flag = true;
+          //然后目标边是新加的，没坐标
         }
+      }
+
+      if (flag) {
+        switch (this.graphType) {
+          case "ExtractedSubGraph":
+            this.sonGraphs[index] = countExtractedSonPos(this.finalPos, item);
+            break;
+          case "OriginalSubGraph":
+            this.sonGraphs[index] = countOriginalSonPos(
+              item.outcome,
+              item.variable,
+              item.linksList
+            );
+            break;
+        }
+        console.log("apply and redraw");
+        this.drawSonGraph(index);
       }
     },
     getNodeIndex(id) {
@@ -377,12 +376,7 @@ export default {
         selection.linksList
       );
       let link = selection.linksList[index];
-      if (link.hidden)
-        selection.history = historyManage.addEdge(selection.history, {
-          source,
-          target,
-          value: link.value,
-        });
+
       index = findLink.sameNodeLink(
         { source, target },
         this.sonGraphs[i].linksList
@@ -405,25 +399,6 @@ export default {
       this.saveData();
     },
 
-    addTempLink(index, source, target) {
-      let oIndex = findLink.sameNodeLink(
-        { source, target },
-        this.multipleSearchValue.selections[index].linksList
-      );
-      if (oIndex > -1) {
-        let originalLink =
-          this.multipleSearchValue.selections[index].linksList[oIndex];
-        this.deleteLinkView.model.remove({ ui: true });
-        if (originalLink.hidden) originalLink.hidden = false;
-        if (originalLink.source !== source) {
-          linkRequest.getLinkValue(source, target).then((response) => {
-            let value = response.data.value;
-            originalLink.value = value;
-            this.showHiddenLink(index, source, target);
-          });
-        } else this.showHiddenLink(index, source, target);
-      } else this.getNewEdge(index, source, target);
-    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
@@ -454,7 +429,7 @@ export default {
               }
             }
           });
-          if (flag) _this.addTempLink(index, realLink.source, realLink.target);
+          if (flag) _this.getNewEdge(index, realLink.source, realLink.target);
         }
       });
 
@@ -600,12 +575,8 @@ export default {
           source: nodes[0],
           target: nodes[1],
         });
-        selection.linksList[index] = {
-          source: selection.linksList[index].source,
-          target: selection.linksList[index].target,
-          value: selection.linksList[index].value,
-          hidden: true,
-        };
+        selection.linksList.splice(index, 1);
+
         selection.history = history;
         this.tip2Hidden();
         this.saveData();
@@ -618,7 +589,7 @@ export default {
     },
     addNewEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
-      let newLink = { source, target, value, add: true };
+      let newLink = { source, target, value };
       selection.linksList.push({ source, target, value });
       selection.history = historyManage.addEdge(selection.history, newLink);
       this.deleteLinkView.model.remove({ ui: true });
@@ -688,14 +659,21 @@ export default {
       if (LinksManagement.isLinkDown(this.paper, link))
         path.attr("line/targetMarker", null);
 
-      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
-      let points = this.sonGraphs[index].linksList[i].points.concat([]);
+      let nodesList = this.sonGraphs[index].nodesList;
+      let sIndex = nodesList.findIndex((node) => node.id === link.source);
+      let tIndex = nodesList.findIndex((node) => node.id === link.target);
+      let points = [nodesList[sIndex], nodesList[tIndex]];
 
-      if (link.source !== this.sonGraphs[index].linksList[i].source)
-        points.reverse();
+      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
+      if (i > -1) {
+        points = this.sonGraphs[index].linksList[i].points.concat([]);
+        points = LinksManagement.getPoints(this.paper, link, points);
+      }
+
       path.connector("ExtractedCurve", {
         points,
         value: value * 7,
+        radius: 12 * this.scales[0].gap,
       });
       path.source(source);
       path.target(target);
