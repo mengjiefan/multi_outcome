@@ -41,7 +41,7 @@
     </div>
   </div>
 </template>
-<script>
+  <script>
 import * as d3 from "d3";
 import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
@@ -49,14 +49,23 @@ import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph, showHiddenEdge } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/extracted/CountPos";
+import { countExtractedSonPos } from "@/plugin/extracted/CountPos";
+import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import { findLink } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 
 export default {
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      console.log(to.name);
+      vm.init();
+      vm.graphType = to.name;
+    });
+  },
   data() {
     return {
+      graphType: ref(),
       scales: ref([]),
       papers: ref([]),
       paper: ref(),
@@ -96,10 +105,19 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
-        this.sonGraphs[i] = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
-        );
+        switch (this.graphType) {
+          case "ExtractedSubGraph":
+            this.sonGraphs[i] = countExtractedSonPos(this.finalPos, item);
+            break;
+          case "OriginalSubGraph":
+            this.sonGraphs[i] = countOriginalSonPos(
+              item.outcome,
+              item.variable,
+              item.linksList
+            );
+            break;
+        }
+
         this.drawSonGraph(i);
       }
       for (let i = 0; i < selection.linksList.length; i++) {
@@ -140,6 +158,15 @@ export default {
         }
         item.linksList[i] = mapLink;
       }
+    },
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
+      }
+      return indexes;
     },
     saveSingleToTable(index) {
       let selection = this.multipleSearchValue.selections[index];
@@ -205,10 +232,21 @@ export default {
       this.sonGraphs = [];
       this.scales = [];
       for (let i = 0; i < this.sonNum; i++) {
-        let ans = countSonPos(
-          this.finalPos,
-          this.multipleSearchValue.selections[i]
-        );
+        let ans = {};
+        let selection = this.multipleSearchValue.selections[i];
+        switch (this.graphType) {
+          case "ExtractedSubGraph":
+            ans = countExtractedSonPos(this.finalPos, selection);
+            break;
+          case "OriginalSubGraph":
+            ans = countOriginalSonPos(
+              selection.outcome,
+              selection.variable,
+              selection.linksList
+            );
+            break;
+        }
+
         this.scales.push({});
         this.sonGraphs.push(ans);
       }
@@ -258,6 +296,10 @@ export default {
       }
     },
     drawSonGraph(index) {
+      for (let i = 0; i < this.sonGraphs[index].nodesList.length; i++)
+        this.sonGraphs[index].nodesList[i]["indexes"] = this.getNodeIndex(
+          this.sonGraphs[index].nodesList[i].id
+        );
       let dom = document.getElementById("paper" + (index + 1));
 
       let paper = drawExtractedGraph(
@@ -356,7 +398,7 @@ export default {
         else nowlink["reverse"] = true;
         nowlink.value = link.value;
       }
-    
+
       showHiddenEdge(this.paper, nowlink, this.scales[i], this.sonGraphs[i]);
       this.saveData();
     },
@@ -440,7 +482,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-              <div class='operate-menu'>Delete edge<br/>" +
+                <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -671,22 +713,21 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
-  },
-
-  mounted() {
-    this.multipleSearchValue = JSON.parse(
-      localStorage.getItem("GET_JSON_RESULT")
-    );
-    console.log("getItem", this.multipleSearchValue);
-    this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-    if (this.multipleSearchValue) {
-      this.drawGraph();
-    }
+    init() {
+      this.multipleSearchValue = JSON.parse(
+        localStorage.getItem("GET_JSON_RESULT")
+      );
+      console.log("getItem", this.multipleSearchValue);
+      this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+      if (this.multipleSearchValue) {
+        this.drawGraph();
+      }
+    },
   },
 };
 </script>
-
-<style scoped>
+  
+  <style scoped>
 .sub-graph {
   display: flex;
   height: 100%;
@@ -780,9 +821,9 @@ export default {
   line-height: 32px;
 }
 </style>
-<style>
+  <style>
 .joint-link path {
   transition-duration: 0.2s;
 }
 </style>
-   
+     

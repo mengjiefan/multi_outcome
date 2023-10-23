@@ -43,7 +43,7 @@ export const countSimplePos = (g, nodes, links) => {
   });
   return { nodesList, linksList };
 };
-export const countSonPos = (all, son) => {
+export const countExtractedSonPos = (all, son) => {
   let linksList = [];
   let nodesList = [];
   let links = son.linksList.filter((link) => !link.hidden);

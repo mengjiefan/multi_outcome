@@ -334,8 +334,7 @@ export const countSonPos = (son, commonNodes, linksList) => {
     let tindex = sonPos.findIndex((node) => node.id === link.target);
     points.push({ x: sonPos[tindex].x, y: sonPos[tindex].y });
     linksPos.push({
-      source: link.source,
-      target: link.target,
+      ...link,
       points,
     });
   });

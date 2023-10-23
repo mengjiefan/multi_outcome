@@ -53,6 +53,7 @@ import {
   addHighLight,
   removeHighLight,
 } from "@/plugin/sonGraph";
+import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/tightened/CountPos";
@@ -60,6 +61,7 @@ import { countSonPos } from "@/plugin/tightened/CountPos";
 export default {
   data() {
     return {
+      scales: ref([]),
       papers: ref([]),
       paper: ref(),
       sonGraphs: ref([]),
@@ -215,6 +217,7 @@ export default {
           nodes: ans.sonPos,
           links: ans.linksPos,
         });
+        this.scales.push({});
       }
       const graphs = this.sonGraphs;
       let dom = document.getElementById("paper1");
@@ -253,14 +256,15 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         let startX = (dom.clientWidth - minGap * midX[i]) / 2;
         let startY = (dom.clientHeight - 80 - minGap * midY[i]) / 2;
-        this.drawSonGraph(i, {
+        this.scales[i] = {
           gap: minGap,
           startX,
           startY,
-        });
+        };
+        this.drawSonGraph(i);
       }
     },
-    drawSonGraph(index, scale) {
+    drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
       for (let i = 0; i < this.sonGraphs[index].nodes.length; i++)
         this.sonGraphs[index].nodes[i]["indexes"] = this.getNodeIndex(
@@ -271,7 +275,7 @@ export default {
         dom,
         this.sonGraphs[index].nodes,
         this.multipleSearchValue.selections[index].linksList,
-        scale,
+        this.scales[index],
         this.sonGraphs[index].links
       );
       if (!this.papers[index]) {

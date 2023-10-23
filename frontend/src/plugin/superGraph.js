@@ -162,6 +162,7 @@ const scaleToPoint = (nextScale, x, y, paper) => {
   }
 };
 
+//TODO: 这个现在不能用了
 export const showHiddenEdge = (paper, orlink, scale, data) => {
   let link = orlink;
   if (link.reverse) {
