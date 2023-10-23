@@ -211,46 +211,58 @@ export default {
         );
         this.sonGraphs.push(ans);
       }
-      for (let i = 0; i < this.sonNum; i++) {
-        this.drawSonGraph(i);
-      }
-    },
-    drawSonGraph(index) {
-      let dom = document.getElementById("paper" + (index + 1));
+      const graphs = this.sonGraphs;
 
-      let minW = 150000;
-      let maxW = 0;
-      let minH = 15000;
-      let maxH = 0;
-      this.sonGraphs[index].nodesList.forEach((node) => {
-        if (node.x > maxW) maxW = node.x;
-        if (node.x < minW) minW = node.x;
-        if (node.y > maxH) maxH = node.y;
-        if (node.y < minH) minH = node.y;
-      });
-      this.sonGraphs[index].linksList.forEach((link) => {
-        link.points.forEach((node) => {
+      let dom = document.getElementById("paper1");
+      let minGap = 10000;
+
+      let midX = [];
+      let midY = [];
+      graphs.forEach((graph) => {
+        let minW = 150000;
+        let maxW = 0;
+        let minH = 15000;
+        let maxH = 0;
+        graph.nodesList.forEach((node) => {
           if (node.x > maxW) maxW = node.x;
           if (node.x < minW) minW = node.x;
           if (node.y > maxH) maxH = node.y;
           if (node.y < minH) minH = node.y;
         });
+        graph.linksList.forEach((link) => {
+          link.points.forEach((node) => {
+            if (node.x > maxW) maxW = node.x;
+            if (node.x < minW) minW = node.x;
+            if (node.y > maxH) maxH = node.y;
+            if (node.y < minH) minH = node.y;
+          });
+        });
+        let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
+        if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
+          gap = (dom.clientHeight - 96) / (maxH - minH + 24);
+        if (gap < minGap) minGap = gap;
+        midX.push((maxW + minW) / 2);
+        midY.push(maxH + 2 * minH);
       });
-      let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-      if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-        gap = (dom.clientHeight - 96) / (maxH - minH + 24);
-      let startX = dom.clientWidth / 2 - ((maxW + minW) / 2) * gap;
-      let startY = (dom.clientHeight - (maxH + 2 * minH) * gap) / 3;
+
+      for (let i = 0; i < this.sonNum; i++) {
+        let startX = dom.clientWidth / 2 - midX[i] * minGap;
+        let startY = (dom.clientHeight - midY[i] * minGap) / 3;
+        this.drawSonGraph(i, {
+          startX,
+          startY,
+          gap: minGap,
+        });
+      }
+    },
+    drawSonGraph(index, scale) {
+      let dom = document.getElementById("paper" + (index + 1));
 
       let paper = drawExtractedGraph(
         dom,
         this.sonGraphs[index].nodesList,
         this.sonGraphs[index].linksList,
-        {
-          startX,
-          startY,
-          gap,
-        }
+        scale
       );
 
       if (!this.papers[index]) {

@@ -231,7 +231,6 @@ export default {
       });
 
       this.simplePos.nodesList.forEach((node) => {
-        console.log(node.indexes.length);
         nodes.push({
           node: node.id,
           rank: y.indexOf(node.y),
