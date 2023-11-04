@@ -53,7 +53,6 @@ import {
   addHighLight,
   removeHighLight,
 } from "@/plugin/sonGraph";
-import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
 import { countSonPos } from "@/plugin/tightened/CountPos";

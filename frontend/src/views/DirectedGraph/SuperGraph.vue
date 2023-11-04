@@ -30,24 +30,19 @@
 <script>
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-import dagre from "dagre";
 
 import { ref } from "vue";
-import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import { createChart } from "@/plugin/charts";
-import {
-  drawSuperGraph,
-  setSuperGraph,
-  showHiddenEdge,
-} from "@/plugin/superGraph";
+import { drawSuperGraph, setSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
 import { countPos } from "@/plugin/tightened/CountPos";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { findLink } from "@/plugin/links";
+import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+
 import { nodeRequest } from "@/plugin/request/node.js";
 
 export default {
@@ -172,7 +167,6 @@ export default {
     },
     setGraph() {
       this.chartsValue = new Map();
-      this.multipleSearchValue.nodesList.forEach((node) => {});
 
       var data = this.multipleSearchValue;
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
@@ -317,8 +311,8 @@ export default {
           selection.history = historyManage.addEdge(selection.history, history);
         }
       });
+      this.addLinkToPaper(superlink);
 
-      showHiddenEdge(this.paper, superlink, this.scale, this.simplePos);
       this.saveData();
     },
     reverseAndShow(source, target, value) {
@@ -556,56 +550,8 @@ export default {
         }
       }
     },
-    addLink(nodesList, link) {
-      var path = new joint.shapes.standard.Link({});
-      let sIndex = nodesList.findIndex((node) => {
-        if (node.id === link.source) return true;
-        else return false;
-      });
-
-      let tIndex = nodesList.findIndex((node) => {
-        if (node.id === link.target) return true;
-        else return false;
-      });
-      let value = Math.abs(link.value);
-      console.log(value);
-      if (value > 1.2) value = 1.2;
-      path.attr({
-        id: "(" + link.source + ", " + link.target + ")",
-        line: {
-          strokeWidth: value * 8 + "",
-          targetMarker: {
-            // minute hand
-            type: "path",
-            stroke: "black",
-            "stroke-width": value * 8,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          },
-        },
-      });
-      let index = findLink.sameNodeLink(link, this.simplePos.linksList);
-      let points = [nodesList[sIndex], nodesList[tIndex]];
-      if (index > -1) {
-        points = this.simplePos.linksList[index].points.concat([]);
-        if (link.source !== this.simplePos.linksList[index].source)
-          points.reverse();
-      }
-
-      path.connector("SuperCurve", {
-        points,
-        value: value * 8,
-      });
-      if (link.value < 0) {
-        path.attr("line/strokeWidth", -link.value * 8 + "");
-        path.attr("line/strokeDasharray", "4 4");
-      }
-      if (LinksManagement.isLinkDown(this.paper, link))
-        path.attr("line/targetMarker", null);
-
-      path.source(nodesList[sIndex].node);
-      path.target(nodesList[tIndex].node);
-      path.addTo(this.paper.model);
+    addLinkToPaper(link) {
+      linksOperation.addLink(this.simplePos, link, this.paper);
     },
     getEdgeValue(source, target) {
       console.log("getEdgeVa");
@@ -624,9 +570,10 @@ export default {
       let newLink = { source, target, value };
       this.multipleSearchValue.linksList.push(newLink);
       this.deleteLinkView.model.remove({ ui: true });
-      this.addLink(this.simplePos.nodesList, newLink);
+      this.addLinkToPaper(newLink);
       this.multipleSearchValue.selections.forEach((selection) => {
         let node = selection.variable.concat([selection.outcome]);
+        2;
         if (node.includes(source) && node.includes(target)) {
           selection.linksList.push(newLink);
           selection.history = historyManage.addEdge(selection.history, newLink);
@@ -651,17 +598,14 @@ export default {
         if (!this.multipleSearchValue.linksList[index].reverse) {
           this.multipleSearchValue.linksList[index]["reverse"] = true;
 
-          this.addLink(this.simplePos.nodesList, {
+          this.addLinkToPaper({
             source: target,
             target: source,
             value: value,
           });
         } else {
           this.multipleSearchValue.linksList[index].reverse = false;
-          this.addLink(
-            this.simplePos.nodesList,
-            this.multipleSearchValue.linksList[index]
-          );
+          this.addLinkToPaper(this.multipleSearchValue.linksList[index]);
         }
         //所有子图都改变，都要增加操作历史
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {

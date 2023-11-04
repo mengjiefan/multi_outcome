@@ -49,7 +49,6 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import dagre from "@/plugin/dagre/dagre";
 import { ref } from "vue";
-import { Loading } from "element-ui";
 import { createChart } from "@/plugin/charts";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";

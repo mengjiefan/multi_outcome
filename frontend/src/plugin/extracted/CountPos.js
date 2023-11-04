@@ -50,7 +50,7 @@ export const countExtractedSonPos = (all, son) => {
   let links = son.linksList.filter((link) => !link.hidden);
   links.forEach((link) => {
     let index = findLink.sameNodeLink(link, all.linksList);
-
+    
     if (index > -1) {
       link["points"] = all.linksList[index].points.concat([]);
       if (findLink.showReverseLink(link, all.linksList) > -1)

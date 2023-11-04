@@ -162,58 +162,10 @@ const scaleToPoint = (nextScale, x, y, paper) => {
   }
 };
 
-//TODO: 这个现在不能用了
-export const showHiddenEdge = (paper, orlink, scale, data) => {
-  let link = orlink;
-  if (link.reverse) {
-    link = {
-      source: link.target,
-      target: link.source,
-      value: link.value,
-      points: link.points,
-      reverse: true,
-    };
-  }
-  let path = new joint.shapes.standard.Link({});
-  let vertices = [];
-  for (let i = 0; i < link.points.length; i++) {
-    let point = link.points[i];
-    startX = scale.startX;
-    startY = scale.startY;
-    gap = scale.gap;
-    vertices.push(new g.Point(countXPos(point.x), countYPos(point.y)));
-  }
-  if (link.reverse) vertices.reverse();
-
-  let value = Math.abs(link.value);
-  if (value > 1.2) value = 1.2;
-  path.attr({
-    id: "(" + link.source + ", " + link.target + ")",
-    line: {
-      strokeWidth: value * 8 + "",
-      targetMarker: {
-        // minute hand
-        type: "path",
-        stroke: "black",
-        "stroke-width": value * 8,
-        fill: "transparent",
-        d: "M 10 -5 0 0 10 5 ",
-      },
-    },
-  });
-  if (link.value < 0) {
-    path.attr("line/strokeDasharray", "4 4");
-  }
-  let realLink = LinksManagement.getNodeByName(paper, link);
-  if (LinksManagement.isLinkDown(paper, link))
-    path.attr("line/targetMarker", null);
-  path.source(realLink.source);
-  path.target(realLink.target);
-  path.addTo(paper.model.attributes.cells.graph);
-};
 export const setSuperGraph = (g, data) => {
   var states = data.nodesList;
-  var edges = data.linksList.filter((edge) => !edge.add); //待定
+  var edges = data.linksList;
+  edges = edges.filter((edge) => !edge.add);
   states.forEach(function (state) {
     let node = {
       label: "",
@@ -355,18 +307,24 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     let points = args.points.concat([]);
     if (points.length > 1) {
       let radius = 6.8 * gap;
-      points[0] = countAnchor(points[1], points[0], radius);
-      if (points[points.length - 1].y < points[0].y)
-        radius = radius + args.value;
-      points[points.length - 1] = countAnchor(
-        points[points.length - 2],
-        points[points.length - 1],
-        radius
-      );
+      if (points.length > 2) {
+        points[0] = countAnchor(points[1], points[0], radius);
+        if (points[points.length - 1].y < points[0].y)
+          radius = radius + args.value;
+        points[points.length - 1] = countAnchor(
+          points[points.length - 2],
+          points[points.length - 1],
+          radius
+        );
+      } else {
+        points[0] = countAnchor(points[1], points[0], 12);
+        points[1] = countAnchor(points[0], points[1], 12)
+      }
     }
 
     return Gen(points);
   };
+
   linksList.forEach((link) => {
     let path = new joint.shapes.standard.Link({});
 
@@ -397,22 +355,14 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     if (link.value < 0) {
       path.attr("line/strokeDasharray", "4 4");
     }
-    if (
-      nodesList[sindex].node.attributes.position.y <
-      nodesList[tindex].node.attributes.position.y
-    )
+    let realLink = LinksManagement.getNodeByName(paper, link);
+    let source = realLink.source;
+    let target = realLink.target;
+    if (nodesList[sindex].y < nodesList[tindex].y)
       path.attr("line/targetMarker", null);
 
-    path.source(nodesList[sindex].node, {
-      anchor: {
-        name: "center",
-        args: {
-          rotate: true,
-          padding: 0,
-        },
-      },
-    });
-    path.target(nodesList[tindex].node);
+    path.source(source);
+    path.target(target);
     path.addTo(graph);
 
     path.connector("SuperCurve", {
@@ -590,13 +540,15 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
     if (link.value < 0) {
       path.attr("line/strokeDasharray", "4 4");
     }
-    if (
-      nodesList[sindex].node.attributes.position.y <
-      nodesList[tindex].node.attributes.position.y
-    )
+    let realLink = LinksManagement.getNodeByName(paper, link);
+    let source = realLink.source;
+    let target = realLink.target;
+    if (sindex < 0) console.log(link);
+    if (nodesList[sindex].y < nodesList[tindex].y)
       path.attr("line/targetMarker", null);
-    path.source(nodesList[sindex].node);
-    path.target(nodesList[tindex].node);
+
+    path.source(source);
+    path.target(target);
     path.addTo(graph);
     let points = link.points.map((point) => {
       return {
