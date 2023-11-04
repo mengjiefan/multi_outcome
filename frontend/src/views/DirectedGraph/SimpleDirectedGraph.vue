@@ -35,7 +35,7 @@
         <el-button @click="saveToTable" type="success" size="small" round
           >Save to Table</el-button
         >
-        <el-button @click="truelyDelete()" type="success" round size="small">
+        <el-button @click="trulyDelete()" type="success" round size="small">
           Relayout
         </el-button>
       </div>
@@ -104,12 +104,11 @@ export default {
       });
     },
 
-    truelyDelete() {
+    trulyDelete() {
       console.log("delete edge");
       this.simplePos = null;
-      let linksList = this.multipleSearchValue.linksList.filter(
-        (link) => !link.hidden
-      );
+
+      let linksList = LinksManagement.getFinalLinks(this.multipleSearchValue.linksList)
       //去除孤点
       //remove unrelated nodes
       let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
@@ -118,15 +117,6 @@ export default {
           else return false;
         });
         return index > -1;
-      });
-      linksList = linksList.map((link) => {
-        if (link.reverse)
-          return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-          };
-        else return link;
       });
       this.multipleSearchValue.linksList = linksList;
       this.multipleSearchValue.nodesList = nodesList;
