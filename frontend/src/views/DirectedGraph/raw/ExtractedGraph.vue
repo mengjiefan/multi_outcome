@@ -643,7 +643,9 @@ export default {
         link,
         this.paper,
         "ExtractedCurve",
-        this.scales[index].gap
+        {
+          gap: this.scales[index].gap,
+        }
       );
     },
     saveData() {

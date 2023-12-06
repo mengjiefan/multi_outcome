@@ -54,7 +54,7 @@ import {
 } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { findLink } from "@/plugin/links";
+import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
 
@@ -349,7 +349,9 @@ export default {
       });
       let dom = document.getElementById("paper" + (index + 1));
 
-      let links = this.multipleSearchValue.selections[index].linksList;
+      let links = LinksManagement.getFinalLinks(
+        this.multipleSearchValue.selections[index].linksList
+      );
 
       for (let i = 0; i < links.length; i++) {
         let link = links[i];
@@ -645,8 +647,10 @@ export default {
         this.deleteLinkView.model.remove({ ui: true });
         historyManage.reverseEdge(selection.history, history);
         selection.linksList[index].value = value;
-        LinksManagement.reverseLink(selection.linksList[index]);
-        this.addLink(i, selection.linksList[index]);
+        this.addLink(
+          i,
+          LinksManagement.reverseLink(selection.linksList[index])
+        );
 
         this.tip2Hidden();
         this.saveData();
@@ -670,38 +674,13 @@ export default {
       else return "UP";
     },
     addLink(i, link) {
-      var path = new joint.shapes.standard.Link({});
-      let attributes = this.deleteLinkView.model.attributes;
-      let value = Math.abs(link.value);
-      if (value > 1) value = 1;
-      path.attr({
-        id: "(" + link.source + ", " + link.target + ")",
-        line: {
-          strokeWidth: value * 8 + "",
-          targetMarker: {
-            type: "path",
-            stroke: "black",
-            "stroke-width": value * 7,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          },
-        },
+      linksOperation.addLink(this.sonGraphs[i], link, this.paper, "TreeCurve", {
+        source: this.deleteLinkView.model.attributes.source,
+        target: this.deleteLinkView.model.attributes.target,
+        mid: this.scales[i].mid,
       });
-      if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let index = findLink.sameNodeLink(link, this.sonGraphs[i].linksList);
-
-      let points = this.sonGraphs[i].linksList[index].points.concat([]);
-      if (link.source !== this.sonGraphs[i].linksList[index].source)
-        points.reverse();
-      let source = attributes.target;
-      let target = attributes.source;
-      if (attributes.attrs.line.targetMarker)
-        path.attr("line/targetMarker", null);
-      path.source(source);
-      path.target(target);
-      path.addTo(this.paper.model);
-      path.connector("TreeCurve", { points: points, value: value * 7 });
     },
+
     getNodeIndex(id) {
       let indexes = [];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
