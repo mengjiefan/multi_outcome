@@ -82,16 +82,17 @@ export default {
     record.forEach((history) => {
       let index = findLink.showSameDireLink(history, data.linksList);
       let allIndex = findLink.sameNodeLink(history, data.linksList);
-      console.log(allIndex, data.linksList[allIndex]);
-      if (history.hidden && allIndex > -1) {
-        data.linksList.splice(allIndex, 1);
-      } else if (history.reverse && index > -1) {
+
+      if (history.hidden && allIndex > -1)
+        data.linksList.splice(allIndex, 1); //delete
+      else if (history.reverse && index > -1)
         data.linksList.splice(index, 1, {
           source: history.target,
           target: history.source,
           value: history.value,
         });
-      } else if (history.add && allIndex < 0) {
+      //reverse
+      else if (history.add && allIndex < 0) {
         let sIndex = data.nodesList.findIndex(
           (node) => node.id === history.source
         );
@@ -105,7 +106,7 @@ export default {
             target: history.target,
             value: history.value,
           });
-      }
+      } //add
     });
   },
   combineHistory(records) {

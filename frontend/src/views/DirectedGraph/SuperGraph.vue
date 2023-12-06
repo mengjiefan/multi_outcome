@@ -97,7 +97,7 @@ export default {
         },
       });
     },
-
+    //TODO: 超图 relayout
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
@@ -551,7 +551,7 @@ export default {
       }
     },
     addLinkToPaper(link) {
-      linksOperation.addLink(this.simplePos, link, this.paper);
+      linksOperation.addLink(this.simplePos, link, this.paper, "SuperCurve");
     },
     getEdgeValue(source, target) {
       console.log("getEdgeVa");
@@ -611,20 +611,11 @@ export default {
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];
           historyManage.reverseEdge(selection.history, history);
-          let index = selection.linksList.findIndex((link) => {
-            if (
-              link.source === source &&
-              link.target === target &&
-              !link.hidden
-            )
-              return true;
-            else if (
-              link.source === target &&
-              link.target === source &&
-              !link.hidden
-            )
-              return true;
-          });
+          let index = findLink.sameNodeLink(
+            { source, target },
+            selection.linksList
+          );
+
           if (index < 0) continue;
           let link = selection.linksList[index];
           link.value = value;

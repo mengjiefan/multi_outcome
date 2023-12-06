@@ -53,43 +53,31 @@ export class LinksManagement {
       realItem.target === realLink.source && realItem.source === realLink.target
     );
   }
+  static getFinalLink(link) {
+    if (link.reverse) {
+      return {
+        source: link.target,
+        target: link.source,
+        value: link.value,
+      };
+    } else if (link.add) {
+      return {
+        source: link.source,
+        target: link.target,
+        value: link.value,
+      };
+    } else return link;
+  }
   static getFinalLinks(linksList) {
     let links = linksList.filter((link) => !link.hidden);
     links = links.map((link) => {
-      if (link.reverse) {
-        return {
-          source: link.target,
-          target: link.source,
-          value: link.value,
-        };
-      } else if (link.add) {
-        return {
-          source: link.source,
-          target: link.target,
-          value: link.value,
-        };
-      } else return link;
+      return this.getFinalLink(link);
     });
     return links;
   }
   static reverseLink(link) {
-    let source = link.source;
-    let target = link.target;
-    link.target = source;
-    link.source = target;
-  }
-  static getPoints(paper, link, points) {
-    if (points.length < 2) return points;
-    if (
-      this.isLinkDown(paper, link) &&
-      points[0].y > points[points.length - 1].y
-    )
-      points.reverse();
-    else if (
-      !this.isLinkDown(paper, link) &&
-      points[0].y < points[points.length - 1].y
-    )
-      points.reverse();
-    return points;
+    if (link.reverse) link.reverse = false;
+    else link.reverse = true;
+    return this.getFinalLink(link);
   }
 }

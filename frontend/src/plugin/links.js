@@ -51,7 +51,7 @@ export class findLink {
 }
 
 export class linksOperation {
-  static addLink(pos, link, paper, curveType) {
+  static addLink(pos, link, paper, curveType, gap) {
     let linksList = pos.linksList;
     let nodesList = pos.nodesList;
     var path = new joint.shapes.standard.Link({});
@@ -83,10 +83,12 @@ export class linksOperation {
     });
     let index = findLink.sameNodeLink(link, linksList);
     let points = [nodesList[sIndex], nodesList[tIndex]];
-
+    console.log(index, "points index");
     if (index > -1) {
       points = linksList[index].points.concat([]);
-      if (link.source !== linksList[index].source) points.reverse();
+      if (link.source !== linksList[index].source) {
+        points.reverse();
+      }
     }
     switch (curveType) {
       case "SuperCurve":
@@ -95,13 +97,18 @@ export class linksOperation {
           value: value * 7,
         });
         break;
+      case "ExtractedCurve":
+        path.connector(curveType, {
+          points,
+          value: value * 7,
+          radius: 7 * gap,
+        });
+        break;
       default:
         break;
     }
-    if (link.value < 0) {
-      path.attr("line/strokeWidth", -link.value * 7 + "");
-      path.attr("line/strokeDasharray", "4 4");
-    }
+    if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
+
     if (LinksManagement.isLinkDown(paper, link))
       path.attr("line/targetMarker", null);
     let realLink = LinksManagement.getNodeByName(paper, link);

@@ -1,3 +1,4 @@
+import { LinksManagement } from "../joint/linkAndNode";
 import { findLink } from "../links";
 export const countSimplePos = (g, nodes, links) => {
   let nodesList = [];
@@ -47,16 +48,21 @@ export const countSimplePos = (g, nodes, links) => {
 export const countExtractedSonPos = (all, son) => {
   let linksList = [];
   let nodesList = [];
-  let links = son.linksList.filter((link) => !link.hidden);
+  let links = LinksManagement.getFinalLinks(son.linksList);
   links.forEach((link) => {
-    let index = findLink.sameNodeLink(link, all.linksList);
-    
+    let nowLink = {
+      source: link.source,
+      target: link.target,
+      value: link.value,
+      points: [],
+    };
+    let index = findLink.sameNodeLink(nowLink, all.linksList);
     if (index > -1) {
-      link["points"] = all.linksList[index].points.concat([]);
-      if (findLink.showReverseLink(link, all.linksList) > -1)
-        link.points.reverse();
-    } else link["points"] = [];
-    linksList.push(link);
+      nowLink["points"] = all.linksList[index].points.concat([]);
+      if (nowLink.source !== all.linksList[index].source)
+        nowLink.points.reverse();
+    }
+    linksList.push(nowLink);
   });
   let index = all.nodesList.findIndex((item) => {
     if (item.id === son.outcome) return true;

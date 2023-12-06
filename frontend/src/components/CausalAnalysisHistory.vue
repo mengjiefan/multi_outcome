@@ -77,6 +77,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
+import { findLink } from "@/plugin/links";
 import historyManage from "@/plugin/history";
 export default {
   name: "CausalAnalysisHistory",
@@ -241,36 +242,20 @@ export default {
           let selection = sameSelection[j];
           records.push(selection.history); //相同outcome合并历史
           selection.links.forEach((link) => {
-            let index = selectionNow.linksList.findIndex((item) => {
-              if (item.target === link.target && item.source === link.source) {
-                return true;
-              } else if (
-                item.source === link.target &&
-                item.target === link.source
-              ) {
-                return true;
-              } else {
-                return false;
-              }
-            });
-            if (index < 0) {
-              if (link.add) link.add = null;
-              selectionNow.linksList.push(link);
-            }
+            let index = findLink.sameNodeLink(link, selectionNow.linksList);
+            if (index < 0) selectionNow.linksList.push(link);
           });
           selection.Variables.forEach((node) => {
-            if (selectionNow.variable.indexOf(node) < 0) {
+            if (selectionNow.variable.indexOf(node) < 0)
               selectionNow.variable.push(node);
-            }
           });
         }
         selectionNow.linksList = LinksManagement.getFinalLinks(
           selectionNow.linksList
-        );
+        ); //relayout(remove 'reverse','add','hidden')
         selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
-        console.log(outcome, selectionNow.history);
-        console.log("redo");
-        historyManage.reDoHistory(selectionNow);
+        historyManage.reDoHistory(selectionNow); //redo
+        //Redo后的结果是relayout后的结果
         finalSelections.push(selectionNow);
       }
       return finalSelections;
@@ -299,6 +284,7 @@ export default {
         });
         this.getLinks(outcomes, factors);
       } else if (selections.length > 1) {
+        //combine all the data and relayout!
         let nodes = [];
         let nodesList = [];
         let linksList = [];
@@ -306,9 +292,8 @@ export default {
         let allNumber = selections.length;
         for (let sI = 0; sI < selections.length; sI++) {
           let selection = selections[sI];
-          let flag = false;
+
           if (!nodes.includes(selection.outcome)) {
-            flag = true;
             nodes.push(selection.outcome);
             nodesList.push({
               id: selection.outcome,
@@ -322,60 +307,38 @@ export default {
                 id: node,
                 type: 1,
               });
-            } else if (flag) {
-              let index = nodes.indexOf(node);
-              nodesList[index].type++;
             }
           });
           for (let i = 0; i < selection.linksList.length; i++) {
-            let link = selection.linksList[i];
-            let index = linksList.findIndex((item) => {
-              if (item.target === link.target && item.source === link.source) {
-                return true;
-              } else if (
-                item.source === link.target &&
-                item.target === link.source
-              ) {
-                return true;
-              } else {
-                return false;
-              }
-            });
-            if (index < 0) {
-              linksList.push(link);
-            } else if (linksList[index].hidden && !link.hidden) {
-              //不隐藏覆盖隐藏
-              linksList[index] = {
-                source: linksList[index].source,
-                target: linksList[index].target,
-                value: linksList[index].value,
-              };
-            }
+            let index = findLink.sameNodeLink(
+              selection.linksList[i],
+              linksList
+            );
+            if (index < 0) linksList.push(selection.linksList[i]);
           }
         }
-        nodesList = nodesList.map((node) => {
-          if (node.type === allNumber && allNumber > 1)
-            return {
-              id: node.id,
-              type: -1,
-            };
-          else if (node.type > 0)
-            return {
-              id: node.id,
-              type: 1,
-            };
-          else return node;
-        });
         const _this = this;
+
         setTimeout(() => {
-          localStorage.setItem(
-            "GET_JSON_RESULT",
-            JSON.stringify({
-              nodesList: nodesList,
-              linksList: linksList,
-              selections: selections,
-            })
-          );
+          if (selections.length === 1)
+            localStorage.setItem(
+              "GET_JSON_RESULT",
+              JSON.stringify({
+                nodesList: nodesList,
+                linksList: linksList,
+                history: selections[0].history,
+              })
+            );
+          else
+            localStorage.setItem(
+              "GET_JSON_RESULT",
+              JSON.stringify({
+                nodesList: nodesList,
+                linksList: linksList,
+                selections: selections,
+              })
+            );
+
           _this.routeToGraph();
         }, 500);
       } else {

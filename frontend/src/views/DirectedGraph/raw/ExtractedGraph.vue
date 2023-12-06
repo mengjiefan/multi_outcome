@@ -52,7 +52,7 @@ import historyManage from "@/plugin/history";
 import { countExtractedSonPos } from "@/plugin/extracted/CountPos";
 import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
-import { findLink } from "@/plugin/links";
+import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 
 export default {
@@ -390,7 +390,7 @@ export default {
           target: source,
           value: link.value,
         });
-        LinksManagement.reverseLink(nowlink);
+        //LinksManagement.reverseLink(nowlink);
 
         nowlink.value = link.value;
       }
@@ -608,13 +608,16 @@ export default {
         target,
         value,
       };
+
       let index = findLink.showSameDireLink(history, selection.linksList);
       if (index > -1) {
         this.deleteLinkView.model.remove({ ui: true });
         historyManage.reverseEdge(selection.history, history);
         selection.linksList[index].value = value;
-        LinksManagement.reverseLink(selection.linksList[index]);
-        this.addLink(i, selection.linksList[index]);
+        this.addLink(
+          i,
+          LinksManagement.reverseLink(selection.linksList[index])
+        ); //方向数据改，坐标数据不改
 
         this.tip2Hidden();
         this.saveData();
@@ -635,49 +638,13 @@ export default {
       this.getEdgeValue(i, nodes[0], nodes[1]);
     },
     addLink(index, link) {
-      var path = new joint.shapes.standard.Link({});
-
-      let value = Math.abs(link.value);
-      if (value > 1) value = 1;
-      path.attr({
-        id: "(" + link.source + ", " + link.target + ")",
-        line: {
-          strokeWidth: value * 8,
-          targetMarker: {
-            type: "path",
-            stroke: "black",
-            "stroke-width": value * 7,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          },
-        },
-      });
-      if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let realLink = LinksManagement.getNodeByName(this.paper, link);
-      let source = realLink.source;
-      let target = realLink.target;
-      if (LinksManagement.isLinkDown(this.paper, link))
-        path.attr("line/targetMarker", null);
-
-      let nodesList = this.sonGraphs[index].nodesList;
-      let sIndex = nodesList.findIndex((node) => node.id === link.source);
-      let tIndex = nodesList.findIndex((node) => node.id === link.target);
-      let points = [nodesList[sIndex], nodesList[tIndex]];
-
-      let i = findLink.sameNodeLink(link, this.sonGraphs[index].linksList);
-      if (i > -1) {
-        points = this.sonGraphs[index].linksList[i].points.concat([]);
-        points = LinksManagement.getPoints(this.paper, link, points);
-      }
-
-      path.connector("ExtractedCurve", {
-        points,
-        value: value * 7,
-        radius: 12 * this.scales[0].gap,
-      });
-      path.source(source);
-      path.target(target);
-      path.addTo(this.paper.model);
+      linksOperation.addLink(
+        this.sonGraphs[index],
+        link,
+        this.paper,
+        "ExtractedCurve",
+        this.scales[index].gap
+      );
     },
     saveData() {
       localStorage.setItem(
@@ -689,7 +656,6 @@ export default {
       this.multipleSearchValue = JSON.parse(
         localStorage.getItem("GET_JSON_RESULT")
       );
-      console.log("getItem", this.multipleSearchValue);
       this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
       if (this.multipleSearchValue) {
         this.drawGraph();
