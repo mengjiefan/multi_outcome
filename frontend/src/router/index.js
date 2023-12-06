@@ -66,7 +66,7 @@ export default new VueRouter({
                   name: "ExtractedSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/extracted-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/raw/ExtractedGraph.vue"),
+                    import("../views/DirectedGraph/ExtractedGraph.vue"),
                 },
                 {
                   name: "TightenedSubGraph",
@@ -78,38 +78,38 @@ export default new VueRouter({
                   name: "CenterSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/center-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
+                    import("../views/DirectedGraph/CurveGraph.vue"),
                 },
                 {
                   name: "AggregateSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/aggregate-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
+                    import("../views/DirectedGraph/CurveGraph.vue"),
                 },
                 {
                   name: "RelativeSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/relative-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
+                    import("../views/DirectedGraph/CurveGraph.vue"),
                 },
                 {
                   name: "ConstraintSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/constraint-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/ConstraintSubGraph.vue"),
+                    import("../views/DirectedGraph/temp/ConstraintSubGraph.vue"),
                 },
                 {
                   name: "TreeSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/tree-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/recal/CurveGraph.vue"),
+                    import("../views/DirectedGraph/CurveGraph.vue"),
                 },
 
                 {
                   name: "OriginalSubGraph",
                   path: "/AppMainPlot/DirectedGraphView/multiple/original-sub-graph",
                   component: () =>
-                    import("../views/DirectedGraph/raw/ExtractedGraph.vue"),
+                    import("../views/DirectedGraph/ExtractedGraph.vue"),
                 },
               ],
             },

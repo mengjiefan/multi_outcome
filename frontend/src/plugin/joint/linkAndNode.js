@@ -1,3 +1,5 @@
+import { findLink } from "@/plugin/links";
+import historyManage from "@/plugin/history";
 const getNode = (nodeView) => {
   return nodeView.model.attributes.attrs.title;
 };
@@ -75,9 +77,13 @@ export class LinksManagement {
     });
     return links;
   }
-  static reverseLink(link) {
-    if (link.reverse) link.reverse = false;
-    else link.reverse = true;
-    return this.getFinalLink(link);
+
+  static reverseLink(link, linksList, history) {
+    let index = findLink.showSameDireLink(link, linksList);
+    historyManage.reverseEdge(history, link);
+    linksList[index].value = link.value;
+    if (linksList[index].reverse) linksList[index].reverse = false;
+    else linksList[index].reverse = true;
+    return this.getFinalLink(linksList[index]);
   }
 }

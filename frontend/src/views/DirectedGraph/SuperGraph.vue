@@ -101,25 +101,9 @@ export default {
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
-      let linksList = this.multipleSearchValue.linksList.filter(
-        (link) => !link.hidden
+      this.multipleSearchValue.linksList = LinksManagement.getFinalLink(
+        this.multipleSearchValue.linksList
       );
-      linksList = linksList.map((link) => {
-        if (link.reverse)
-          return {
-            source: link.target,
-            target: link.source,
-            value: link.value,
-          };
-        else if (link.add)
-          return {
-            source: link.source,
-            target: link.target,
-            value: link.value,
-          };
-        else return link;
-      });
-      this.multipleSearchValue.linksList = linksList;
       this.multipleSearchValue.selections =
         this.multipleSearchValue.selections.map((selection) => {
           return this.trulyDeleteSon(selection);

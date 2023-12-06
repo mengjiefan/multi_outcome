@@ -603,25 +603,22 @@ export default {
     },
     changeEdge(i, source, target, value) {
       let selection = this.multipleSearchValue.selections[i];
-      let history = {
-        source,
-        target,
-        value,
-      };
+      this.deleteLinkView.model.remove({ ui: true });
+      this.addLink(
+        i,
+        LinksManagement.reverseLink(
+          {
+            source,
+            target,
+            value,
+          },
+          selection.linksList,
+          selection.history
+        )
+      ); //方向数据改，坐标数据不改
 
-      let index = findLink.showSameDireLink(history, selection.linksList);
-      if (index > -1) {
-        this.deleteLinkView.model.remove({ ui: true });
-        historyManage.reverseEdge(selection.history, history);
-        selection.linksList[index].value = value;
-        this.addLink(
-          i,
-          LinksManagement.reverseLink(selection.linksList[index])
-        ); //方向数据改，坐标数据不改
-
-        this.tip2Hidden();
-        this.saveData();
-      }
+      this.tip2Hidden();
+      this.saveData();
     },
     reverseSonEdge(outcome, edge) {
       for (let i = outcome.length - 1; i >= 0; i--) {
