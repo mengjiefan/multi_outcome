@@ -166,6 +166,7 @@ export default {
         this.multipleSearchValue.nodesList,
         this.multipleSearchValue.linksList
       );
+      /*
       let addEdges = this.multipleSearchValue.linksList.filter(
         (edge) => edge.add
       );
@@ -174,7 +175,7 @@ export default {
           ...edge,
           points: [],
         });
-      });
+      });*/
 
       console.log("simplePos", that.simplePos);
 
@@ -227,7 +228,7 @@ export default {
           if (node.y < minH) minH = node.y;
         });
       });
-      let gap = 900 / (maxW - minW);
+      let gap = 1200 / (maxW - minW);
       let startX = (dom.clientWidth / gap - (maxW - minW)) / 2;
       let startY = (dom.clientHeight / gap - (maxH - minH)) / 3;
       this.scale = {
@@ -242,6 +243,22 @@ export default {
         this.scale
       );
       this.setPaper(paper);
+      this.drawAddEdges();
+    },
+    drawAddEdges() {
+      let addEdges = this.multipleSearchValue.linksList.filter(
+        (link) => link.add
+      );
+      let that = this;
+      addEdges.forEach((edge) => {
+        if (edge.reverse)
+          that.addLinkToPaper({
+            source: edge.target,
+            target: edge.source,
+            value: edge.value,
+          });
+        else that.addLinkToPaper(edge);
+      });
     },
     getWidth(router) {
       if (!router) return "-";
@@ -368,8 +385,9 @@ export default {
       }
       this.saveData();
     },
-    checkIfExist(link, realLink, paper) {
+    checkIfExist(link, paper) {
       const _this = this;
+      let realLink = LinksManagement.getLinkNode(paper, link);
       let graph = paper.model.attributes.cells.graph;
       let flag = true;
       graph.getCells().forEach((item) => {
@@ -377,7 +395,6 @@ export default {
           if (LinksManagement.dubplicateLink(paper, link, item)) {
             //原来就有边,什么也不做
             flag = false;
-            _this.deleteLinkView.model.remove({ ui: true });
             _this.emphasizeLink(realLink.source, realLink.target);
             _this.$message({
               showClose: true,
@@ -387,27 +404,24 @@ export default {
           } else if (LinksManagement.reversedLink(paper, link, item)) {
             flag = false;
             //原来边方向相反，相当于反转边
-            _this.deleteLinkView.model.remove({ ui: true });
             _this.deleteLinkView = item.findView(paper);
             _this.getEdgeValue(realLink.target, realLink.source);
           }
         }
       });
-      return flag;
+      if (flag) this.addTempLink(realLink.source, realLink.target);
     },
     setPaper(paper) {
+      this.paper = paper;
       const _this = this;
       let graph = paper.model.attributes.cells.graph;
       graph.on("change:source change:target", function (link) {
         if (link.get("source").id && link.get("target").id) {
           _this.deleteLinkView = link.findView(paper);
+          _this.deleteLinkView.model.remove({ ui: true });
           _this.paper = paper;
-          let realLink = LinksManagement.getLinkNode(paper, link);
-          if (realLink.source === realLink.target) {
-            _this.deleteLinkView.model.remove({ ui: true });
-          } else if (_this.checkIfExist(link, realLink, paper)) {
-            _this.addTempLink(realLink.source, realLink.target);
-          }
+          if (link.get("source").id !== link.get("target").id)
+            _this.checkIfExist(link, paper);
         }
       });
 
@@ -552,14 +566,13 @@ export default {
     },
     addNewEdge(source, target, value) {
       let newLink = { source, target, value };
-      this.multipleSearchValue.linksList.push(newLink);
+      this.multipleSearchValue.linksList.push({ ...newLink, add: true });
       this.deleteLinkView.model.remove({ ui: true });
       this.addLinkToPaper(newLink);
       this.multipleSearchValue.selections.forEach((selection) => {
         let node = selection.variable.concat([selection.outcome]);
-        2;
         if (node.includes(source) && node.includes(target)) {
-          selection.linksList.push(newLink);
+          selection.linksList.push({ ...newLink, add: true });
           selection.history = historyManage.addEdge(selection.history, newLink);
         }
       });
@@ -576,21 +589,14 @@ export default {
         this.multipleSearchValue.linksList
       );
       if (index > -1) {
-        console.log(this.multipleSearchValue.linksList[index]);
         this.deleteLinkView.model.remove({ ui: true });
-        this.multipleSearchValue.linksList[index].value = value;
-        if (!this.multipleSearchValue.linksList[index].reverse) {
-          this.multipleSearchValue.linksList[index]["reverse"] = true;
-
-          this.addLinkToPaper({
-            source: target,
-            target: source,
-            value: value,
-          });
-        } else {
-          this.multipleSearchValue.linksList[index].reverse = false;
-          this.addLinkToPaper(this.multipleSearchValue.linksList[index]);
-        }
+        this.addLinkToPaper(
+          LinksManagement.reverseLink(
+            history,
+            this.multipleSearchValue.linksList,
+            []
+          )
+        ); //方向数据改，坐标数据不改
         //所有子图都改变，都要增加操作历史
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];

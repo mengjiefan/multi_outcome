@@ -421,8 +421,12 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
     model: graph,
     width: "100%",
     height: "100%",
-    drawGrid: { name: "mesh", args: { color: "#bbbbbb" } },
-    gridSize: 80,
+    gridSize: 1,
+    async: true,
+    linkPinning: false,
+    sorting: joint.dia.Paper.sorting.APPROX,
+    defaultLink: () => new joint.shapes.standard.Link(),
+    connectionStrategy: joint.connectionStrategies.pinAbsolute,
     interactive: function (cellView, method) {
       return null;
     },
@@ -492,6 +496,12 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
     args
   ) {
     let points = args.points.concat([]);
+    points = points.map((point) => {
+      return {
+        x: point.x * 80,
+        y: point.y * 80,
+      };
+    });
     if (points.length > 1) {
       points[0] = countAnchor(points[1], points[0], 16);
       let radius = 16;
@@ -549,12 +559,7 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
     path.addTo(graph);
 
     path.connector("TightenedCurve", {
-      points: points.map((point) => {
-        return {
-          x: countXPos(point.x),
-          y: countYPos(point.y),
-        };
-      }),
+      points: points,
       value: value * 7,
     });
   });

@@ -41,31 +41,25 @@
     </div>
   </div>
 </template>
-<script>
+    <script>
 import * as d3 from "d3";
 import { ref } from "vue";
-import { createChart } from "@/plugin/charts";
-import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
-import { drawExtractedGraph, showHiddenEdge } from "@/plugin/superGraph";
-
-import historyManage from "@/plugin/history";
-import { countExtractedSonPos } from "@/plugin/extracted/CountPos";
-import { countOriginalSonPos } from "@/plugin/original/CountPos";
-import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { LinksManagement } from "@/plugin/joint/linkAndNode";
 import { findLink, linksOperation } from "@/plugin/links";
-import { linkRequest } from "@/plugin/request/edge.js";
+import { linkRequest } from "@/plugin/request/edge";
+import { createChart } from "@/plugin/charts";
+import {
+  drawTightenedGraph,
+  addHighLight,
+  removeHighLight,
+} from "@/plugin/sonGraph";
+import * as joint from "jointjs";
+import historyManage from "@/plugin/history";
+import { countSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
-  beforeRouteEnter(to, from, next) {
-    next((vm) => {
-      console.log(to.name);
-      vm.init();
-      vm.graphType = to.name;
-    });
-  },
   data() {
     return {
-      graphType: ref(),
       scales: ref([]),
       papers: ref([]),
       paper: ref(),
@@ -99,74 +93,52 @@ export default {
   methods: {
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
-
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
         if (i == index) continue;
-        this.applyToSingle(selection.linksList, i);
+        let item = this.multipleSearchValue.selections[i];
+        this.applyToSingle(selection.linksList, item);
+        this.drawSonGraph(i);
       }
-      for (let i = 0; i < selection.linksList.length; i++) {
-        let link = selection.linksList[i];
-        let index = findLink.sameNodeLink(
-          link,
-          this.multipleSearchValue.linksList
-        );
-        if (index > -1) this.multipleSearchValue.linksList[index] = link;
-        else this.multipleSearchValue.linksList.push(link);
+      for (let i = 0; i < this.multipleSearchValue.linksList.length; i++) {
+        let link = this.multipleSearchValue.linksList[i];
+        let mapLink = link;
+        let index = selection.linksList.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) mapLink = selection.linksList[index];
+        this.multipleSearchValue.linksList[i] = mapLink;
       }
-
       this.saveData();
     },
-    applyToSingle(answer, index) {
-      let item = this.multipleSearchValue.selections[index];
-      let flag = false;
+    applyToSingle(answer, item) {
       for (let i = 0; i < item.linksList.length; i++) {
         let link = item.linksList[i];
-        let linkIndex = findLink.sameNodeLink(link, answer); //目标边在本图中有
-        console.log(index, linkIndex);
-        if (linkIndex > -1) {
-          console.log(link);
-          let mapLink = answer[linkIndex]; //现边
-          if (findLink.showReverseLink(link, answer) > -1) {
-            flag = true;
+        let mapLink = link;
+        let index = answer.findIndex((edge) => {
+          if (edge.source === link.source && edge.target === link.target)
+            return true;
+          else return false;
+        });
+        if (index > -1) {
+          mapLink = answer[index];
+          if (link.hidden) {
+            mapLink = link;
+          } else if (mapLink.hidden) {
+            item.history = historyManage.deleteEdge(item.history, link);
+          } else if (mapLink.reverse && !link.reverse) {
+            historyManage.reverseEdge(item.history, mapLink);
+          } else if (link.reverse && !mapLink.reverse) {
             historyManage.reverseEdge(item.history, {
-              source: link.source,
-              target: link.target,
+              target: link.source,
+              source: link.target,
               value: mapLink.value,
             });
-            item.linksList.splice(i, 1, mapLink);
           }
-
-          if (findLink.sameNodeLink(link, this.sonGraphs[index].linksList) < 0)
-            flag = true;
-          //然后目标边是新加的，没坐标
         }
+        item.linksList[i] = mapLink;
       }
-
-      if (flag) {
-        switch (this.graphType) {
-          case "ExtractedSubGraph":
-            this.sonGraphs[index] = countExtractedSonPos(this.finalPos, item);
-            break;
-          case "OriginalSubGraph":
-            this.sonGraphs[index] = countOriginalSonPos(
-              item.outcome,
-              item.variable,
-              item.linksList
-            );
-            break;
-        }
-        console.log("apply and redraw");
-        this.drawSonGraph(index);
-      }
-    },
-    getNodeIndex(id) {
-      let indexes = [];
-      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
-        let selection = this.multipleSearchValue.selections[i];
-        if (selection.outcome === id) indexes.push(i);
-        else if (selection.variable.includes(id)) indexes.push(i);
-      }
-      return indexes;
     },
     saveSingleToTable(index) {
       let selection = this.multipleSearchValue.selections[index];
@@ -199,6 +171,7 @@ export default {
     },
     createTooltip(number) {
       let tooltips = d3.selectAll(".tooltip")._groups[0];
+      console.log(tooltips.length, number, "tooltip");
       if (tooltips.length < number)
         return d3
           .select("body")
@@ -211,52 +184,29 @@ export default {
           if (i === number - 1) return this;
         });
     },
-    drawGraph() {
-      this.ifGroup = false;
-      let that = this;
-      this.sonNum = 0;
-      if (this.tooltip2) {
-        this.tip2Hidden();
-      }
-      this.tooltip = this.createTooltip(1);
-      this.tooltip2 = this.createTooltip(2);
-      this.multipleSearchValue.nodesList.forEach(function (state) {
-        if (state.type === -1) that.ifGroup = true;
-        else if (state.type === 0) that.sonNum++;
-      });
-      setTimeout(() => {
-        this.drawSonGraphs();
-      }, 0);
-    },
+
     drawSonGraphs() {
       this.sonGraphs = [];
-      this.scales = [];
-      for (let i = 0; i < this.sonNum; i++) {
-        let ans = {};
-        let selection = this.multipleSearchValue.selections[i];
-        switch (this.graphType) {
-          case "ExtractedSubGraph":
-            ans = countExtractedSonPos(this.finalPos, selection);
-            break;
-          case "OriginalSubGraph":
-            ans = countOriginalSonPos(
-              selection.outcome,
-              selection.variable,
-              selection.linksList
-            );
-            break;
-        }
 
+      for (let i = 1; i <= this.sonNum; i++) {
+        let ans = countSonPos(
+          this.finalPos[i],
+          this.finalPos[0].nodesList,
+          this.multipleSearchValue.selections[i - 1].linksList
+        );
+        this.sonGraphs.push({
+          nodesList: ans.sonPos,
+          linksList: ans.linksPos,
+        });
         this.scales.push({});
-        this.sonGraphs.push(ans);
       }
       const graphs = this.sonGraphs;
-
       let dom = document.getElementById("paper1");
       let minGap = 10000;
 
       let midX = [];
       let midY = [];
+
       graphs.forEach((graph) => {
         let minW = 150000;
         let maxW = 0;
@@ -276,61 +226,43 @@ export default {
             if (node.y < minH) minH = node.y;
           });
         });
-        let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-        if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-          gap = (dom.clientHeight - 96) / (maxH - minH + 24);
+        let gap = (dom.clientWidth - 40) / (maxW - minW);
+        if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+          gap = (dom.clientHeight - 120) / (maxH - minH);
         if (gap < minGap) minGap = gap;
-        midX.push((maxW + minW) / 2);
-        midY.push(maxH + 2 * minH);
+        midX.push(maxW + minW);
+        midY.push(maxH + minH);
       });
 
       for (let i = 0; i < this.sonNum; i++) {
-        let startX = dom.clientWidth / 2 - midX[i] * minGap;
-        let startY = (dom.clientHeight - midY[i] * minGap) / 3;
+        let startX = (dom.clientWidth - minGap * midX[i]) / 2;
+        let startY = (dom.clientHeight - 80 - minGap * midY[i]) / 2;
         this.scales[i] = {
+          gap: minGap,
           startX,
           startY,
-          gap: minGap,
         };
         this.drawSonGraph(i);
       }
     },
     drawSonGraph(index) {
+      let dom = document.getElementById("paper" + (index + 1));
       for (let i = 0; i < this.sonGraphs[index].nodesList.length; i++)
         this.sonGraphs[index].nodesList[i]["indexes"] = this.getNodeIndex(
           this.sonGraphs[index].nodesList[i].id
         );
-      let dom = document.getElementById("paper" + (index + 1));
 
-      let paper = drawExtractedGraph(
+      let paper = drawTightenedGraph(
         dom,
         this.sonGraphs[index].nodesList,
-        this.sonGraphs[index].linksList,
-        this.scales[index]
+        this.multipleSearchValue.selections[index].linksList,
+        this.scales[index],
+        this.sonGraphs[index].linksList
       );
-
       if (!this.papers[index]) {
         this.papers.push(paper);
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
-      this.drawAddEdges(index);
-    },
-    drawAddEdges(index) {
-      this.paper = this.papers[index];
-      let addEdges = this.multipleSearchValue.selections[
-        index
-      ].linksList.filter((link) => link.add);
-      console.log("addedges", addEdges);
-      let that = this;
-      addEdges.forEach((edge) => {
-        if (edge.reverse)
-          that.addLink(index, {
-            source: edge.target,
-            target: edge.source,
-            value: edge.value,
-          });
-        else that.addLink(index, edge);
-      });
     },
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -367,8 +299,11 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
+    plotChart(line) {
+      let dom = document.getElementsByClassName(line)[0];
+      createChart(dom, line);
+    },
     getWidth(index, router) {
-      if (!router) return "-";
       let nodes = router.split(", ");
       nodes[0] = nodes[0].slice(1, nodes[0].length);
       nodes[1] = nodes[1].slice(0, nodes[1].length - 1);
@@ -380,40 +315,6 @@ export default {
           value = link.value;
       });
       return value.toFixed(3);
-    },
-    plotChart(line) {
-      let dom = document.getElementsByClassName(line)[0];
-      createChart(dom, line);
-    },
-    //TODO:需检查  尤其是改过了reverseLink方法
-    showHiddenLink(i, source, target) {
-      let selection = this.multipleSearchValue.selections[i];
-      let index = findLink.sameNodeLink(
-        { source, target },
-        selection.linksList
-      );
-      let link = selection.linksList[index];
-
-      index = findLink.sameNodeLink(
-        { source, target },
-        this.sonGraphs[i].linksList
-      );
-      let nowlink = this.sonGraphs[i].linksList[index];
-      index = findLink.showReverseLink({ source, target }, selection.linksList);
-      if (index > -1) {
-        LinksManagement.reverseLink(link);
-        historyManage.reverseEdge(selection.history, {
-          source: target,
-          target: source,
-          value: link.value,
-        });
-        //LinksManagement.reverseLink(nowlink);
-
-        nowlink.value = link.value;
-      }
-
-      showHiddenEdge(this.paper, nowlink, this.scales[i], this.sonGraphs[i]);
-      this.saveData();
     },
     checkIfExist(index, link, paper) {
       let realLink = LinksManagement.getLinkNode(paper, link);
@@ -496,8 +397,7 @@ export default {
           _this.highLightAllPaper(elementView.model.attributes.attrs.title);
       });
       paper.on("element:mouseout", function (elementView, evt) {
-        if (elementView.model.attributes.type === "standard.Rectangle")
-          _this.removeAllHighLight(elementView.model.attributes.attrs.title);
+        _this.removeAllHighLight(elementView.model.attributes.attrs.title);
       });
     },
     highLightAllPaper(id) {
@@ -597,32 +497,21 @@ export default {
           source: nodes[0],
           target: nodes[1],
         });
-        selection.linksList.splice(index, 1);
-
+        selection.linksList[index] = {
+          source: selection.linksList[index].source,
+          target: selection.linksList[index].target,
+          value: selection.linksList[index].value,
+          hidden: true,
+        };
         selection.history = history;
         this.tip2Hidden();
         this.saveData();
       }
     },
+
     addTempLink(i, source, target) {
-      /*
-      let oIndex = findLink.sameNodeLink(
-        { source, target },
-        this.multipleSearchValue.linksList
-      );
-      if (oIndex > -1) {
-        let originalLink = this.multipleSearchValue.linksList[oIndex];
-        this.deleteLinkView.model.remove({ ui: true });
-        if (originalLink.hidden) {
-          originalLink.hidden = false;
-        }
-        if (originalLink.source !== source) {
-          linkRequest.getLinkValue(source, target).then((response) => {
-            let value = response.data.value;
-            this.reverseAndShow(source, target, value);
-          });
-        } else this.showHiddenLink(source, target);
-      } else */ this.getNewEdge(i, source, target);
+      /*TODO*/
+      this.getNewEdge(i, source, target);
     },
     getNewEdge(i, source, target) {
       linkRequest.getLinkValue(source, target).then((response) => {
@@ -669,137 +558,38 @@ export default {
         if (selection.outcome === outcome) return true;
         else return false;
       });
-
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       this.getEdgeValue(i, nodes[0], nodes[1]);
+    },
+    checkDirection(source, target) {
+      if (source.y <= target.y) return "DOWN";
+      else return "UP";
     },
     addLink(index, link) {
       linksOperation.addLink(
         this.sonGraphs[index],
         link,
         this.paper,
-        "ExtractedCurve",
+        "TightenedCurve",
         {
           gap: this.scales[index].gap,
         }
       );
     },
-    saveData() {
-      localStorage.setItem(
-        "GET_JSON_RESULT",
-        JSON.stringify(this.multipleSearchValue)
-      );
-    },
-    init() {
-      this.multipleSearchValue = JSON.parse(
-        localStorage.getItem("GET_JSON_RESULT")
-      );
-      this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-      if (this.multipleSearchValue) {
-        this.drawGraph();
+    getNodeIndex(id) {
+      let indexes = [];
+      for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
+        let selection = this.multipleSearchValue.selections[i];
+        if (selection.outcome === id) indexes.push(i);
+        else if (selection.variable.includes(id)) indexes.push(i);
       }
+      return indexes;
     },
+  },
+
+  mounted() {
+    console.log(1);
   },
 };
 </script>
   
-  <style scoped>
-.sub-graph {
-  display: flex;
-  height: 100%;
-  flex: 1;
-}
-.directed-tabs {
-  background-color: rgb(55, 162, 228);
-  height: 40px;
-  display: flex;
-  font-size: 20px;
-  padding-left: 16px;
-  gap: 16px;
-}
-.active-tab {
-  background-color: white;
-  border-radius: 4px 4px 0 0;
-  color: rgb(55, 162, 228);
-  vertical-align: center;
-  text-align: center;
-  padding-left: 8px;
-  padding-right: 8px;
-  line-height: 40px;
-  cursor: pointer;
-}
-.normal-tab {
-  background-color: rgb(55, 162, 228);
-  border-radius: 4px 4px 0 0;
-  color: white;
-  vertical-align: center;
-  text-align: center;
-  padding-left: 8px;
-  padding-right: 8px;
-  line-height: 40px;
-  cursor: pointer;
-}
-
-.group-graphs {
-  width: 100%;
-  display: flex;
-}
-
-.son-svg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-}
-.paper-svg {
-  padding: 1%;
-  margin: 0.5%;
-  border: 1px solid rgba(151, 151, 151, 0.49);
-  flex: 1 1/3;
-  min-width: 30%;
-}
-.svg-content {
-  width: 100%;
-  height: 90% !important;
-}
-.one-line-operator {
-  height: 10%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.son-title {
-  font-size: 16px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-}
-.color-hint {
-  height: 20px;
-  width: 20px;
-  margin-right: 8px;
-  border-radius: 16px;
-}
-.one-line-operator .drawing-buttons {
-  display: flex;
-  justify-content: flex-end;
-}
-.graph-main-title {
-  font-size: 20px;
-  margin-top: 20px;
-  font-weight: bold;
-  line-height: 36px;
-}
-.graph-subtitle {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 32px;
-}
-</style>
-  <style>
-.joint-link path {
-  transition-duration: 0.2s;
-}
-</style>
-     

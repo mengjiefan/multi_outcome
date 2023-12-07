@@ -45,7 +45,7 @@
 import * as d3 from "d3";
 import { ref } from "vue";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
-import { findLink } from "@/plugin/links";
+import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge";
 import { createChart } from "@/plugin/charts";
 import {
@@ -66,8 +66,6 @@ export default {
       sonGraphs: ref([]),
       finalPos: ref(),
       ifGroup: ref(false),
-      loadingInstance: ref(null),
-      countingGraph: ref(false),
       tooltip: null,
       tooltip2: null,
       sonNum: ref(0),
@@ -213,8 +211,8 @@ export default {
           this.multipleSearchValue.selections[i - 1].linksList
         );
         this.sonGraphs.push({
-          nodes: ans.sonPos,
-          links: ans.linksPos,
+          nodesList: ans.sonPos,
+          linksList: ans.linksPos,
         });
         this.scales.push({});
       }
@@ -230,13 +228,13 @@ export default {
         let maxW = 0;
         let minH = 15000;
         let maxH = 0;
-        graph.nodes.forEach((node) => {
+        graph.nodesList.forEach((node) => {
           if (node.x > maxW) maxW = node.x;
           if (node.x < minW) minW = node.x;
           if (node.y > maxH) maxH = node.y;
           if (node.y < minH) minH = node.y;
         });
-        graph.links.forEach((link) => {
+        graph.linksList.forEach((link) => {
           link.points.forEach((node) => {
             if (node.x > maxW) maxW = node.x;
             if (node.x < minW) minW = node.x;
@@ -265,17 +263,17 @@ export default {
     },
     drawSonGraph(index) {
       let dom = document.getElementById("paper" + (index + 1));
-      for (let i = 0; i < this.sonGraphs[index].nodes.length; i++)
-        this.sonGraphs[index].nodes[i]["indexes"] = this.getNodeIndex(
-          this.sonGraphs[index].nodes[i].id
+      for (let i = 0; i < this.sonGraphs[index].nodesList.length; i++)
+        this.sonGraphs[index].nodesList[i]["indexes"] = this.getNodeIndex(
+          this.sonGraphs[index].nodesList[i].id
         );
 
       let paper = drawTightenedGraph(
         dom,
-        this.sonGraphs[index].nodes,
+        this.sonGraphs[index].nodesList,
         this.multipleSearchValue.selections[index].linksList,
         this.scales[index],
-        this.sonGraphs[index].links
+        this.sonGraphs[index].linksList
       );
       if (!this.papers[index]) {
         this.papers.push(paper);
@@ -334,9 +332,45 @@ export default {
       });
       return value.toFixed(3);
     },
+    checkIfExist(index, link, paper) {
+      let realLink = LinksManagement.getLinkNode(paper, link);
+      const _this = this;
+      let graph = paper.model.attributes.cells.graph;
+      let flag = true;
+      graph.getCells().forEach((item) => {
+        if (item.attributes.type.includes("Link")) {
+          if (LinksManagement.dubplicateLink(paper, link, item)) {
+            //原来就有边,什么也不做
+            flag = false;
+            _this.$message({
+              showClose: true,
+              message: "Duplicate Edge!",
+              type: "warning",
+            });
+          } else if (LinksManagement.reversedLink(paper, link, item)) {
+            flag = false;
+            //原来边方向相反，相当于反转边
+            _this.deleteLinkView = item.findView(paper);
+            _this.getEdgeValue(index, realLink.target, realLink.source);
+          }
+        }
+      });
+      if (flag) this.addTempLink(index, realLink.source, realLink.target);
+    },
     setPaper(index, paper) {
       const _this = this;
       let outcome = this.multipleSearchValue.selections[index].outcome;
+      let graph = paper.model.attributes.cells.graph;
+      graph.on("change:source change:target", function (link) {
+        if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = link.findView(paper);
+          _this.deleteLinkView.model.remove({ ui: true });
+          _this.paper = paper;
+          if (link.get("source").id !== link.get("target").id) {
+            _this.checkIfExist(index, link, paper);
+          }
+        }
+      });
 
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
@@ -490,51 +524,45 @@ export default {
         this.saveData();
       }
     },
-    getEdgeValue(i, source, target) {
-      console.log(i, source, target);
-      linkRequest.getLinkValue(target, source).then((response) => {
-        this.changeEdge(i, source, target, response.data.value);
+
+    addTempLink(i, source, target) {
+      /*TODO*/
+      this.getNewEdge(i, source, target);
+    },
+    getNewEdge(i, source, target) {
+      linkRequest.getLinkValue(source, target).then((response) => {
+        this.addNewEdge(i, { source, target, value: response.data.value });
       });
     },
-    changeEdge(i, source, target, value) {
+    addNewEdge(i, link) {
       let selection = this.multipleSearchValue.selections[i];
-      let index = selection.linksList.findIndex(function (row) {
-        if (
-          (row.source === source &&
-            row.target === target &&
-            !row.hidden &&
-            !row.reverse) ||
-          (row.source === target &&
-            row.target === source &&
-            !row.hidden &&
-            row.reverse)
-        ) {
-          return true;
-        } else return false;
+      selection.linksList.push({ ...link, add: true });
+      selection.history = historyManage.addEdge(selection.history, link);
+      this.addLink(i, link);
+      this.saveData();
+    },
+    getEdgeValue(i, source, target) {
+      linkRequest.getLinkValue(target, source).then((response) => {
+        this.changeEdge(i, { source, target, value: response.data.value });
       });
+    },
+    changeEdge(i, link) {
+      let selection = this.multipleSearchValue.selections[i];
+      let index = findLink.showSameDireLink(link, selection.linksList);
       if (index > -1) {
         this.deleteLinkView.model.remove({ ui: true });
-
-        historyManage.reverseEdge(selection.history, {
-          source,
-          target,
-          value,
-        });
-        selection.linksList[index].value = value;
-        if (!selection.linksList[index].reverse) {
-          selection.linksList[index]["reverse"] = true;
-          this.addLink(i, {
-            source: target,
-            target: source,
-            value,
-          });
-        } else {
-          selection.linksList[index].reverse = false;
-          this.addLink(i, selection.linksList[index]);
-        }
-        this.tip2Hidden();
-        this.saveData();
+        this.addLink(
+          i,
+          LinksManagement.reverseLink(
+            link,
+            selection.linksList,
+            selection.history
+          )
+        ); //方向数据改，坐标数据不改
       }
+
+      this.tip2Hidden();
+      this.saveData();
     },
     reverseSonEdge(outcome, edge) {
       for (let i = outcome.length - 1; i >= 0; i--) {
@@ -554,50 +582,15 @@ export default {
       else return "UP";
     },
     addLink(index, link) {
-      var path = new joint.shapes.standard.Link({});
-
-      let value = Math.abs(link.value);
-      if (value > 1) value = 1;
-      path.attr({
-        id: "(" + link.source + ", " + link.target + ")",
-        line: {
-          strokeWidth: value * 8 + "",
-          targetMarker: {
-            type: "path",
-            stroke: "black",
-            "stroke-width": value * 7,
-            fill: "transparent",
-            d: "M 10 -5 0 0 10 5 ",
-          },
-        },
-      });
-      if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
-      let realLink = LinksManagement.getNodeByName(this.paper, link);
-      let source = realLink.source;
-      let target = realLink.target;
-
-      if (LinksManagement.isLinkDown(this.paper, link))
-        path.attr("line/targetMarker", null);
-
-      let i = findLink.sameNodeLink(link, this.sonGraphs[index].links);
-      let points = this.sonGraphs[index].links[i].points.concat([]);
-
-      if (link.source !== this.sonGraphs[index].links[i].source)
-        points.reverse();
-      console.log(points);
-      path.connector("TightenedCurve", {
-        points: points.map((point) => {
-          return {
-            x: point.x * 80,
-            y: point.y * 80,
-          };
-        }),
-        value: value * 7,
-      });
-
-      path.source(source);
-      path.target(target);
-      path.addTo(this.paper.model);
+      linksOperation.addLink(
+        this.sonGraphs[index],
+        link,
+        this.paper,
+        "TightenedCurve",
+        {
+          gap: this.scales[index].gap,
+        }
+      );
     },
     getNodeIndex(id) {
       let indexes = [];

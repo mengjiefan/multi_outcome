@@ -62,8 +62,8 @@ export const countPos = (g, childNodes, commonNode) => {
             y: evenValue(y, point.y),
           });
         });
+        if (path.source !== link.source) points.reverse();
       }
-      if (path.source !== link.source) points.reverse();
       linksList.push({
         source: link.source,
         target: link.target,

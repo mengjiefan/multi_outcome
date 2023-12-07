@@ -108,7 +108,9 @@ export default {
       console.log("delete edge");
       this.simplePos = null;
 
-      let linksList = LinksManagement.getFinalLinks(this.multipleSearchValue.linksList)
+      let linksList = LinksManagement.getFinalLinks(
+        this.multipleSearchValue.linksList
+      );
       //去除孤点
       //remove unrelated nodes
       let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
@@ -248,10 +250,9 @@ export default {
         { source, target },
         this.multipleSearchValue.linksList
       );
+      this.deleteLinkView.model.remove({ ui: true });
       if (oIndex > -1) {
         let originalLink = this.multipleSearchValue.linksList[oIndex];
-
-        this.deleteLinkView.model.remove({ ui: true });
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
           linkRequest.getLinkValue(source, target).then((response) => {
@@ -263,9 +264,7 @@ export default {
             target,
             value: this.multipleSearchValue.linksList[oIndex].value,
           });
-      } else {
-        this.getNewEdge(source, target);
-      }
+      } else this.getNewEdge(source, target);
     },
     setPaper(paper) {
       this.paper = paper;
@@ -531,7 +530,6 @@ export default {
       return { source, target, value: response.data.value };
     },
     async getNewEdge(source, target) {
-      this.deleteLinkView.model.remove({ ui: true });
       let newLink = await this.getEdgeValue(source, target);
       this.multipleSearchValue.linksList.push({
         ...newLink,

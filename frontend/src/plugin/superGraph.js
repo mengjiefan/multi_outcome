@@ -306,7 +306,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   ) {
     let points = args.points.concat([]);
     if (points.length > 1) {
-      let radius = 6.8 * gap;
+      let radius = 6.8;
       if (points.length > 2) {
         points[0] = countAnchor(points[1], points[0], radius);
         if (points[points.length - 1].y < points[0].y)
@@ -318,7 +318,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         );
       } else {
         points[0] = countAnchor(points[1], points[0], 12);
-        points[1] = countAnchor(points[0], points[1], 12)
+        points[1] = countAnchor(points[0], points[1], 12);
       }
     }
 

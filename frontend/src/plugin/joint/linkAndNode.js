@@ -70,8 +70,17 @@ export class LinksManagement {
       };
     } else return link;
   }
+  //保留add
   static getFinalLinks(linksList) {
     let links = linksList.filter((link) => !link.hidden);
+    links = links.map((link) => {
+      return this.getFinalLink(link);
+    });
+    return links;
+  }
+  //去除add
+  static getLayoutLinks(linksList) {
+    let links = linksList.filter((link) => !link.hidden && !link.add);
     links = links.map((link) => {
       return this.getFinalLink(link);
     });

@@ -25,7 +25,7 @@ export const countOriginalSonPos = (outcome, variables, linksList) => {
     });
     g.setNode(state, node);
   });
-  var edges = linksList;
+  var edges = linksList.filter((link) => !link.add);
   edges.forEach(function (edge) {
     let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
     var valString = edgeValue.toString() + "px";

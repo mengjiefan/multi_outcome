@@ -49,6 +49,15 @@ export class findLink {
     return index;
   }
 }
+const countAnchor = (last, center, radius) => {
+  let distance = Math.sqrt(
+    (center.x - last.x) * (center.x - last.x) +
+      (center.y - last.y) * (center.y - last.y)
+  );
+  let x = center.x + ((last.x - center.x) * radius) / distance;
+  let y = center.y + ((last.y - center.y) * radius) / distance;
+  return { x, y };
+};
 
 export class linksOperation {
   static countControl(source, target, mid) {
@@ -95,9 +104,9 @@ export class linksOperation {
       },
     });
     let index = findLink.sameNodeLink(link, linksList);
-    let points = [nodesList[sIndex], nodesList[tIndex]];
+    let points = [];
 
-    if (index > -1) {
+    if (linksList[index]?.points?.length) {
       points = linksList[index].points.concat([]);
       if (link.source !== linksList[index].source) {
         points.reverse();
@@ -112,24 +121,30 @@ export class linksOperation {
 
     let source = realLink.source;
     let target = realLink.target;
+
     if (curveType === "TreeCurve") {
       source = attrs.target;
       target = attrs.source;
       let point = this.countControl(points[0], points[2], attrs.mid);
       points[1] = point;
-    }
-    if (curveType === "ExtractedCurve")
+    } else if (!points.length) {
+      path.connector(curveType, {
+        points: [nodesList[sIndex], nodesList[tIndex]],
+        value: value * 7,
+        radius: 12,
+      });
+    } else if (curveType === "ExtractedCurve")
       path.connector(curveType, {
         points,
-        value: value * 7,
-        radius: 7 * attrs.gap,
+        value: value * 8,
+        radius: 8 * attrs.gap,
       });
     else
       path.connector(curveType, {
         points,
         value: value * 7,
       });
-
+    console.log(points);
     console.log(source, target, "adds");
     path.source(source);
     path.target(target);
