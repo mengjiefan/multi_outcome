@@ -1,7 +1,47 @@
 <template>
-  <son-graph :graphType="graphType"></son-graph>
+  <div class="sub-graph">
+    <div class="group-graphs">
+      <div class="son-svg">
+        <div
+          v-for="index in sonNum"
+          :key="index"
+          :class="'paper' + index"
+          class="paper-svg"
+        >
+          <div class="one-line-operator">
+            <div class="son-title">
+              <div
+                class="color-hint"
+                :style="[{ 'background-color': cmap[index - 1] }]"
+              ></div>
+              {{ multipleSearchValue.selections[index - 1].outcome }}
+            </div>
+            <div class="drawing-buttons">
+              <!--Apply Changes to Super Graph-->
+              <el-button
+                @click="applySubGraph(index - 1)"
+                type="warning"
+                size="small"
+                round
+                >Apply</el-button
+              >
+              <!--Save Sub Graph to Table-->
+              <el-button
+                @click="saveSingleToTable(index - 1)"
+                type="warning"
+                size="small"
+                round
+                >Save</el-button
+              >
+            </div>
+          </div>
+          <div :id="'paper' + index" class="svg-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
-  <script>
+<script>
 import * as d3 from "d3";
 import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
@@ -14,19 +54,46 @@ import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
-import sonGraph from "../SonGraph.vue";
 
 export default {
-  components: { sonGraph },
   beforeRouteEnter(to, from, next) {
     next((vm) => {
       console.log(to.name);
+      vm.init();
       vm.graphType = to.name;
     });
   },
   data() {
     return {
       graphType: ref(),
+      scales: ref([]),
+      papers: ref([]),
+      paper: ref(),
+      sonGraphs: ref([]),
+      finalPos: ref(),
+      ifGroup: ref(false),
+      tooltip: null,
+      tooltip2: null,
+      sonNum: ref(0),
+      deleteLinkView: ref(),
+      tip2Show: ref(false),
+      transform: ref([]),
+      multipleSearchValue: ref({
+        nodesList: [],
+        linksList: [],
+      }),
+      cmap: [
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
     };
   },
   methods: {
@@ -144,8 +211,45 @@ export default {
           if (i === number - 1) return this;
         });
     },
+    drawGraph() {
+      this.ifGroup = false;
+      let that = this;
+      this.sonNum = 0;
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
+      this.multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === -1) that.ifGroup = true;
+        else if (state.type === 0) that.sonNum++;
+      });
+      setTimeout(() => {
+        this.drawSonGraphs();
+      }, 0);
+    },
     drawSonGraphs() {
-     
+      this.sonGraphs = [];
+      this.scales = [];
+      for (let i = 0; i < this.sonNum; i++) {
+        let ans = {};
+        let selection = this.multipleSearchValue.selections[i];
+        switch (this.graphType) {
+          case "ExtractedSubGraph":
+            ans = countExtractedSonPos(this.finalPos, selection);
+            break;
+          case "OriginalSubGraph":
+            ans = countOriginalSonPos(
+              selection.outcome,
+              selection.variable,
+              selection.linksList
+            );
+            break;
+        }
+
+        this.scales.push({});
+        this.sonGraphs.push(ans);
+      }
       const graphs = this.sonGraphs;
 
       let dom = document.getElementById("paper1");
@@ -153,6 +257,7 @@ export default {
 
       let midX = [];
       let midY = [];
+
       graphs.forEach((graph) => {
         let minW = 150000;
         let maxW = 0;
@@ -172,21 +277,21 @@ export default {
             if (node.y < minH) minH = node.y;
           });
         });
-        let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-        if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-          gap = (dom.clientHeight - 96) / (maxH - minH + 24);
+        let gap = (dom.clientWidth - 40) / (maxW - minW);
+        if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+          gap = (dom.clientHeight - 120) / (maxH - minH);
         if (gap < minGap) minGap = gap;
-        midX.push((maxW + minW) / 2);
-        midY.push(maxH + 2 * minH);
+        midX.push(maxW + minW);
+        midY.push(maxH + minH);
       });
 
       for (let i = 0; i < this.sonNum; i++) {
-        let startX = dom.clientWidth / 2 - midX[i] * minGap;
-        let startY = (dom.clientHeight - midY[i] * minGap) / 3;
+        let startX = (dom.clientWidth - minGap * midX[i]) / 2;
+        let startY = (dom.clientHeight - 80 - minGap * midY[i]) / 2;
         this.scales[i] = {
+          gap: minGap,
           startX,
           startY,
-          gap: minGap,
         };
         this.drawSonGraph(i);
       }
@@ -377,7 +482,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-                  <div class='operate-menu'>Delete edge<br/>" +
+                <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -502,23 +607,23 @@ export default {
     },
     addTempLink(i, source, target) {
       /*
-        let oIndex = findLink.sameNodeLink(
-          { source, target },
-          this.multipleSearchValue.linksList
-        );
-        if (oIndex > -1) {
-          let originalLink = this.multipleSearchValue.linksList[oIndex];
-          this.deleteLinkView.model.remove({ ui: true });
-          if (originalLink.hidden) {
-            originalLink.hidden = false;
-          }
-          if (originalLink.source !== source) {
-            linkRequest.getLinkValue(source, target).then((response) => {
-              let value = response.data.value;
-              this.reverseAndShow(source, target, value);
-            });
-          } else this.showHiddenLink(source, target);
-        } else */ this.getNewEdge(i, source, target);
+      let oIndex = findLink.sameNodeLink(
+        { source, target },
+        this.multipleSearchValue.linksList
+      );
+      if (oIndex > -1) {
+        let originalLink = this.multipleSearchValue.linksList[oIndex];
+        this.deleteLinkView.model.remove({ ui: true });
+        if (originalLink.hidden) {
+          originalLink.hidden = false;
+        }
+        if (originalLink.source !== source) {
+          linkRequest.getLinkValue(source, target).then((response) => {
+            let value = response.data.value;
+            this.reverseAndShow(source, target, value);
+          });
+        } else this.showHiddenLink(source, target);
+      } else */ this.getNewEdge(i, source, target);
     },
     getNewEdge(i, source, target) {
       linkRequest.getLinkValue(source, target).then((response) => {
@@ -580,9 +685,122 @@ export default {
         }
       );
     },
+    saveData() {
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify(this.multipleSearchValue)
+      );
+    },
+    init() {
+      this.multipleSearchValue = JSON.parse(
+        localStorage.getItem("GET_JSON_RESULT")
+      );
+      this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+      if (this.multipleSearchValue) {
+        this.drawGraph();
+      }
+    },
   },
 };
 </script>
-    
+  
+  <style scoped>
+.sub-graph {
+  display: flex;
+  height: 100%;
+  flex: 1;
+}
+.directed-tabs {
+  background-color: rgb(55, 162, 228);
+  height: 40px;
+  display: flex;
+  font-size: 20px;
+  padding-left: 16px;
+  gap: 16px;
+}
+.active-tab {
+  background-color: white;
+  border-radius: 4px 4px 0 0;
+  color: rgb(55, 162, 228);
+  vertical-align: center;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  line-height: 40px;
+  cursor: pointer;
+}
+.normal-tab {
+  background-color: rgb(55, 162, 228);
+  border-radius: 4px 4px 0 0;
+  color: white;
+  vertical-align: center;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  line-height: 40px;
+  cursor: pointer;
+}
 
-       
+.group-graphs {
+  width: 100%;
+  display: flex;
+}
+
+.son-svg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+.paper-svg {
+  padding: 1%;
+  margin: 0.5%;
+  border: 1px solid rgba(151, 151, 151, 0.49);
+  flex: 1 1/3;
+  min-width: 30%;
+}
+.svg-content {
+  width: 100%;
+  height: 90% !important;
+}
+.one-line-operator {
+  height: 10%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.son-title {
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+.color-hint {
+  height: 20px;
+  width: 20px;
+  margin-right: 8px;
+  border-radius: 16px;
+}
+.one-line-operator .drawing-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+.graph-main-title {
+  font-size: 20px;
+  margin-top: 20px;
+  font-weight: bold;
+  line-height: 36px;
+}
+.graph-subtitle {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 32px;
+}
+</style>
+  <style>
+.joint-link path {
+  transition-duration: 0.2s;
+}
+</style>
+     

@@ -195,7 +195,7 @@ export const removeHighLight = (elementView) => {
     elementView.model.attr("body/fill", "transparent");
   }
 };
-export const drawSonCharts = (dom, nodesList, scale, linksList) => {
+export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   let maxX = 0;
   let maxY = 0;
 

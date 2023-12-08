@@ -49,30 +49,20 @@ export class findLink {
     return index;
   }
 }
-const countAnchor = (last, center, radius) => {
-  let distance = Math.sqrt(
-    (center.x - last.x) * (center.x - last.x) +
-      (center.y - last.y) * (center.y - last.y)
-  );
-  let x = center.x + ((last.x - center.x) * radius) / distance;
-  let y = center.y + ((last.y - center.y) * radius) / distance;
-  return { x, y };
+const countControl = (source, target, mid) => {
+  let x = (source.x + target.x) / 2;
+  let y = (source.y + target.y) / 2;
+
+  let offset = (target.y - source.y) * 0.15;
+  if (source.x !== target.x) {
+    offset = Math.abs(offset);
+    if (x < mid) x = x - offset;
+    else x = x + offset;
+    return { x, y };
+  } else return { x: x + offset, y };
 };
 
 export class linksOperation {
-  static countControl(source, target, mid) {
-    console.log(source, target, mid);
-    let x = (source.x + target.x) / 2;
-    let y = (source.y + target.y) / 2;
-
-    let offset = (target.y - source.y) * 0.15;
-    if (source.x !== target.x) {
-      offset = Math.abs(offset);
-      if (x < mid) x = x - offset;
-      else x = x + offset;
-      return { x, y };
-    } else return { x: x + offset, y };
-  }
   static addLink(pos, link, paper, curveType, attrs) {
     let linksList = pos.linksList;
     let nodesList = pos.nodesList;
@@ -125,8 +115,9 @@ export class linksOperation {
     if (curveType === "TreeCurve") {
       source = attrs.target;
       target = attrs.source;
-      let point = this.countControl(points[0], points[2], attrs.mid);
+      let point = countControl(points[0], points[2], attrs.mid);
       points[1] = point;
+      path.connector("TreeCurve", { points: link.points, value: value * 7 });
     } else if (!points.length) {
       path.connector(curveType, {
         points: [nodesList[sIndex], nodesList[tIndex]],
@@ -144,8 +135,6 @@ export class linksOperation {
         points,
         value: value * 7,
       });
-    console.log(points);
-    console.log(source, target, "adds");
     path.source(source);
     path.target(target);
     path.addTo(paper.model);

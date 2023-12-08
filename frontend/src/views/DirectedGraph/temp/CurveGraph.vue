@@ -42,13 +42,13 @@
     </div>
   </div>
 </template>
-          <script>
+        <script>
 import axios from "axios";
 import * as d3 from "d3";
 import { ref } from "vue";
 import { createChart } from "@/plugin/charts";
 import {
-  drawSonCharts,
+  drawCurveGraph,
   addHighLight,
   removeHighLight,
 } from "@/plugin/sonGraph";
@@ -59,7 +59,60 @@ import { linkRequest } from "@/plugin/request/edge.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
 
 export default {
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      console.log(to.name);
+      vm.graphType = to.name;
+      vm.init();
+    });
+  },
+  data() {
+    return {
+      scales: ref([]),
+      graphType: ref(),
+      papers: ref([]),
+      paper: ref(),
+      sonGraphs: ref([]),
+      simplePos: ref(),
+      ifGroup: ref(false),
+      loadingInstance: ref(null),
+      countingGraph: ref(false),
+      tooltip: null,
+      tooltip2: null,
+      sonNum: ref(0),
+      deleteLinkView: ref(),
+      tip2Show: ref(false),
+      transform: ref([]),
+      multipleSearchValue: ref({
+        nodesList: [],
+        linksList: [],
+      }),
+      cmap: [
+        "#FF595E",
+        "#FF924C",
+        "#FFCA3A",
+        "#C5CA30",
+        "#8AC926",
+        "#36949D",
+        "#1982C4",
+        "#4267AC",
+        "#565AA0",
+        "#6A4C93",
+      ],
+    };
+  },
   methods: {
+    init() {
+      this.multipleSearchValue = JSON.parse(
+        localStorage.getItem("GET_JSON_RESULT")
+      );
+      console.log("getItem", this.multipleSearchValue);
+      this.simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+
+      if (this.multipleSearchValue) {
+        this.drawGraph();
+      }
+    },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
       for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
@@ -145,7 +198,25 @@ export default {
           if (i === number - 1) return this;
         });
     },
-
+    drawGraph() {
+      this.ifGroup = false;
+      let that = this;
+      this.sonNum = 0;
+      if (this.tooltip2) {
+        this.tip2Hidden();
+      }
+      this.tooltip = this.createTooltip(1);
+      this.tooltip2 = this.createTooltip(2);
+      this.multipleSearchValue.nodesList.forEach(function (state) {
+        if (state.type === -1) that.ifGroup = true;
+        else if (state.type === 0) that.sonNum++;
+      });
+      this.getLayout();
+      /*
+          setTimeout(() => {
+            this.drawSonGraphs();
+          }, 0);*/
+    },
     traversal(list, value) {
       if (list.includes(value)) return list;
       let i;
@@ -164,7 +235,108 @@ export default {
         list.push(value);
       }
     },
+    getLayout() {
+      let nodes = [];
+      let x = [];
+      let y = [];
+      let that = this;
+      this.simplePos.nodesList.forEach((node) => {
+        that.traversal(x, node.x);
+        that.traversal(y, node.y);
+      });
 
+      this.simplePos.nodesList.forEach((node) => {
+        nodes.push({
+          node: node.id,
+          rank: y.indexOf(node.y),
+          order: x.indexOf(node.x),
+          fixed: node.indexes.length > 1,
+          group: node.indexes,
+          outcome: node.type === 0,
+        });
+      });
+      console.log(nodes.filter((node) => !node.fixed));
+      let links = this.simplePos.linksList;
+      let name = "";
+      console.log(this.graphType);
+      switch (this.graphType) {
+        case "CenterSubGraph":
+          name = "center";
+          break;
+        case "AggregateSubGraph":
+          name = "aggregate";
+          break;
+        case "RelativeSubGraph":
+          name = "relative";
+          break;
+        case "TreeSubGraph":
+          name = "tree";
+          break;
+      }
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/calculate_" + name + "_layout",
+        //参数
+        data: {
+          nodesList: nodes,
+          linksList: links,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((response) => {
+        console.log(response.data.graph[0].map((node) => node.new_order));
+        this.sonGraphs = [];
+        response.data.graph.forEach((graph) => {
+          this.sonGraphs.push({
+            nodesList: graph,
+            linksList: [],
+          });
+        });
+        this.drawSonGraphs();
+      });
+    },
+    drawSonGraphs() {
+      const graphs = this.sonGraphs;
+      let dom = document.getElementById("paper1");
+      let minGap = 100000;
+
+      let midX = [];
+
+      let minH = 15000;
+      let maxH = 0;
+      graphs.forEach((graph) => {
+        let minW = 150000;
+        let maxW = 0;
+        graph.nodesList.forEach((node) => {
+          if (node.new_order > maxW) maxW = node.new_order;
+          if (node.new_order < minW) minW = node.new_order;
+          if (node.rank > maxH) maxH = node.rank;
+          if (node.rank < minH) minH = node.rank;
+        });
+
+        let gap = (dom.clientWidth - 50) / (maxW - minW);
+
+        if (!gap || isNaN(gap)) gap = 1;
+        if (gap < minGap) minGap = gap;
+        midX.push(maxW + minW);
+      });
+      if ((dom.clientHeight - 120) / (maxH - minH) < minGap)
+        minGap = (dom.clientHeight - 120) / (maxH - minH);
+      this.scales = [];
+      let startY = (dom.clientHeight - 70 - minGap * (maxH + minH)) / 2;
+      for (let i = 0; i < this.sonNum; i++) {
+        let startX = (dom.clientWidth - minGap * midX[i]) / 2;
+
+        this.scales.push({
+          mid: { x: midX[i] / 2, y: (maxH + minH) / 2 },
+          startX,
+          startY,
+          gap: minGap,
+        });
+        this.drawSonGraph(i);
+      }
+    },
     drawSonGraph(index) {
       let nodes = this.sonGraphs[index].nodesList.map((node) => {
         return {
@@ -190,7 +362,7 @@ export default {
         let point = this.countControl(source, target, this.scales[index].mid);
         link["points"] = [source, point, target];
       }
-      let paper = drawSonCharts(dom, nodes, this.scales[index], links);
+      let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
       if (!this.papers[index]) {
         this.papers.push(paper);
@@ -321,7 +493,7 @@ export default {
           "<div class='operate-header'><div class='hint-list'>" +
           outcome +
           "</div><div class='close-button'>x</div></div><hr/>\
-                      <div class='operate-menu'>Delete edge<br/>" +
+                    <div class='operate-menu'>Delete edge<br/>" +
           router +
           "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
         _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
@@ -516,9 +688,113 @@ export default {
       }
       return indexes;
     },
+    saveData() {
+      localStorage.setItem(
+        "GET_JSON_RESULT",
+        JSON.stringify(this.multipleSearchValue)
+      );
+    },
   },
 };
 </script>
-            
+          
+        <style scoped>
+.sub-graph {
+  display: flex;
+  height: 100%;
+  flex: 1;
+}
+.directed-tabs {
+  background-color: rgb(55, 162, 228);
+  height: 40px;
+  display: flex;
+  font-size: 20px;
+  padding-left: 16px;
+  gap: 16px;
+}
+.active-tab {
+  background-color: white;
+  border-radius: 4px 4px 0 0;
+  color: rgb(55, 162, 228);
+  vertical-align: center;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  line-height: 40px;
+  cursor: pointer;
+}
+.normal-tab {
+  background-color: rgb(55, 162, 228);
+  border-radius: 4px 4px 0 0;
+  color: white;
+  vertical-align: center;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  line-height: 40px;
+  cursor: pointer;
+}
 
-           
+.group-graphs {
+  width: 100%;
+  display: flex;
+}
+
+.son-svg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+.paper-svg {
+  padding: 1%;
+  margin: 0.5%;
+  border: 1px solid rgba(151, 151, 151, 0.49);
+  flex: 1 1/3;
+  min-width: 30%;
+}
+.svg-content {
+  width: 100%;
+  height: 90% !important;
+}
+.one-line-operator {
+  height: 10%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.son-title {
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+.color-hint {
+  height: 20px;
+  width: 20px;
+  margin-right: 8px;
+  border-radius: 16px;
+}
+.one-line-operator .drawing-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+.graph-main-title {
+  font-size: 20px;
+  margin-top: 20px;
+  font-weight: bold;
+  line-height: 36px;
+}
+.graph-subtitle {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 32px;
+}
+</style>
+      <style>
+.joint-link path {
+  transition-duration: 0.2s;
+}
+</style>
+         
