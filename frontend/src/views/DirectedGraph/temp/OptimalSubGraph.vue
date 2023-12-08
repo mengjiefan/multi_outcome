@@ -54,7 +54,7 @@ import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
 import { drawExtractedGraph } from "@/plugin/superGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
+import { countTightenedSonPos, countSimplePos } from "@/plugin/extracted/CountPos";
 
 export default {
   data() {
@@ -98,7 +98,7 @@ export default {
         if (i == index) continue;
         let item = this.multipleSearchValue.selections[i];
         this.applyToSingle(selection.linksList, item);
-        this.sonGraphs[i] = countSonPos(
+        this.sonGraphs[i] = countTightenedSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );
@@ -209,7 +209,7 @@ export default {
       this.sonGraphs = [];
       this.gaps = [];
       for (let i = 0; i < this.sonNum; i++) {
-        let ans = countSonPos(
+        let ans = countTightenedSonPos(
           this.finalPos,
           this.multipleSearchValue.selections[i]
         );

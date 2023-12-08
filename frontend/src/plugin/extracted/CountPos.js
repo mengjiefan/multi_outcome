@@ -83,3 +83,54 @@ export const countExtractedSonPos = (all, son) => {
   });
   return { linksList, nodesList };
 };
+
+export const countExtractedScale = (
+  graphs,
+  clientHeight,
+  clientWidth,
+  sonNum
+) => {
+  let scales = [];
+  let minGap = 10000;
+
+  let midX = [];
+  let midY = [];
+
+  graphs.forEach((graph) => {
+    let minW = 150000;
+    let maxW = 0;
+    let minH = 15000;
+    let maxH = 0;
+    graph.nodesList.forEach((node) => {
+      if (node.x > maxW) maxW = node.x;
+      if (node.x < minW) minW = node.x;
+      if (node.y > maxH) maxH = node.y;
+      if (node.y < minH) minH = node.y;
+    });
+    graph.linksList.forEach((link) => {
+      link.points.forEach((node) => {
+        if (node.x > maxW) maxW = node.x;
+        if (node.x < minW) minW = node.x;
+        if (node.y > maxH) maxH = node.y;
+        if (node.y < minH) minH = node.y;
+      });
+    });
+    let gap = (clientWidth - 40) / (maxW - minW);
+    if ((clientHeight - 120) / (maxH - minH) < gap)
+      gap = (clientHeight - 120) / (maxH - minH);
+    if (gap < minGap) minGap = gap;
+    midX.push(maxW + minW);
+    midY.push(maxH + minH);
+  });
+
+  for (let i = 0; i < sonNum; i++) {
+    let startX = (clientWidth - minGap * midX[i]) / 2;
+    let startY = (clientHeight - 80 - minGap * midY[i]) / 2;
+    scales.push({
+      gap: minGap,
+      startX,
+      startY,
+    });
+  }
+  return scales;
+};

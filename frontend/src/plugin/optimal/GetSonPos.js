@@ -1,5 +1,5 @@
 
-export const countSonPos = (all, son) => {
+export const countTightenedSonPos = (all, son) => {
     let x = [];
     let y = [];
     let nodesList = [];

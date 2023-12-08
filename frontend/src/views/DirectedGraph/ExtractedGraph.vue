@@ -257,6 +257,7 @@ export default {
 
       let midX = [];
       let midY = [];
+
       graphs.forEach((graph) => {
         let minW = 150000;
         let maxW = 0;
@@ -276,21 +277,21 @@ export default {
             if (node.y < minH) minH = node.y;
           });
         });
-        let gap = (dom.clientWidth - 32) / (maxW - minW + 24);
-        if ((dom.clientHeight - 96) / (maxH - minH + 24) < gap)
-          gap = (dom.clientHeight - 96) / (maxH - minH + 24);
+        let gap = (dom.clientWidth - 40) / (maxW - minW);
+        if ((dom.clientHeight - 120) / (maxH - minH) < gap)
+          gap = (dom.clientHeight - 120) / (maxH - minH);
         if (gap < minGap) minGap = gap;
-        midX.push((maxW + minW) / 2);
-        midY.push(maxH + 2 * minH);
+        midX.push(maxW + minW);
+        midY.push(maxH + minH);
       });
 
       for (let i = 0; i < this.sonNum; i++) {
-        let startX = dom.clientWidth / 2 - midX[i] * minGap;
-        let startY = (dom.clientHeight - midY[i] * minGap) / 3;
+        let startX = (dom.clientWidth - minGap * midX[i]) / 2;
+        let startY = (dom.clientHeight - 80 - minGap * midY[i]) / 2;
         this.scales[i] = {
+          gap: minGap,
           startX,
           startY,
-          gap: minGap,
         };
         this.drawSonGraph(i);
       }

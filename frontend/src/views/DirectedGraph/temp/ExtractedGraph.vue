@@ -144,45 +144,8 @@ export default {
           if (i === number - 1) return this;
         });
     },
-    drawGraph() {
-      this.ifGroup = false;
-      let that = this;
-      this.sonNum = 0;
-      if (this.tooltip2) {
-        this.tip2Hidden();
-      }
-      this.tooltip = this.createTooltip(1);
-      this.tooltip2 = this.createTooltip(2);
-      this.multipleSearchValue.nodesList.forEach(function (state) {
-        if (state.type === -1) that.ifGroup = true;
-        else if (state.type === 0) that.sonNum++;
-      });
-      setTimeout(() => {
-        this.drawSonGraphs();
-      }, 0);
-    },
     drawSonGraphs() {
-      this.sonGraphs = [];
-      this.scales = [];
-      for (let i = 0; i < this.sonNum; i++) {
-        let ans = {};
-        let selection = this.multipleSearchValue.selections[i];
-        switch (this.graphType) {
-          case "ExtractedSubGraph":
-            ans = countExtractedSonPos(this.finalPos, selection);
-            break;
-          case "OriginalSubGraph":
-            ans = countOriginalSonPos(
-              selection.outcome,
-              selection.variable,
-              selection.linksList
-            );
-            break;
-        }
-
-        this.scales.push({});
-        this.sonGraphs.push(ans);
-      }
+     
       const graphs = this.sonGraphs;
 
       let dom = document.getElementById("paper1");

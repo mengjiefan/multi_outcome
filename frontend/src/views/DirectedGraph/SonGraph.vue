@@ -43,8 +43,17 @@
 </template>
 
 <script>
+import axios from "axios";
 import { ref } from "vue";
 import { linksOperation } from "@/plugin/links";
+import { countTightenedSonPos } from "@/plugin/tightened/CountPos";
+import {
+  countExtractedSonPos,
+  countExtractedScale,
+} from "@/plugin/extracted/CountPos";
+import { countOriginalSonPos } from "@/plugin/original/CountPos";
+import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
+
 export default {
   name: "SonGraph",
   props: {
@@ -60,7 +69,6 @@ export default {
       paper: ref(),
       sonGraphs: ref([]),
       finalPos: ref(),
-      ifGroup: ref(false),
       tooltip: null,
       tooltip2: null,
       sonNum: ref(0),
@@ -86,22 +94,90 @@ export default {
     };
   },
   methods: {
-    drawGraph() {
-      this.ifGroup = false;
-      let that = this;
+    async drawGraph() {
       this.sonNum = 0;
-      if (this.tooltip2) {
-        this.tip2Hidden();
-      }
+      if (this.tooltip2) this.tip2Hidden();
+
       this.tooltip = this.createTooltip(1);
       this.tooltip2 = this.createTooltip(2);
-      this.multipleSearchValue.nodesList.forEach(function (state) {
-        if (state.type === -1) that.ifGroup = true;
-        else if (state.type === 0) that.sonNum++;
+      this.sonNum = this.multipleSearchValue.nodesList.filter(
+        (node) => node.type === 0
+      ).length;
+      let name = "";
+      switch (this.graphType) {
+        case "CenterSubGraph":
+          name = "center";
+          break;
+        case "AggregateSubGraph":
+          name = "aggregate";
+          break;
+        case "RelativeSubGraph":
+          name = "relative";
+          break;
+        case "TreeSubGraph":
+          name = "tree";
+          break;
+        default:
+          break;
+      }
+      if (!name) this.getNormalLayout();
+      else await this.getCurveLayout(name);
+
+      let dom = document.getElementById("paper1");
+      if (name)
+        this.scales = countCurveScale(
+          this.sonGraphs,
+          dom.clientHeight,
+          dom.clientWidth,
+          this.sonNum
+        );
+      else
+        this.scales = countExtractedScale(
+          this.sonGraphs,
+          dom.clientHeight,
+          dom.clientWidth,
+          this.sonNum
+        );
+      for (let i = 0; i < this.sonNum; i++) this.drawSonGraph(i);
+    },
+    getNormalLayout() {
+      this.sonGraphs = [];
+      this.scales = [];
+      for (let i = 0; i < this.sonNum; i++) {
+        let ans = {};
+        let selection = this.multipleSearchValue.selections[i];
+        switch (this.graphType) {
+          case "ExtractedSubGraph":
+            ans = countExtractedSonPos(this.finalPos, selection);
+            break;
+          case "OriginalSubGraph":
+            ans = countOriginalSonPos(
+              selection.outcome,
+              selection.variable,
+              selection.linksList
+            );
+            break;
+          case "TightenedSubGraph":
+            ans = countTightenedSonPos(
+              this.finalPos[i + 1],
+              this.finalPos[0].nodesList,
+              selection.linksList
+            );
+        }
+
+        this.scales.push({});
+        this.sonGraphs.push(ans);
+      }
+    },
+    async getCurveLayout(name) {
+      let graphs = await countCurveSonPos(this.finalPos, name);
+      this.sonGraphs = [];
+      graphs.forEach((graph) => {
+        this.sonGraphs.push({
+          nodesList: graph,
+          linksList: [],
+        });
       });
-      setTimeout(() => {
-        this.drawSonGraphs();
-      }, 0);
     },
     saveData() {
       localStorage.setItem(
@@ -126,10 +202,9 @@ export default {
       );
       console.log(this.graphType);
       console.log(this.graphType.slice(0, this.graphType.indexOf("Sub")));
-      if (this.graphType === "ExtractedSubGraph")
-        this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-      else if (this.graphType === "TightenedSubGraph")
+      if (this.graphType === "TightenedSubGraph")
         this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
+      else this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
       if (this.multipleSearchValue) this.drawGraph();
     },
   },

@@ -133,7 +133,7 @@ const traversal = (list, value) => {
   }
   return list;
 };
-export const countSonPos = (son, commonNodes, linksList) => {
+export const countTightenedSonPos = (son, commonNodes, linksList) => {
   let sonPos = son.nodesList;
   let verticePos = son.linksList;
   let minPosX = -1;
@@ -351,7 +351,7 @@ export const countSonPos = (son, commonNodes, linksList) => {
   }
   return {
     gap: gap,
-    sonPos: sonPos.concat(commonPos),
-    linksPos,
+    nodesList: sonPos.concat(commonPos),
+    linksList: linksPos,
   };
 };

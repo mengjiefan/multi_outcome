@@ -55,7 +55,7 @@ import {
 } from "@/plugin/sonGraph";
 import * as joint from "jointjs";
 import historyManage from "@/plugin/history";
-import { countSonPos } from "@/plugin/tightened/CountPos";
+import { countTightenedSonPos } from "@/plugin/tightened/CountPos";
 
 export default {
   data() {
@@ -205,17 +205,18 @@ export default {
       this.sonGraphs = [];
 
       for (let i = 1; i <= this.sonNum; i++) {
-        let ans = countSonPos(
+        let ans = countTightenedSonPos(
           this.finalPos[i],
           this.finalPos[0].nodesList,
           this.multipleSearchValue.selections[i - 1].linksList
         );
         this.sonGraphs.push({
-          nodesList: ans.sonPos,
-          linksList: ans.linksPos,
+          nodesList: ans.nodesList,
+          linksList: ans.linksList,
         });
         this.scales.push({});
       }
+      
       const graphs = this.sonGraphs;
       let dom = document.getElementById("paper1");
       let minGap = 10000;

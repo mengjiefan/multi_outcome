@@ -35,7 +35,7 @@ const evenValue = (values, value) => {
     }
 }
 
-export const countSonPos = (son, linksList) => {
+export const countTightenedSonPos = (son, linksList) => {
     let x = [];
     let y = [];
     let sonPos = son.nodesList;
