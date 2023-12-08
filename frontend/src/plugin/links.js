@@ -117,7 +117,7 @@ export class linksOperation {
       target = attrs.source;
       let point = countControl(points[0], points[2], attrs.mid);
       points[1] = point;
-      path.connector("TreeCurve", { points: link.points, value: value * 7 });
+      path.connector("TreeCurve", { points: points, value: value * 7 });
     } else if (!points.length) {
       path.connector(curveType, {
         points: [nodesList[sIndex], nodesList[tIndex]],

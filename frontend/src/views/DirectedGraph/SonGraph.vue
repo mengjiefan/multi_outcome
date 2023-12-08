@@ -755,16 +755,23 @@ export default {
       );
     },
     addLink(index, link) {
-      let curveType =
-        this.graphType.slice(0, this.graphType.indexOf("Sub")) + "Curve";
-      if (this.ifCurve) curveType = "TreeCurve";
+      let curveType = "TreeCurve";
+      if (
+        this.graphType === "ExtractedSubGraph" ||
+        this.graphType === "OriginalSubGraph"
+      )
+        curveType = "ExtractedCurve";
+      else if (!this.ifCurve) curveType = "TightenedCurve";
       linksOperation.addLink(
         this.sonGraphs[index],
         link,
         this.paper,
         curveType,
         {
+          source: this.deleteLinkView?.model?.attributes?.source,
+          target: this.deleteLinkView?.model?.attributes?.target,
           gap: this.scales[index].gap,
+          mid: this.scales[index].mid,
         }
       );
     },
