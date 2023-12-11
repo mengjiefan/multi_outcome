@@ -63,10 +63,10 @@ export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
     let minW = 150000;
     let maxW = 0;
     graph.nodesList.forEach((node) => {
-      if (node.new_order > maxW) maxW = node.new_order;
-      if (node.new_order < minW) minW = node.new_order;
-      if (node.rank > maxH) maxH = node.rank;
-      if (node.rank < minH) minH = node.rank;
+      if (node.x > maxW) maxW = node.x;
+      if (node.x < minW) minW = node.x;
+      if (node.y > maxH) maxH = node.y;
+      if (node.y < minH) minH = node.y;
     });
 
     let gap = (clientWidth - 50) / (maxW - minW);

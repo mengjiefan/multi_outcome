@@ -211,7 +211,12 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     width: "100%",
     height: "100%",
     drawGrid: { name: "mesh", args: { color: "#bbbbbb" } },
-    gridSize: 80,
+    gridSize: 1,
+    async: true,
+    linkPinning: false,
+    sorting: joint.dia.Paper.sorting.APPROX,
+    defaultLink: () => new joint.shapes.standard.Link(),
+    connectionStrategy: joint.connectionStrategies.pinAbsolute,
     interactive: function (cellView, method) {
       return null;
     },
@@ -360,23 +365,15 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
-  paper.on("cell:mousewheel", function (cellView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
-  paper.on("element:mousewheel", function (elementView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+
   paper.on("blank:mousewheel", function (evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
-  });
-  paper.on("cell:pointermove", function (cellView, evt, x, y) {
     handleMouseMove(paper, evt, x, y);
   });
 
@@ -387,9 +384,6 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     handleMouseUp();
   });
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
-    handleMouseUp();
-  });
-  paper.on("element:pointerup", function (elementView, evt, x, y) {
     handleMouseUp();
   });
   /* scale  SVG
@@ -567,23 +561,16 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
-  paper.on("cell:mousewheel", function (cellView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
-  paper.on("element:mousewheel", function (elementView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+
   paper.on("blank:mousewheel", function (evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
-  });
-  paper.on("cell:pointermove", function (cellView, evt, x, y) {
     handleMouseMove(paper, evt, x, y);
   });
 
@@ -596,9 +583,7 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
     handleMouseUp();
   });
-  paper.on("element:pointerup", function (elementView, evt, x, y) {
-    handleMouseUp();
-  });
+
   /* scale  SVG
     if (nodesList) {
         svgZoom(name);

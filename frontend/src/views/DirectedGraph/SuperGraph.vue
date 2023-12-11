@@ -101,7 +101,7 @@ export default {
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
-      this.multipleSearchValue.linksList = LinksManagement.getFinalLink(
+      this.multipleSearchValue.linksList = LinksManagement.getFinalLinks(
         this.multipleSearchValue.linksList
       );
       this.multipleSearchValue.selections =
@@ -166,16 +166,6 @@ export default {
         this.multipleSearchValue.nodesList,
         this.multipleSearchValue.linksList
       );
-      /*
-      let addEdges = this.multipleSearchValue.linksList.filter(
-        (edge) => edge.add
-      );
-      addEdges.forEach((edge) => {
-        that.simplePos.linksList.push({
-          ...edge,
-          points: [],
-        });
-      });*/
 
       console.log("simplePos", that.simplePos);
 
@@ -189,7 +179,7 @@ export default {
       }
 
       let finalPos = countPos(
-        g,
+        simpleG,
         this.multipleSearchValue.selections,
         commonNodes
       );
@@ -348,16 +338,16 @@ export default {
       );
       if (oIndex > -1) {
         let originalLink = this.multipleSearchValue.linksList[oIndex];
-        this.deleteLinkView.model.remove({ ui: true });
-        if (originalLink.hidden) {
-          originalLink.hidden = false;
-        }
+
+        if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
+          originalLink.reverse = !originalLink.reverse;
           linkRequest.getLinkValue(source, target).then((response) => {
             let value = response.data.value;
-            this.reverseAndShow(source, target, value);
+            originalLink.value = value;
+            this.addNewEdge({ source, target, value });
           });
-        } else this.showHiddenLink(source, target);
+        } else this.addNewEdge({ source, target, value: originalLink.value });
       } else this.getNewEdge(source, target);
     },
     emphasizeLink(source, target) {
@@ -380,8 +370,7 @@ export default {
         link.value = value;
         //如果子图有隐藏的边，虽然会对方向和历史做修改，但并不会显示
         historyManage.reverseEdge(selection.history, history);
-        if (link.source === history.source) link["reverse"] = true;
-        else if (link.source === history.target) link.reverse = false;
+        link.reverse = !link.reverse;
       }
       this.saveData();
     },
@@ -561,19 +550,40 @@ export default {
     },
     getNewEdge(source, target) {
       linkRequest.getLinkValue(source, target).then((response) => {
-        this.addNewEdge(source, target, response.data.value);
+        let link = {
+          source,
+          target,
+          value: response.data.value,
+          add: true,
+        };
+        this.multipleSearchValue.linksList.push(link);
+        this.addNewEdge(link);
       });
     },
-    addNewEdge(source, target, value) {
-      let newLink = { source, target, value };
-      this.multipleSearchValue.linksList.push({ ...newLink, add: true });
-      this.deleteLinkView.model.remove({ ui: true });
-      this.addLinkToPaper(newLink);
+    addNewEdge(link) {
+      this.addLinkToPaper(link);
       this.multipleSearchValue.selections.forEach((selection) => {
         let node = selection.variable.concat([selection.outcome]);
-        if (node.includes(source) && node.includes(target)) {
-          selection.linksList.push({ ...newLink, add: true });
-          selection.history = historyManage.addEdge(selection.history, newLink);
+        let index = findLink.sameNodeLink(link, selection.linksList);
+        //超图新加子图有，翻转方向并显形
+
+        if (index > -1) {
+          let sonLink = selection.linksList[index];
+          if (sonLink.hidden) {
+            selection.history = historyManage.addEdge(selection.history, link);
+            sonLink.hidden = false;
+          }
+          if (findLink.showReverseLink(link, selection.linksList) > -1) {
+            sonLink.value = link.value;
+            sonLink.reverse = !sonLink.reverse;
+            historyManage.reverseEdge(selection.history, {
+              source: link.target,
+              target: link.source,
+            });
+          }
+        } else if (node.includes(link.source) && node.includes(link.target)) {
+          selection.linksList.push(link);
+          selection.history = historyManage.addEdge(selection.history, link);
         }
       });
       this.saveData();
@@ -601,19 +611,14 @@ export default {
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];
           historyManage.reverseEdge(selection.history, history);
-          let index = findLink.sameNodeLink(
+          let index = findLink.showSameDireLink(
             { source, target },
             selection.linksList
           );
-
           if (index < 0) continue;
           let link = selection.linksList[index];
           link.value = value;
-          if (link.source === source && !link.reverse) {
-            link["reverse"] = true;
-          } else if (link.source === target && link.reverse) {
-            link.reverse = false;
-          }
+          link.reverse = !link.reverse;
         }
         this.saveData();
         this.tip2Hidden();

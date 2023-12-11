@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import dagre from "dagre-d3/lib/dagre";
 import { countSimplePos } from "@/plugin/extracted/CountPos";
+import { findLink } from "../links";
 export const countOriginalSonPos = (outcome, variables, linksList) => {
   let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
     ranker: "tight-tree",
@@ -13,6 +14,20 @@ export const countOriginalSonPos = (outcome, variables, linksList) => {
     },
   ];
 
+  if (
+    findLink.sameNodeLink(
+      { source: "BMI", target: "Index of Multiple Deprivation" },
+      linksList
+    ) > -1
+  )
+    console.log(
+      linksList[
+        findLink.sameNodeLink(
+          { source: "BMI", target: "Index of Multiple Deprivation" },
+          linksList
+        )
+      ].source
+    );
   g.setNode(outcome, { label: "", type: 0 });
   variables.forEach(function (state) {
     let node = {

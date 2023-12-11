@@ -68,7 +68,6 @@ export default {
   name: "SonGraph",
   beforeRouteEnter(to, from, next) {
     next((vm) => {
-      console.log(to.name);
       vm.graphType = to.name;
       vm.init();
     });
@@ -157,7 +156,7 @@ export default {
           dom.clientWidth,
           this.sonNum
         );
-      console.log(this.sonGraphs);
+
       for (let i = 0; i < this.sonNum; i++) this.drawSonGraph(i);
     },
     drawSonGraph(index) {
@@ -217,9 +216,8 @@ export default {
       for (let i = 0; i < item.linksList.length; i++) {
         let link = item.linksList[i];
         let linkIndex = findLink.sameNodeLink(link, answer); //目标边在本图中有
-        console.log(index, linkIndex);
+
         if (linkIndex > -1) {
-          console.log(link);
           let mapLink = answer[linkIndex]; //现边
           if (findLink.showReverseLink(link, answer) > -1) {
             flag = true;
@@ -312,7 +310,7 @@ export default {
       let addEdges = this.multipleSearchValue.selections[
         index
       ].linksList.filter((link) => link.add);
-      console.log("addedges", addEdges);
+
       let that = this;
       addEdges.forEach((edge) => {
         if (edge.reverse)
@@ -602,7 +600,8 @@ export default {
           source: nodes[0],
           target: nodes[1],
         });
-        selection.linksList.splice(index, 1);
+        selection.linksList[index].add = false;
+        selection.linksList[index].hidden = true;
 
         selection.history = history;
         this.tip2Hidden();
@@ -610,33 +609,40 @@ export default {
       }
     },
     addTempLink(i, source, target) {
-      /*
-        let oIndex = findLink.sameNodeLink(
-          { source, target },
-          this.multipleSearchValue.linksList
-        );
-        if (oIndex > -1) {
-          let originalLink = this.multipleSearchValue.linksList[oIndex];
-          this.deleteLinkView.model.remove({ ui: true });
-          if (originalLink.hidden) {
-            originalLink.hidden = false;
-          }
-          if (originalLink.source !== source) {
-            linkRequest.getLinkValue(source, target).then((response) => {
-              let value = response.data.value;
-              this.reverseAndShow(source, target, value);
-            });
-          } else this.showHiddenLink(source, target);
-        } else */ this.getNewEdge(i, source, target);
+      let selection = this.multipleSearchValue.selections[i];
+
+      let oIndex = findLink.sameNodeLink(
+        { source, target },
+        selection.linksList
+      );
+      if (oIndex > -1) {
+        let originalLink = selection.linksList[oIndex];
+        if (originalLink.hidden) originalLink.hidden = false;
+        if (LinksManagement.getFinalLink(originalLink).source !== source) {
+          originalLink.reverse = !originalLink.reverse;
+          linkRequest.getLinkValue(source, target).then((response) => {
+            let value = response.data.value;
+            originalLink.value = value;
+            this.addNewEdge(i, { source, target, value });
+          });
+        } else this.addNewEdge(i, originalLink);
+      } else this.getNewEdge(i, source, target);
     },
     getNewEdge(i, source, target) {
       linkRequest.getLinkValue(source, target).then((response) => {
-        this.addNewEdge(i, { source, target, value: response.data.value });
+        let selection = this.multipleSearchValue.selections[i];
+        let link = {
+          source,
+          target,
+          value: response.data.value,
+          add: true,
+        };
+        selection.linksList.push(link);
+        this.addNewEdge(i, link);
       });
     },
     addNewEdge(i, link) {
       let selection = this.multipleSearchValue.selections[i];
-      selection.linksList.push({ ...link, add: true });
       selection.history = historyManage.addEdge(selection.history, link);
       this.addLink(i, link);
       this.saveData();
@@ -679,15 +685,7 @@ export default {
       this.getEdgeValue(i, nodes[0], nodes[1]);
     },
     countLinks(index) {
-      let nodes = this.sonGraphs[index].nodesList.map((node) => {
-        return {
-          id: node.node,
-          x: node.new_order,
-          y: node.rank,
-          indexes: node.group,
-          type: node.outcome ? 0 : 1,
-        };
-      });
+      const nodes = this.sonGraphs[index].nodesList;
       let dom = document.getElementById("paper" + (index + 1));
 
       let links = LinksManagement.getFinalLinks(
@@ -700,11 +698,13 @@ export default {
         let tIndex = nodes.findIndex((node) => node.id === link.target);
         let source = nodes[sIndex];
         let target = nodes[tIndex];
+
         let point = this.countControl(source, target, this.scales[index].mid);
         link["points"] = [source, point, target];
       }
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
+
       return paper;
     },
     getNormalLayout() {
@@ -743,7 +743,15 @@ export default {
       this.sonGraphs = [];
       graphs.forEach((graph) => {
         this.sonGraphs.push({
-          nodesList: graph,
+          nodesList: graph.map((node) => {
+            return {
+              id: node.node,
+              x: node.new_order,
+              y: node.rank,
+              indexes: node.group,
+              type: node.outcome ? 0 : 1,
+            };
+          }),
           linksList: [],
         });
       });

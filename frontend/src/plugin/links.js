@@ -98,9 +98,7 @@ export class linksOperation {
 
     if (linksList[index]?.points?.length) {
       points = linksList[index].points.concat([]);
-      if (link.source !== linksList[index].source) {
-        points.reverse();
-      }
+      if (link.source !== linksList[index].source) points.reverse();
     }
 
     if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
@@ -115,8 +113,8 @@ export class linksOperation {
     if (curveType === "TreeCurve") {
       source = attrs.target;
       target = attrs.source;
-      let point = countControl(points[0], points[2], attrs.mid);
-      points[1] = point;
+      let point = countControl(nodesList[sIndex], nodesList[tIndex], attrs.mid);
+      points = [nodesList[sIndex], point, nodesList[tIndex]];
       path.connector("TreeCurve", { points: points, value: value * 7 });
     } else if (!points.length) {
       path.connector(curveType, {

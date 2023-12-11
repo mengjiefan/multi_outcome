@@ -56,19 +56,23 @@ export class LinksManagement {
     );
   }
   static getFinalLink(link) {
+    let ans = link;
     if (link.reverse) {
-      return {
+      ans = {
         source: link.target,
         target: link.source,
         value: link.value,
       };
     } else if (link.add) {
-      return {
+      ans = {
         source: link.source,
         target: link.target,
         value: link.value,
       };
-    } else return link;
+    }
+    if (link.hidden) ans.hidden = link.hidden;
+
+    return ans;
   }
   //保留add
   static getFinalLinks(linksList) {
@@ -80,7 +84,7 @@ export class LinksManagement {
   }
   //去除add
   static getLayoutLinks(linksList) {
-    let links = linksList.filter((link) => !link.hidden && !link.add);
+    let links = linksList.filter((link) => !link.add);
     links = links.map((link) => {
       return this.getFinalLink(link);
     });

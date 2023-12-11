@@ -51,9 +51,7 @@ export const countExtractedSonPos = (all, son) => {
   let links = LinksManagement.getLayoutLinks(son.linksList);
   links.forEach((link) => {
     let nowLink = {
-      source: link.source,
-      target: link.target,
-      value: link.value,
+      ...link,
       points: [],
     };
     let index = findLink.sameNodeLink(nowLink, all.linksList);
