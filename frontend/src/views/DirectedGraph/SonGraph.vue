@@ -91,18 +91,7 @@ export default {
         nodesList: [],
         linksList: [],
       }),
-      cmap: [
-        "#FF595E",
-        "#FF924C",
-        "#FFCA3A",
-        "#C5CA30",
-        "#8AC926",
-        "#36949D",
-        "#1982C4",
-        "#4267AC",
-        "#565AA0",
-        "#6A4C93",
-      ],
+      cmap: ["#66c5cc", "#f6cf71", "#f89c74", "#dcb0f2", "#87c55f", "#9eb9f3", "#fe88b1", "#c9db74", "#b3b3b3"],
     };
   },
   methods: {
