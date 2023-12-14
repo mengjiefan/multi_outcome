@@ -52,6 +52,7 @@ export const countPos = (g, childNodes, commonNode) => {
         y: y.indexOf(pos.y),
       });
     });
+
     child.linksList.forEach((link) => {
       let points = [];
       let path = findLink(edges, link);

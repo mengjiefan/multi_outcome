@@ -48,7 +48,7 @@ export const countSimplePos = (g, nodes, links) => {
 export const countExtractedSonPos = (all, son) => {
   let linksList = [];
   let nodesList = [];
-  let links = LinksManagement.getLayoutLinks(son.linksList);
+  let links = LinksManagement.getFinalLinks(son.linksList);
   links.forEach((link) => {
     let nowLink = {
       ...link,

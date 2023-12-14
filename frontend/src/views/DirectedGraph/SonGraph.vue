@@ -188,7 +188,7 @@ export default {
         this.papers.push(paper);
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
-      if (!this.ifCurve) this.drawAddEdges(index);
+      if (this.graphType === "OriginalSubGraph") this.drawAddEdges(index);
     },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
@@ -736,6 +736,33 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
+    searchForPos(index, link) {
+      if (findLink.sameNodeLink(link, this.sonGraphs[index].linksList) > -1)
+        return;
+
+      let ans = {};
+      let selection = this.multipleSearchValue.selections[index];
+      switch (this.graphType) {
+        case "ExtractedSubGraph":
+          ans = countExtractedSonPos(this.finalPos, selection);
+          break;
+        case "OriginalSubGraph":
+          ans = countOriginalSonPos(
+            selection.outcome,
+            selection.variable,
+            selection.linksList
+          );
+          break;
+        case "TightenedSubGraph":
+          ans = countTightenedSonPos(
+            this.finalPos[index + 1],
+            this.finalPos[0].nodesList,
+            selection.linksList
+          );
+      }
+
+      this.sonGraphs[index] = ans;
+    },
     addLink(index, link) {
       let curveType = "TreeCurve";
       if (
@@ -744,6 +771,7 @@ export default {
       )
         curveType = "ExtractedCurve";
       else if (!this.ifCurve) curveType = "TightenedCurve";
+      if (!this.ifCurve) this.searchForPos(index, link);
       linksOperation.addLink(
         this.sonGraphs[index],
         link,

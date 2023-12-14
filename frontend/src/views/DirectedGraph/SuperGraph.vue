@@ -96,7 +96,6 @@ export default {
         },
       });
     },
-    //TODO: 超图 relayout
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
