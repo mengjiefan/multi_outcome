@@ -70,7 +70,17 @@ export default {
         linksList: [],
       }),
       chartsValue: ref(),
-      cmap: ["#66c5cc", "#f6cf71", "#f89c74", "#dcb0f2", "#87c55f", "#9eb9f3", "#fe88b1", "#c9db74", "#b3b3b3"],
+      cmap: [
+        "#66c5cc",
+        "#f6cf71",
+        "#f89c74",
+        "#dcb0f2",
+        "#87c55f",
+        "#9eb9f3",
+        "#fe88b1",
+        "#c9db74",
+        "#b3b3b3",
+      ],
     };
   },
   methods: {
@@ -102,27 +112,19 @@ export default {
     },
     trulyDeleteSon(son) {
       let all = this.multipleSearchValue.linksList;
-      son.linksList = son.linksList.filter((link) => !link.hidden);
+      son.linksList = LinksManagement.getFinalLinks(son.linksList);
       let linksList = [];
       for (let i = 0; i < son.linksList.length; i++) {
         let link = son.linksList[i];
         let index = findLink.sameNodeLink(link, all);
-        if (index > -1) {
-          linksList.push(all[index]);
-        }
-        if (link.source === all[index].source && link.reverse) {
+        if (index > -1) linksList.push(all[index]);
+
+        if (findLink.showReverseLink(link, all) > -1)
           historyManage.reverseEdge(son.history, {
-            source: link.target,
-            target: link.source,
+            source: all[index].target,
+            target: all[index].source,
             value: all[index].value,
           });
-        } else if (link.source !== all[index].source && !link.reverse) {
-          historyManage.reverseEdge(son.history, {
-            source: link.source,
-            target: link.target,
-            value: all[index].value,
-          });
-        }
       }
       son.linksList = linksList;
       return son;
@@ -278,8 +280,7 @@ export default {
           link.value = superlink.value;
           index = findLink.showReverseLink(history, [link]);
           if (index === 0) {
-            if (link.reverse) link.reverse = false;
-            else link["reverse"] = true;
+            link.reverse = !link.reverse;
             historyManage.reverseEdge(selection.history, {
               source: target,
               target: source,
@@ -443,7 +444,7 @@ export default {
         addHighLight(elementView);
       });
       paper.on("element: pointerclick", function (elementView, d) {
-        //TODO
+        //TODO?
         _this.chartVisible(elementView.model.attributes.attrs.title, {
           pageX: d.pageX,
           pageY: d.pageY,

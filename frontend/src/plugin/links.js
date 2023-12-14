@@ -2,19 +2,11 @@ import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import * as joint from "jointjs";
 
 export class findLink {
-  static showSameDireLink(link, linksList) {
+  static showSameDireLink(originalLink, originalLinkList) {
+    let link = LinksManagement.getFinalLink(originalLink);
+    let linksList = LinksManagement.getFinalLinks(originalLinkList);
     let index = linksList.findIndex((item) => {
-      if (
-        item.source === link.source &&
-        item.target === link.target &&
-        !item.reverse
-      )
-        return true;
-      else if (
-        item.target === link.source &&
-        item.source === link.target &&
-        item.reverse
-      )
+      if (item.source === link.source && item.target === link.target)
         return true;
       else return false;
     });
@@ -30,19 +22,12 @@ export class findLink {
     });
     return index;
   }
-  static showReverseLink(link, linksList) {
+  static showReverseLink(originalLink, originalLinkList) {
+    let link = LinksManagement.getFinalLink(originalLink);
+    let linksList = LinksManagement.getFinalLinks(originalLinkList);
+
     let index = linksList.findIndex((item) => {
-      if (
-        item.source === link.source &&
-        item.target === link.target &&
-        item.reverse
-      )
-        return true;
-      else if (
-        item.target === link.source &&
-        item.source === link.target &&
-        !item.reverse
-      )
+      if (item.target === link.source && item.source === link.target)
         return true;
       else return false;
     });

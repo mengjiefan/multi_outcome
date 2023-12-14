@@ -95,8 +95,8 @@ export class LinksManagement {
     let index = findLink.showSameDireLink(link, linksList);
     historyManage.reverseEdge(history, link);
     linksList[index].value = link.value;
-    if (linksList[index].reverse) linksList[index].reverse = false;
-    else linksList[index].reverse = true;
+    linksList[index].reverse = !linksList[index].reverse;
+
     return this.getFinalLink(linksList[index]);
   }
 }
