@@ -1,9 +1,49 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
-import svgPanZoom from "svg-pan-zoom";
+
 import { g } from "jointjs";
-const cmap = ["#66c5cc", "#f6cf71", "#f89c74", "#dcb0f2", "#87c55f", "#9eb9f3", "#fe88b1", "#c9db74", "#b3b3b3"];
+const cmap = [
+  "#FF595E",
+  "#FF924C",
+  "#FFCA3A",
+  "#C5CA30",
+  "#8AC926",
+  "#36949D",
+  "#1982C4",
+  "#4267AC",
+  "#565AA0",
+  "#6A4C93",
+];
+
+const addOffset = (x, y, graph) => {
+  let arrow = new joint.shapes.standard.Polygon();
+  arrow.resize(10, 20);
+  arrow.position(x - 16, y + 7);
+  arrow.attr({
+    body: {
+      strokeWidth: 0,
+      stroke: "transparent",
+      fill: "gray",
+      refPoints: "0,20 10,10 0,0",
+    },
+  });
+
+  arrow.addTo(graph);
+  for (let i = 0; i < 5; i++) {
+    let rect = new joint.shapes.standard.Rectangle();
+    rect.resize(3, 10);
+    rect.attr({
+      body: {
+        strokeWidth: 0,
+        stroke: "transparent",
+        fill: "gray",
+      },
+    });
+    rect.position(x - 16 - 5 * i, y + 12);
+    rect.addTo(graph);
+  }
+};
 const addTool = (element, paper) => {
   function getMarkup(angle = 0) {
     return [
@@ -74,15 +114,13 @@ const handleCellMouseWheel = (paper, x, y, delta) => {
   scaleToPoint(newScale, x, y, paper);
 };
 let targetSvg = null;
-let originalX = NaN;
-let originalY = NaN;
-const handleMouseMove = (paper, e, x, y) => {
+const handleMouseMove = (paper, e, originalPos) => {
   const translate = paper.translate();
-  const nextTx = translate.tx + e.clientX - originalX;
-  const nextTy = translate.ty + e.clientY - originalY;
 
-  originalX = e.clientX;
-  originalY = e.clientY;
+  const nextTx = translate.tx + e.clientX - originalPos.x;
+  const nextTy = translate.ty + e.clientY - originalPos.y;
+  originalPos.x = e.clientX;
+  originalPos.y = e.clientY;
 
   if (!targetSvg) targetSvg = e.target;
   if (targetSvg !== e.target) {
@@ -92,9 +130,9 @@ const handleMouseMove = (paper, e, x, y) => {
     paper.translate(nextTx, nextTy);
   }
 };
-const handleMouseUp = () => {
-  originalX = NaN;
-  originalY = NaN;
+const handleMouseUp = (originalPos) => {
+  originalPos.x = NaN;
+  originalPos.y = NaN;
   targetSvg = null;
 };
 const scaleToPoint = (nextScale, x, y, paper) => {
@@ -200,7 +238,7 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     width: "100%",
     height: "100%",
     drawGrid: { name: "mesh", args: { color: "#bbbbbb" } },
-    gridSize: 1,
+    gridSize: 80,
     async: true,
     linkPinning: false,
     sorting: joint.dia.Paper.sorting.APPROX,
@@ -224,7 +262,11 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   //addIndexOfGrid(graph, maxX, maxY);
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
     let faRect = new joint.shapes.standard.Rectangle();
-
+    addOffset(
+      countXPos(nodesList[nodeI].x) - 16,
+      countYPos(nodesList[nodeI].y) - 16,
+      graph
+    );
     faRect.resize(32, 32);
     faRect.position(
       countXPos(nodesList[nodeI].x) - 16,
@@ -272,6 +314,7 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     nodesList[nodeI]["node"] = faRect;
 
     faRect.addTo(graph);
+
     addTool(faRect, paper);
   }
   var Gen = d3
@@ -353,7 +396,10 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
 
   paper.scale(paperScale);
   paper.translate(startX, startY);
-
+  let originalPos = {
+    x: NaN,
+    y: NaN,
+  };
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -363,22 +409,19 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
+    handleMouseMove(paper, evt, originalPos);
   });
 
   paper.on("blank:pointerup", function (evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("link:pointerup", function (linkView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
-  /* scale  SVG
-    if (nodesList) {
-        svgZoom(name);
-    }*/
+
   return paper;
 };
 export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
@@ -550,7 +593,6 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
-
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -573,9 +615,5 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
     handleMouseUp();
   });
 
-  /* scale  SVG
-    if (nodesList) {
-        svgZoom(name);
-    }*/
   return paper;
 };

@@ -1,13 +1,22 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
-import { g } from "jointjs";
 import * as d3 from "d3";
-import svgPanZoom from "svg-pan-zoom";
 //import { getAnchoredGraph } from "@/plugin/super/anchor.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import dagre from "dagre";
 
-const cmap = ["#66c5cc", "#f6cf71", "#f89c74", "#dcb0f2", "#87c55f", "#9eb9f3", "#fe88b1", "#c9db74", "#b3b3b3"];
+const cmap = [
+  "#FF595E",
+  "#FF924C",
+  "#FFCA3A",
+  "#C5CA30",
+  "#8AC926",
+  "#36949D",
+  "#1982C4",
+  "#4267AC",
+  "#565AA0",
+  "#6A4C93",
+];
 let gap = 1;
 let startX;
 let startY;
@@ -80,28 +89,6 @@ const addTool = (element, paper) => {
   });
   element.findView(paper).addTools(tools);
 };
-const svgZoom = (name) => {
-  /** 判断是否有节点需要渲染，否则svg-pan-zoom会报错。 */
-  let svgZoom = svgPanZoom("#" + name + " svg", {
-    /** 判断是否是节点的拖拽 */
-    /** 是否可拖拽 */
-    panEnabled: true,
-    /** 是否可缩放 */
-    zoomEnabled: true,
-    /** 双击放大 */
-    dblClickZoomEnabled: false,
-    /** 可缩小至的最小倍数 */
-    minZoom: 0.3,
-    /** 可放大至的最大倍数 */
-    maxZoom: 5,
-    /** 是否自适应画布尺寸 */
-    fit: false,
-    /** 图是否居中 */
-    center: false,
-  });
-  /** 手动设置缩放敏感度 */
-  svgZoom.setZoomScaleSensitivity(0.5);
-};
 
 const handleCellMouseWheel = (paper, x, y, delta) => {
   const oldScale = paper.scale().sx;
@@ -113,6 +100,7 @@ let originalX = NaN;
 let originalY = NaN;
 const handleMouseMove = (paper, e, x, y) => {
   const translate = paper.translate();
+  console.log(translate.tx, translate.ty)
   const nextTx = translate.tx + e.clientX - originalX;
   const nextTy = translate.ty + e.clientY - originalY;
 
@@ -197,6 +185,7 @@ export const setSuperGraph = (g, data) => {
   dagre.layout(g);
   //getAnchoredGraph(g, data);
 };
+
 export const drawSuperGraph = (dom, nodesList, links, scale) => {
   startX = scale.startX;
   startY = scale.startY;
@@ -220,10 +209,9 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     model: graph,
     width: "100%",
     height: "100%",
-    gridSize: 1,
     async: true,
-    linkPinning: false,
     sorting: joint.dia.Paper.sorting.APPROX,
+    linkPinning: false,
     defaultLink: () => new joint.shapes.standard.Link(),
     connectionStrategy: joint.connectionStrategies.pinAbsolute,
     interactive: function (cellView, method) {

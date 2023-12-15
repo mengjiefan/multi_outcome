@@ -93,7 +93,7 @@ export default new VueRouter({
                     import("../views/DirectedGraph/SonGraph.vue"),
                 },
                 {
-                  name: "ConstraintSubGraph",
+                  name: "TestPaper",
                   path: "/AppMainPlot/DirectedGraphView/multiple/constraint-sub-graph",
                   component: () =>
                     import(

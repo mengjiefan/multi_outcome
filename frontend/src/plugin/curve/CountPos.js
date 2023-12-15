@@ -36,6 +36,11 @@ export const countCurveSonPos = async (all, name) => {
       outcome: node.type === 0,
     });
   });
+  let fixedNodes = nodes.filter((node) => node.fixed);
+  console.log(fixedNodes)
+  let fixedX = fixedNodes.map((node) => node.order);
+  fixedX.sort((a, b) => a - b);
+  console.log(fixedX[0] + fixedX[fixedX.length - 1]);
 
   let links = all.linksList;
   let response = await axios({
