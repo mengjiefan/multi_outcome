@@ -16,31 +16,41 @@ const cmap = [
   "#6A4C93",
 ];
 
-const addOffset = (x, y, graph) => {
+const addOffset = (x, y, offset, graph) => {
+  if (offset === 0) return;
   let arrow = new joint.shapes.standard.Polygon();
   arrow.resize(10, 20);
-  arrow.position(x - 16, y + 7);
+
   arrow.attr({
     body: {
       strokeWidth: 0,
       stroke: "transparent",
-      fill: "gray",
-      refPoints: "0,20 10,10 0,0",
+      fill: "rgba(151, 151, 151, 0.6)",
     },
   });
-
+  if (offset > 0) {
+    arrow.position(x - 16, y + 6);
+    arrow.attr("body/refPoints", "0,20 10,10 0,0");
+  } else {
+    arrow.position(x + 38, y + 6);
+    arrow.attr("body/refPoints", "0,20 -10,10 0,0");
+  }
   arrow.addTo(graph);
-  for (let i = 0; i < 5; i++) {
+  let width = 6 / Math.abs(offset);
+  let number = Math.floor(20 / width);
+  for (let i = 0; i < number; i++) {
     let rect = new joint.shapes.standard.Rectangle();
-    rect.resize(3, 10);
+    rect.resize(width, 10);
     rect.attr({
       body: {
         strokeWidth: 0,
         stroke: "transparent",
-        fill: "gray",
+        fill: "rgba(151, 151, 151, 0.6)",
       },
     });
-    rect.position(x - 16 - 5 * i, y + 12);
+    let gap = (width * 5) / 3;
+    if (offset > 0) rect.position(x - 16 - width - gap * i, y + 11);
+    else rect.position(x + 48 + gap * i, y + 11);
     rect.addTo(graph);
   }
 };
@@ -260,13 +270,21 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     }
   });
   //addIndexOfGrid(graph, maxX, maxY);
+  let max = -1;
+  nodesList.forEach((node) => {
+    if (Math.abs(node.offset) > max) max = Math.abs(node.offset);
+  });
+  console.log(max)
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
-    let faRect = new joint.shapes.standard.Rectangle();
     addOffset(
       countXPos(nodesList[nodeI].x) - 16,
       countYPos(nodesList[nodeI].y) - 16,
+      nodesList[nodeI].offset,
       graph
     );
+  }
+  for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+    let faRect = new joint.shapes.standard.Rectangle();
     faRect.resize(32, 32);
     faRect.position(
       countXPos(nodesList[nodeI].x) - 16,

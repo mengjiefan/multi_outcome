@@ -721,6 +721,7 @@ export default {
           nodesList: graph.map((node) => {
             return {
               id: node.node,
+              offset: node.new_order - node.order,
               x: node.new_order,
               y: node.rank,
               indexes: node.group,
