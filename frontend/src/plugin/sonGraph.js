@@ -6,6 +6,7 @@ import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
 
 import { g } from "jointjs";
+import { linksOperation } from "./links";
 const cmap = [
   "#FF595E",
   "#FF924C",
@@ -391,19 +392,17 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
       if (item.id === link.target) return true;
       else return false;
     });
-    let value = Math.abs(link.value);
-
-    if (value > 1) value = 1;
+    let value = linksOperation.recalLinkValue(link.value);
     path.attr({
       id: "(" + link.source + ", " + link.target + ")",
       line: {
         class: link.source + "," + link.target,
-        strokeWidth: value * 8 + "",
+        strokeWidth: value + "",
         targetMarker: {
           // minute hand
           type: "path",
           stroke: "black",
-          "stroke-width": value * 7,
+          "stroke-width": value,
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         },
@@ -587,17 +586,16 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
       if (item.id === link.target) return true;
       else return false;
     });
-    let value = Math.abs(link.value);
-    if (value > 1) value = 1;
+    let value = linksOperation.recalLinkValue(link.value);
     path.attr({
       id: "(" + link.source + ", " + link.target + ")",
       line: {
-        strokeWidth: value * 8 + "",
+        strokeWidth: value + "",
         targetMarker: {
           // minute hand
           type: "path",
           stroke: "black",
-          "stroke-width": value * 7,
+          "stroke-width": value,
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         },

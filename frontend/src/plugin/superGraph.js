@@ -4,6 +4,7 @@ import * as d3 from "d3";
 //import { getAnchoredGraph } from "@/plugin/super/anchor.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
 import dagre from "dagre";
+import { linksOperation } from "./links";
 
 const cmap = [
   "#FF595E",
@@ -310,17 +311,16 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
       if (item.id === link.target) return true;
       else return false;
     });
-    let value = Math.abs(link.value);
-    if (value > 1.2) value = 1.2;
+    let value = linksOperation.recalLinkValue(link.value);
     path.attr({
       id: "(" + link.source + ", " + link.target + ")",
       line: {
-        strokeWidth: value * 8 + "",
+        strokeWidth: value + "",
         targetMarker: {
           // minute hand
           type: "path",
           stroke: "black",
-          "stroke-width": value * 7,
+          "stroke-width": value,
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         },
@@ -495,18 +495,17 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
       if (item.id === link.target) return true;
       else return false;
     });
-    let value = Math.abs(link.value);
-    if (value > 1) value = 1;
+    let value = linksOperation.recalLinkValue(link.value);
     path.attr({
       id: "(" + link.source + ", " + link.target + ")",
       line: {
         stroke: "black",
-        strokeWidth: value * 8 + "",
+        strokeWidth: value + "",
         targetMarker: {
           // minute hand
           type: "path",
           stroke: "black",
-          "stroke-width": value * 7,
+          "stroke-width": value,
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         },

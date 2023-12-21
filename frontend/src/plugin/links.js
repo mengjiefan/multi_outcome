@@ -48,6 +48,10 @@ const countControl = (source, target, mid) => {
 };
 
 export class linksOperation {
+  static recalLinkValue(value) {
+    let newV = Math.abs(value);
+    return Math.log(newV + 1.01) / Math.log(2);
+  }
   static addLink(pos, link, paper, curveType, attrs) {
     let linksList = pos.linksList;
     let nodesList = pos.nodesList;
@@ -61,18 +65,17 @@ export class linksOperation {
       if (node.id === link.target) return true;
       else return false;
     });
-    let value = Math.abs(link.value);
+    let value = linksOperation.recalLinkValue(link.value);
 
-    if (value > 1.2) value = 1.2;
     path.attr({
       id: "(" + link.source + ", " + link.target + ")",
       line: {
-        strokeWidth: value * 8 + "",
+        strokeWidth: value + "",
         targetMarker: {
           // minute hand
           type: "path",
           stroke: "black",
-          "stroke-width": value * 7,
+          "stroke-width": value,
           fill: "transparent",
           d: "M 10 -5 0 0 10 5 ",
         },
