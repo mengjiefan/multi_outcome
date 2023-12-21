@@ -189,7 +189,10 @@ export default {
         this.papers.push(paper);
       } else this.papers[index] = paper;
       this.setPaper(index, paper);
-      if (this.graphType === "OriginalSubGraph") this.drawAddEdges(index);
+      if (
+        this.graphType === "ExtractedSubGraph" ||
+        this.graphType === "OriginalSubGraph"
+      ) this.drawAddEdges(index);
     },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
@@ -716,6 +719,7 @@ export default {
       this.ifCurve = true;
       let graphs = await countCurveSonPos(this.finalPos, name);
       this.sonGraphs = [];
+
       graphs.forEach((graph) => {
         this.sonGraphs.push({
           nodesList: graph.map((node) => {
@@ -795,6 +799,7 @@ export default {
       if (this.graphType === "TightenedSubGraph")
         this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
       else this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+      console.log(this.finalPos)
       if (this.multipleSearchValue) this.drawGraph();
     },
   },

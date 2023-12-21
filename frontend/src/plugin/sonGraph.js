@@ -1,3 +1,6 @@
+/*
+  CurveGraph, TightenedGraph
+*/
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
@@ -25,7 +28,7 @@ const addOffset = (x, y, offset, graph) => {
     body: {
       strokeWidth: 0,
       stroke: "transparent",
-      fill: "rgba(151, 151, 151, 0.6)",
+      fill: "rgba(151, 151, 151, 0.3)",
     },
   });
   if (offset > 0) {
@@ -45,13 +48,51 @@ const addOffset = (x, y, offset, graph) => {
       body: {
         strokeWidth: 0,
         stroke: "transparent",
-        fill: "rgba(151, 151, 151, 0.6)",
+        fill: "rgba(151, 151, 151, 0.3)",
       },
     });
     let gap = (width * 5) / 3;
     if (offset > 0) rect.position(x - 16 - width - gap * i, y + 11);
     else rect.position(x + 48 + gap * i, y + 11);
     rect.addTo(graph);
+  }
+};
+const addIndexOfGrid = (graph, maxX, maxY, minX, minY) => {
+  for (let i = minX - 1; i <= maxX; i++) {
+    let indexLabel = new joint.shapes.standard.Rectangle();
+    indexLabel.position(countXPos(i), countYPos(minY - 1) - 16);
+    indexLabel.attr({
+      body: {
+        strokeWidth: 0,
+        stroke: "transparent",
+        fill: "transparent",
+      },
+      label: {
+        text: i,
+        fill: "black",
+        y: 0,
+        fontSize: 12,
+      },
+    });
+    indexLabel.addTo(graph);
+  }
+  for (let j = minY; j <= maxY; j++) {
+    let indexLabel = new joint.shapes.standard.Rectangle();
+    indexLabel.position(countXPos(minX - 1) - 16, countYPos(j));
+    indexLabel.attr({
+      body: {
+        strokeWidth: 0,
+        stroke: "transparent",
+        fill: "transparent",
+      },
+      label: {
+        text: j,
+        fill: "black",
+        y: 0,
+        fontSize: 12,
+      },
+    });
+    indexLabel.addTo(graph);
   }
 };
 const addTool = (element, paper) => {
@@ -186,42 +227,17 @@ export const checkDirection = (source, target) => {
   else return "UP";
 };
 export const addHighLight = (elementView) => {
-  /*
-    joint.highlighters.mask.add(
-        elementView,
-        { selector: "root" },
-        "my-element-highlight",
-        {
-            padding: 0,
-            deep: true,
-            attrs: {
-                stroke: "#FF4365",
-                "stroke-width": 3,
-            },
-        }
-    );*/
   let attributes = elementView.model.attributes;
-  if (attributes.attrs.label.fontWeight !== "bold") {
+  if (!isNaN(parseFloat(attributes.attrs.label.text))) return;
+  else if (attributes.attrs.label.fontWeight !== "bold") {
     elementView.model.attr("label/fontWeight", "bold");
     elementView.model.attr(
       "label/fontSize",
       elementView.model.attributes.attrs.label.fontSize + 1
     );
   }
-
-  if (!isNaN(parseFloat(attributes.attrs.label.text))) {
-    elementView.model.attr("body/fill", "#1f77b4");
-  }
 };
 export const removeHighLight = (elementView) => {
-  /*
-    const highlighter = joint.dia.HighlighterView.get(
-        elementView,
-        "my-element-highlight"
-    );
-    if (highlighter)
-        highlighter.remove();
-        */
   let attributes = elementView.model.attributes;
   elementView.model.attr("label/fontWeight", "normal");
   elementView.model.attr(
@@ -235,6 +251,8 @@ export const removeHighLight = (elementView) => {
 export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   let maxX = 0;
   let maxY = 0;
+  let minX = 1000;
+  let minY = 1000;
 
   let paperScale = scale.gap / gap;
 
@@ -261,20 +279,16 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
     if (nodesList[nodeI].x > maxX) maxX = nodesList[nodeI].x;
     if (nodesList[nodeI].y > maxY) maxY = nodesList[nodeI].y;
+    if (nodesList[nodeI].x < minX) minX = nodesList[nodeI].x;
+    if (nodesList[nodeI].y < minY) minY = nodesList[nodeI].y;
   }
-  linksList.forEach((link) => {
-    for (let i = 0; i < link.points.length; i++) {
-      let point = link.points[i];
-      if (point.x > maxX) maxX = point.x;
-      if (point.y > maxY) maxY = point.y;
-    }
-  });
-  //addIndexOfGrid(graph, maxX, maxY);
+
+  addIndexOfGrid(graph, maxX, maxY, minX, minY);
   let max = -1;
   nodesList.forEach((node) => {
     if (Math.abs(node.offset) > max) max = Math.abs(node.offset);
   });
-  console.log(max)
+  console.log(max);
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
     addOffset(
       countXPos(nodesList[nodeI].x) - 16,
@@ -611,6 +625,10 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
+  let originalPos = {
+    x: NaN,
+    y: NaN,
+  };
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -620,17 +638,17 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
+    handleMouseMove(paper, evt, originalPos);
   });
 
   paper.on("blank:pointerup", function (evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("link:pointerup", function (linkView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
 
   return paper;

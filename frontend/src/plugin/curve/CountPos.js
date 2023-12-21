@@ -37,7 +37,7 @@ export const countCurveSonPos = async (all, name) => {
     });
   });
   let fixedNodes = nodes.filter((node) => node.fixed);
-  console.log(fixedNodes)
+  console.log(fixedNodes);
   let fixedX = fixedNodes.map((node) => node.order);
   fixedX.sort((a, b) => a - b);
   console.log(fixedX[0] + fixedX[fixedX.length - 1]);
@@ -74,7 +74,7 @@ export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
       if (node.y < minH) minH = node.y;
     });
 
-    let gap = (clientWidth - 50) / (maxW - minW);
+    let gap = (clientWidth - 50) / (maxW - minW + 1);
 
     if (!gap || isNaN(gap)) gap = 1;
     if (gap < minGap) minGap = gap;
@@ -83,7 +83,7 @@ export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
   if ((clientHeight - 120) / (maxH - minH) < minGap)
     minGap = (clientHeight - 120) / (maxH - minH);
 
-  let startY = (clientHeight - 70 - minGap * (maxH + minH)) / 2;
+  let startY = (clientHeight + 40 - minGap * (maxH - minH)) / 2;
   for (let i = 0; i < sonNum; i++) {
     let startX = (clientWidth - minGap * midX[i]) / 2;
 

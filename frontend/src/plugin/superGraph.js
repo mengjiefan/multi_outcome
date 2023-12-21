@@ -96,16 +96,13 @@ const handleCellMouseWheel = (paper, x, y, delta) => {
   scaleToPoint(newScale, x, y, paper);
 };
 let targetSvg = null;
-let originalX = NaN;
-let originalY = NaN;
-const handleMouseMove = (paper, e, x, y) => {
+const handleMouseMove = (paper, e, originalPos) => {
   const translate = paper.translate();
-  console.log(translate.tx, translate.ty)
-  const nextTx = translate.tx + e.clientX - originalX;
-  const nextTy = translate.ty + e.clientY - originalY;
 
-  originalX = e.clientX;
-  originalY = e.clientY;
+  const nextTx = translate.tx + e.clientX - originalPos.x;
+  const nextTy = translate.ty + e.clientY - originalPos.y;
+  originalPos.x = e.clientX;
+  originalPos.y = e.clientY;
 
   if (!targetSvg) targetSvg = e.target;
   if (targetSvg !== e.target) {
@@ -115,9 +112,9 @@ const handleMouseMove = (paper, e, x, y) => {
     paper.translate(nextTx, nextTy);
   }
 };
-const handleMouseUp = () => {
-  originalX = NaN;
-  originalY = NaN;
+const handleMouseUp = (originalPos) => {
+  originalPos.x = NaN;
+  originalPos.y = NaN;
   targetSvg = null;
 };
 const scaleToPoint = (nextScale, x, y, paper) => {
@@ -351,9 +348,10 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
-  paper.on("cell:mousewheel", function (cellView, evt, x, y, delta) {
-    handleCellMouseWheel(paper, x, y, delta);
-  });
+  let originalPos = {
+    x: NaN,
+    y: NaN,
+  };
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -363,23 +361,23 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
+    handleMouseMove(paper, evt, originalPos);
   });
 
   paper.on("blank:pointerup", function (evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("link:pointerup", function (linkView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
 
   return paper;
 };
 export const drawExtractedGraph = (dom, nodesList, links, scale) => {
-  let linksList = links.filter((link) => !link.hidden);
+  let linksList = links.filter((link) => !link.hidden && link.points?.length);
   linksList = linksList.map((link) => {
     if (!link.points) link.points = [];
     let points = link.points.concat([]);
@@ -551,6 +549,10 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
   paper.scale(paperScale);
   paper.translate(startX, startY);
 
+  let originalPos = {
+    x: NaN,
+    y: NaN,
+  };
   paper.on("link:mousewheel", function (linkView, evt, x, y, delta) {
     handleCellMouseWheel(paper, x, y, delta);
   });
@@ -560,17 +562,17 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
   });
 
   paper.on("blank:pointermove", function (evt, x, y) {
-    handleMouseMove(paper, evt, x, y);
+    handleMouseMove(paper, evt, originalPos);
   });
 
   paper.on("blank:pointerup", function (evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("link:pointerup", function (linkView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
-    handleMouseUp();
+    handleMouseUp(originalPos);
   });
 
   return paper;
