@@ -783,8 +783,7 @@ export default {
         this.paper,
         curveType,
         {
-          source: this.deleteLinkView?.model?.attributes?.source,
-          target: this.deleteLinkView?.model?.attributes?.target,
+          ...LinksManagement.getNodeByName(this.paper, link),
           gap: this.scales[index].gap,
           mid: this.scales[index].mid,
         }

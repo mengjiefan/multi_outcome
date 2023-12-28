@@ -99,27 +99,27 @@ export class linksOperation {
     let target = realLink.target;
 
     if (curveType === "TreeCurve") {
-      source = attrs.target;
-      target = attrs.source;
+      source = attrs.source;
+      target = attrs.target;
       let point = countControl(nodesList[sIndex], nodesList[tIndex], attrs.mid);
       points = [nodesList[sIndex], point, nodesList[tIndex]];
-      path.connector("TreeCurve", { points: points, value: value * 7 });
+      path.connector("TreeCurve", { points: points, value: value });
     } else if (!points.length) {
       path.connector(curveType, {
         points: [nodesList[sIndex], nodesList[tIndex]],
-        value: value * 7,
+        value: value,
         radius: 12,
       });
     } else if (curveType === "ExtractedCurve")
       path.connector(curveType, {
         points,
-        value: value * 8,
+        value: value,
         radius: 8 * attrs.gap,
       });
     else
       path.connector(curveType, {
         points,
-        value: value * 7,
+        value: value,
       });
     path.source(source);
     path.target(target);

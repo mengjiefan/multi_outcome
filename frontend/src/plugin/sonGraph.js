@@ -444,7 +444,7 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     path.addTo(graph);
     //path.vertices(vertices);
 
-    path.connector("TreeCurve", { points: link.points, value: value * 7 });
+    path.connector("TreeCurve", { points: link.points, value: value });
   });
 
   paper.scale(paperScale);
@@ -638,7 +638,7 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
 
     path.connector("TightenedCurve", {
       points: points,
-      value: value * 7,
+      value
     });
   });
 

@@ -341,7 +341,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
 
     path.connector("SuperCurve", {
       points: link.points,
-      value: value * 7,
+      value,
     });
   });
 
@@ -541,7 +541,7 @@ export const drawExtractedGraph = (dom, nodesList, links, scale) => {
     };
     path.connector("ExtractedCurve", {
       points,
-      value: value * 7,
+      value,
       radius: 12,
     });
   });
