@@ -61,7 +61,7 @@ const addOffset = (x, y, offset, graph) => {
 const addIndexOfGrid = (graph, maxX, maxY, minX, minY) => {
   for (let i = minX - 1; i <= maxX; i++) {
     let indexLabel = new joint.shapes.standard.Rectangle();
-    indexLabel.position(countXPos(i), countYPos(minY - 1) - 16);
+    indexLabel.position(countXPos(i), countYPos(minY) - 40);
     indexLabel.attr({
       body: {
         strokeWidth: 0,
@@ -79,7 +79,7 @@ const addIndexOfGrid = (graph, maxX, maxY, minX, minY) => {
   }
   for (let j = minY; j <= maxY; j++) {
     let indexLabel = new joint.shapes.standard.Rectangle();
-    indexLabel.position(countXPos(minX - 1) - 16, countYPos(j));
+    indexLabel.position(countXPos(minX - 1) - 40, countYPos(j));
     indexLabel.attr({
       body: {
         strokeWidth: 0,
@@ -266,8 +266,14 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     model: graph,
     width: "100%",
     height: "100%",
-    drawGrid: { name: "mesh", args: { color: "#bbbbbb" } },
-    gridSize: 80,
+    drawGrid: {
+      name: "doubleMesh",
+      args: [
+        { color: "white", thickness: 1 }, 
+        { color: "#bbbbbb", scaleFactor: 5, thickness: 1 }, 
+      ],
+    },
+    gridSize: 16,
     async: true,
     linkPinning: false,
     sorting: joint.dia.Paper.sorting.APPROX,
@@ -283,13 +289,14 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     if (nodesList[nodeI].x < minX) minX = nodesList[nodeI].x;
     if (nodesList[nodeI].y < minY) minY = nodesList[nodeI].y;
   }
-
+  minX = Math.ceil(minX);
+  maxX = Math.ceil(maxX);
   addIndexOfGrid(graph, maxX, maxY, minX, minY);
   let max = -1;
   nodesList.forEach((node) => {
     if (Math.abs(node.offset) > max) max = Math.abs(node.offset);
   });
-  console.log(max);
+
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
     addOffset(
       countXPos(nodesList[nodeI].x) - 16,
@@ -306,6 +313,21 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
       countYPos(nodesList[nodeI].y) - 16
     );
     let indexes = nodesList[nodeI].indexes;
+    let id = nodesList[nodeI].id;
+    if (id.length > 10) {
+      let ids = [];
+      let oIndex = 0;
+      for (let sIndex = 1; sIndex < id.length; sIndex++) {
+        if (/[A-Z]/.test(id[sIndex])) {
+          ids.push(id.slice(oIndex, sIndex));
+          oIndex = sIndex;
+        }
+      }
+      ids.push(id.slice(oIndex, id.length));
+      id = ids.join("\n");
+      if (ids.length === 1) id = id.replaceAll(" ", "\n");
+    }
+
     faRect.attr({
       body: {
         strokeWidth: 0,
@@ -316,10 +338,10 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
         fill: "transparent",
       },
       label: {
-        text: nodesList[nodeI].id,
+        text: id,
         fill: "black",
         y: 0,
-        fontSize: 10,
+        fontSize: 8,
       },
       title: nodesList[nodeI].id,
     });

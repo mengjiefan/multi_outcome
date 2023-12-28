@@ -192,7 +192,8 @@ export default {
       if (
         this.graphType === "ExtractedSubGraph" ||
         this.graphType === "OriginalSubGraph"
-      ) this.drawAddEdges(index);
+      )
+        this.drawAddEdges(index);
     },
     applySubGraph(index) {
       let selection = this.multipleSearchValue.selections[index];
@@ -435,6 +436,7 @@ export default {
       });
     },
     highLightAllPaper(id) {
+      if (!id) return;
       this.papers.forEach((paper) => {
         var elements = paper.model.getElements();
         elements.forEach((element) => {
@@ -446,6 +448,7 @@ export default {
       });
     },
     removeAllHighLight(id) {
+      if (!id) return;
       this.papers.forEach((paper) => {
         var elements = paper.model.getElements();
         elements.forEach((element) => {
@@ -563,25 +566,21 @@ export default {
       });
       let selection = this.multipleSearchValue.selections[i];
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
-      let index = selection.linksList.findIndex(function (row) {
-        if (
-          (row.source === nodes[0] && row.target === nodes[1]) ||
-          (row.source === nodes[1] && row.target === nodes[0])
-        ) {
-          return true;
-        } else return false;
-      });
+      let history = {
+        source: nodes[0],
+        target: nodes[1],
+      };
+      let index = findLink.sameNodeLink(history, selection.linksList);
       this.deleteLinkView.model.remove({ ui: true });
-      if (index > -1) {
-        let history = historyManage.deleteEdge(selection.history, {
-          source: nodes[0],
-          target: nodes[1],
-        });
-        selection.linksList[index].add = false;
-        selection.linksList[index].hidden = true;
 
-        selection.history = history;
+      if (index > -1) {
+        if (selection.linksList[index].add)
+          selection.linksList.splice(index, 1);
+        else selection.linksList[index].hidden = true;
+        selection.history = historyManage.deleteEdge(
+          selection.history,
+          history
+        );
         this.tip2Hidden();
         this.saveData();
       }
@@ -799,7 +798,7 @@ export default {
       if (this.graphType === "TightenedSubGraph")
         this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
       else this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-      console.log(this.finalPos)
+      console.log(this.finalPos);
       if (this.multipleSearchValue) this.drawGraph();
     },
   },

@@ -620,49 +620,31 @@ export default {
     },
     deleteEdge(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
-
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
-        if (
-          (row.source === nodes[0] && row.target === nodes[1]) ||
-          (row.target === nodes[0] && row.source === nodes[1])
-        ) {
-          return true;
-        } else return false;
-      });
+      let history = {
+        source: nodes[0],
+        target: nodes[1],
+      };
+      let index = findLink.sameNodeLink(
+        history,
+        this.multipleSearchValue.linksList
+      );
       if (index > -1) {
-        let history = {
-          source: nodes[0],
-          target: nodes[1],
-        };
-        this.multipleSearchValue.linksList[index] = {
-          source: nodes[0],
-          target: nodes[1],
-          value: this.multipleSearchValue.linksList[index].value,
-          hidden: true,
-        };
+        let fatherLink = this.multipleSearchValue.linksList[index];
+        if (fatherLink.add) this.multipleSearchValue.linksList.splice(index, 1);
+        else fatherLink.hidden = true;
+
         for (let i = 0; i < this.multipleSearchValue.selections.length; i++) {
           let selection = this.multipleSearchValue.selections[i];
           selection.history = historyManage.deleteEdge(
             selection.history,
             history
           );
-          let index = selection.linksList.findIndex((link) => {
-            if (
-              link.source === history.source &&
-              link.target === history.target &&
-              !link.hidden
-            )
-              return true;
-            else if (
-              link.source === history.target &&
-              link.target === history.source &&
-              !link.hidden
-            )
-              return true;
-          });
-          if (index < 0) continue;
-          let link = selection.linksList[index];
-          link["hidden"] = true;
+          let sindex = findLink.sameNodeLink(history, selection.linksList);
+
+          if (sindex < 0) continue;
+          let link = selection.linksList[sindex];
+          if (link.add) selection.linksList.splice(sindex, 1);
+          else link.hidden = true;
         }
         this.saveData();
         this.tip2Hidden();
