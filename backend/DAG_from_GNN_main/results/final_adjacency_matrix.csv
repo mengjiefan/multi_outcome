@@ -1,0 +1,8 @@
+,famHisHypertension,Smoke,Sex,Income score,Index of Multiple Deprivation,Employment score,Hypertension
+famHisHypertension,0,0,0,0,0,0,0
+Smoke,0,0,0,0,1,0,0
+Sex,0,0,0,1,0,0,0
+Income score,1,0,0,0,1,1,0
+Index of Multiple Deprivation,0,0,0,0,0,0,0
+Employment score,1,1,0,0,0,0,1
+Hypertension,0,0,0,0,1,0,0
