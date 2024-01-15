@@ -31,6 +31,11 @@ from causallearn.utils.cit import chisq, fisherz, gsq, kci, mv_fisherz
 from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 import copy
+import subprocess
+import signal
+import time
+import psutil
+import keyboard
 
 sys.path.append("")
 
@@ -59,6 +64,75 @@ clhls_outcomes = ['g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD',
 
 ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
 clhls_file = "./myApp/clhls_10_outcomes_data.csv"
+
+
+def run_command_with_timeout(command, timeout_seconds):
+    #  timeout_seconds 参数是超时时间，单位是秒
+    # 此处因为dag-gnn代码不会自动停止，所以需手动设置定时启用 Ctrl+C 以停止代码运行，获取最终的数据
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               cwd='./DAG_from_GNN_main', universal_newlines=True)
+
+    try:
+        # 等待命令执行
+        process.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        # 如果超时，发送 Ctrl + C 信号，在 Unix 系统中，Ctrl+C 的信号是 SIGINT
+        # process.send_signal(signal.SIGINT)
+        keyboard.press_and_release('ctrl+c')
+        time.sleep(1)  # 等待一秒钟确保处理 Ctrl + C 信号
+
+        # 终止进程
+        process.terminate()
+
+        # 等待进程退出
+        process.wait()
+
+    # 读取输出结果
+    result = process.communicate()
+
+    return result
+
+
+def run_dag_gnn_command():
+    try:
+        # 启动命令并获取进程对象
+        process = subprocess.Popen(['python', '-m', 'DAG_from_GNN'],
+                                   cwd='./DAG_from_GNN_main',
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   text=True)
+
+        try:
+            # 设置超时时间
+            timeout_seconds = 60
+
+            # 等待命令执行
+            process.wait(timeout=timeout_seconds)
+
+        except subprocess.TimeoutExpired:
+            # 发送 Ctrl+C 信号
+            process.send_signal(signal.SIGINT)
+
+            # 等待一段时间确保进程被终止
+            time.sleep(1)
+
+            # 如果进程仍在运行，强制终止
+            if process.poll() is None:
+                process.kill()
+
+        # 读取输出结果
+        stdout, stderr = process.communicate()
+
+        # 打印输出结果
+        print(stdout)
+
+        # 如果有错误输出，也可以打印
+        if stderr:
+            print(f"Error: {stderr}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
 
 def get_list(request):
     num_top = request.GET.get("CovariantNum")  # CovariantNum
@@ -95,6 +169,21 @@ def get_list(request):
     outcome_vars = top_correlated_factors + [outcome]
 
     outcome_data_df = data[outcome_vars]
+    # print(outcome_data_df)
+
+    # 将选定结局及与其相关的前top个元素一起组成的outcome_data_df，存到 /backend/DAG_from_GNN_main目录下的datasets文件夹[./backend/DAG_from_GNN_main/datasets]下
+    outcome_data_df.to_csv('./DAG_from_GNN_main/datasets/causal_related_data.csv', index=False)
+
+    # (1) 运行 dag-gnn
+    # try:
+    #     dag_gnn_result = run_command_with_timeout(['python', '-m', 'DAG_from_GNN'], timeout_seconds=60)  # 此处的60s待定，因为实际运行时间远远长于这个时间
+    #     print(dag_gnn_result)
+    # except Exception as e:
+    #     print(f"Error: {e}")
+    # 调用函数
+    run_dag_gnn_command()
+
+    # (3) 运行 PC
 
     # 将DataFrame转换为NumPy数组
     data_array = outcome_data_df.to_numpy()

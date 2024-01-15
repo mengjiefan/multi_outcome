@@ -463,7 +463,7 @@ export default {
       let x = (source.x + target.x) / 2;
       let y = (source.y + target.y) / 2;
 
-      let offset = (target.y - source.y) * 0.3;
+      let offset = (target.y - source.y) * 0.2;
       if (source.x !== target.x) {
         offset = Math.abs(offset);
         if (x < mid) x = x - offset;
