@@ -459,17 +459,37 @@ export default {
         });
       });
     },
-    countControl(source, target, mid) {
-      let x = (source.x + target.x) / 2;
-      let y = (source.y + target.y) / 2;
+    // countControl(source, target, mid) {
+    //   let x = (source.x + target.x) / 2;
+    //   let y = (source.y + target.y) / 2;
 
-      let offset = (target.y - source.y) * 0.15;
-      if (source.x !== target.x) {
-        offset = Math.abs(offset);
-        if (x < mid) x = x - offset;
-        else x = x + offset;
-        return { x, y };
-      } else return { x: x + offset, y };
+    //   let offset = (target.y - source.y) * 0.15;
+    //   if (source.x !== target.x) {
+    //     offset = Math.abs(offset);
+    //     if (x < mid) x = x - offset;
+    //     else x = x + offset;
+    //     return { x, y };
+    //   } else return { x: x + offset, y };
+    // },
+    countControl(source, target){
+      const deltaX = target.x - source.x;
+      const deltaY = target.y - source.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // 控制点偏移量
+      const controlOffsetX = (deltaY * 0.2 * distance) / distance;
+      const controlOffsetY = (deltaX * 0.2 * distance) / distance;
+
+      // 使用两个控制点 control1 和 control2 来生成三次贝塞尔曲线。
+      // 可以调整 0.2 的值来改变曲线的平滑度。增大这个值会使曲线更加弯曲，减小则使曲线更直。
+      // 控制点坐标
+      const control1X = source.x + controlOffsetX;
+      const control1Y = source.y + controlOffsetY;
+      const control2X = target.x - controlOffsetX;
+      const control2Y = target.y - controlOffsetY;
+
+      return {control1X, control1Y, control2X, control2Y}
+
     },
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -676,8 +696,16 @@ export default {
         let source = nodes[sIndex];
         let target = nodes[tIndex];
 
-        let point = this.countControl(source, target, this.scales[index].mid);
-        link["points"] = [source, point, target];
+        // let point = this.countControl(source, target, this.scales[index].mid);
+
+        // link["points"] = [source, point, target];
+        
+        // 调用 countControl 返回两个控制点的对象
+        let { control1X, control1Y, control2X, control2Y } = this.countControl(source, target);
+
+        // 将控制点添加到链接对象的 points 属性中
+        link["points"] = [source, { x: control1X, y: control1Y }, { x: control2X, y: control2Y }, target];
+        
       }
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
