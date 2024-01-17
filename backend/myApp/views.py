@@ -32,8 +32,10 @@ from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 import copy
 import subprocess
+import os
 import signal
 import time
+from threading import Timer
 import psutil
 import keyboard
 
@@ -66,52 +68,40 @@ ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
 clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
 
-def run_command_with_timeout(command, timeout_seconds):
-    #  timeout_seconds 参数是超时时间，单位是秒
-    # 此处因为dag-gnn代码不会自动停止，所以需手动设置定时启用 Ctrl+C 以停止代码运行，获取最终的数据
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               cwd='./DAG_from_GNN_main', universal_newlines=True)
-
-    try:
-        # 等待命令执行
-        process.wait(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired:
-        # 如果超时，发送 Ctrl + C 信号，在 Unix 系统中，Ctrl+C 的信号是 SIGINT
-        # process.send_signal(signal.SIGINT)
-        keyboard.press_and_release('ctrl+c')
-        time.sleep(1)  # 等待一秒钟确保处理 Ctrl + C 信号
-
-        # 终止进程
-        process.terminate()
-
-        # 等待进程退出
-        process.wait()
-
-    # 读取输出结果
-    result = process.communicate()
-
-    return result
-
-
 def run_dag_gnn_command():
     try:
+        # 进入新的文件夹
+        os.chdir('./DAG_from_GNN_main')
+
         # 启动命令并获取进程对象
         process = subprocess.Popen(['python', '-m', 'DAG_from_GNN'],
-                                   cwd='./DAG_from_GNN_main',
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    text=True)
 
+        # 设置超时时间
+        timeout_seconds = 60  # 设置为你需要的超时时间
+
+        # 定义定时器函数
+        def stop_process():
+            print("Stopping process...")
+            # 发送 Ctrl+C 信号
+            process.send_signal(subprocess.signal.CTRL_C_EVENT)  # 会导致整个后端Django终止
+
+
+        # 创建定时器
+        timer = Timer(timeout_seconds, stop_process)
+
         try:
-            # 设置超时时间
-            timeout_seconds = 60
+            # 启动定时器
+            timer.start()
 
             # 等待命令执行
-            process.wait(timeout=timeout_seconds)
+            process.wait()
 
         except subprocess.TimeoutExpired:
-            # 发送 Ctrl+C 信号
-            process.send_signal(signal.SIGINT)
+            # 如果超时，取消定时器
+            timer.cancel()
 
             # 等待一段时间确保进程被终止
             time.sleep(1)
@@ -175,13 +165,19 @@ def get_list(request):
     outcome_data_df.to_csv('./DAG_from_GNN_main/datasets/causal_related_data.csv', index=False)
 
     # (1) 运行 dag-gnn
-    # try:
-    #     dag_gnn_result = run_command_with_timeout(['python', '-m', 'DAG_from_GNN'], timeout_seconds=60)  # 此处的60s待定，因为实际运行时间远远长于这个时间
-    #     print(dag_gnn_result)
-    # except Exception as e:
-    #     print(f"Error: {e}")
     # 调用函数
     run_dag_gnn_command()
+    # run_command_with_timeout(['python', '-m', 'DAG_from_GNN'], timeout_seconds=60)
+
+    # 以下方式可实现手动进行，但是手动输入 Ctrl + C时，会导致整个后端Django终止
+    # 进入新的文件夹
+    # os.chdir('./DAG_from_GNN_main')
+    #
+    # # 执行 python -m DAG_from_GNN 命令
+    # try:
+    #     subprocess.run(['python', '-m', 'DAG_from_GNN'], check=True)
+    # except subprocess.CalledProcessError as e:
+    #     print(f"Error executing python -m DAG_from_GNN: {e}")
 
     # (3) 运行 PC
 
