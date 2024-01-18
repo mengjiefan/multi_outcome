@@ -70,6 +70,7 @@ clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
 def run_dag_gnn_command():
     try:
+
         # 进入新的文件夹
         os.chdir('./DAG_from_GNN_main')
 
@@ -79,29 +80,16 @@ def run_dag_gnn_command():
                                    stderr=subprocess.PIPE,
                                    text=True)
 
-        # 设置超时时间
-        timeout_seconds = 60  # 设置为你需要的超时时间
-
-        # 定义定时器函数
-        def stop_process():
-            print("Stopping process...")
-            # 发送 Ctrl+C 信号
-            process.send_signal(subprocess.signal.CTRL_C_EVENT)  # 会导致整个后端Django终止
-
-
-        # 创建定时器
-        timer = Timer(timeout_seconds, stop_process)
-
         try:
-            # 启动定时器
-            timer.start()
+            # 设置超时时间
+            timeout_seconds = 60  # 设置为你需要的超时时间
 
             # 等待命令执行
-            process.wait()
+            process.wait(timeout=timeout_seconds)
 
         except subprocess.TimeoutExpired:
-            # 如果超时，取消定时器
-            timer.cancel()
+            # 终止进程
+            process.terminate()
 
             # 等待一段时间确保进程被终止
             time.sleep(1)
@@ -166,8 +154,11 @@ def get_list(request):
 
     # (1) 运行 dag-gnn
     # 调用函数
-    run_dag_gnn_command()
+    # run_dag_gnn_command()
     # run_command_with_timeout(['python', '-m', 'DAG_from_GNN'], timeout_seconds=60)
+
+    # 返回原文件夹
+    # os.chdir('./myApp')
 
     # 以下方式可实现手动进行，但是手动输入 Ctrl + C时，会导致整个后端Django终止
     # 进入新的文件夹
