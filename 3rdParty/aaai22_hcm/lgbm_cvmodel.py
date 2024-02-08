@@ -51,7 +51,7 @@ class LgbClsModel(object):
             num_boost_round=self.num_boost_round,
             # early_stopping_rounds=self.early_stopping_round
             # early_stopping_round=self.early_stopping_round
-            # callbacks=[early_stopping(self.early_stopping_round)]
+            callbacks=[lgb.early_stopping(self.early_stopping_round,verbose=False)]
         )
         y_pred = self.model.predict(X_test)
         #  log_loss is the negative log-likelihood of a logistic model
@@ -95,10 +95,10 @@ class LgbRegModel(object):
             lgb_train,
             valid_sets=test_data,
             # verbose_eval=False,
-            num_boost_round=self.num_boost_round
+            num_boost_round=self.num_boost_round,
             # early_stopping_rounds=self.early_stopping_round
             # early_stopping_round = self.early_stopping_round
-            # callbacks=[early_stopping(self.early_stopping_round)]
+            callbacks=[lgb.early_stopping(self.early_stopping_round,verbose=False)]
         )
 
         y_pred = self.model.predict(X_test)
