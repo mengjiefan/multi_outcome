@@ -410,7 +410,7 @@ def load_data(args, batch_size=1000, suffix='', debug = False):
         # generate data
         G = simulate_random_dag(d, degree, graph_type)
         X = simulate_sem(G, n, x_dims, sem_type, linear_type)
-
+        print(X)
     elif args.data_type == 'discrete':
         # get benchmark discrete data
         if args.data_filename.endswith('.pkl'):
@@ -420,11 +420,23 @@ def load_data(args, batch_size=1000, suffix='', debug = False):
             all_data, graph = read_BNrep(args)
             G = nx.DiGraph(graph)
             X = all_data['1000']['1']
+    elif args.data_type == 'own_file':
+        if args.data_filename.endswith('.csv'):
+                df = pd.read_csv(args.data_filename)
+                X2d = df.to_numpy()
+                n, d = X2d.shape[0], X2d.shape[1]
+                X = X2d[:, :, np.newaxis] # extend to 3D array
+                G = simulate_random_dag(len(df.columns),degree,graph_type)# Just a dummy parameter for running correctly---we don't really have a groundtruth
+                # print(X)
+                args.data_variable_size = d
+                args.data_sample_size = n
+                print(X.shape)
 
 
     feat_train = torch.FloatTensor(X)
     feat_valid = torch.FloatTensor(X)
     feat_test = torch.FloatTensor(X)
+    print(feat_train.shape)
 
     # reconstruct itself
     train_data = TensorDataset(feat_train, feat_train)

@@ -49,6 +49,8 @@ class MLPEncoder(nn.Module):
         adj_A = torch.eye(adj_A1.size()[0]).double()
         H1 = F.relu((self.fc1(inputs)))
         x = (self.fc2(H1))
+        # print(adj_Aforz.shape)
+        # print((x+self.Wa).shape)
         logits = torch.matmul(adj_Aforz, x+self.Wa) -self.Wa
 
         return x, logits, adj_A1, adj_A, self.z, self.z_positive, self.adj_A, self.Wa

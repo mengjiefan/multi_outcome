@@ -27,16 +27,32 @@ parser = argparse.ArgumentParser()
 
 # -----------data parameters ------
 # configurations
-parser.add_argument('--data_type', type=str, default= 'synthetic',
-                    choices=['synthetic', 'discrete', 'real'],
+# parser.add_argument('--data_type', type=str, default= 'synthetic',
+#                     choices=['synthetic', 'discrete', 'real'],
+#                     help='choosing which experiment to do.')
+
+parser.add_argument('--data_type', type=str, default= 'own_file',
+                    choices=['synthetic', 'discrete', 'real', 'own_file'],
                     help='choosing which experiment to do.')
-parser.add_argument('--data_filename', type=str, default= 'alarm',
+# parser.add_argument('--data_filename', type=str, default= 'alarm',
+#                     help='data file name containing the discrete files.')
+# ukb_8_outcomes_data_nolab_his_sm
+parser.add_argument('--data_filename', type=str, default= './ukb_8_outcomes_data_nolab_his_sm.csv',
                     help='data file name containing the discrete files.')
+
+# parser.add_argument('--data_filename', type=str, default= './causal_related_data.csv',
+#                     help='data file name containing the discrete files.')
 parser.add_argument('--data_dir', type=str, default= 'data/',
                     help='data file name containing the discrete files.')
-parser.add_argument('--data_sample_size', type=int, default=5000,
+# parser.add_argument('--data_sample_size', type=int, default=5000,
+#                     help='the number of samples of data')
+parser.add_argument('--data_sample_size', type=int, default=3000, # Should set
                     help='the number of samples of data')
-parser.add_argument('--data_variable_size', type=int, default=10,
+# parser.add_argument('--data_variable_size', type=int, default=10,
+#                     help='the number of variables in synthetic generated data')
+
+# Dimension of the data 
+parser.add_argument('--data_variable_size', type=int, default=10, # should be equal to the data variable numbers, also the number of nodes!
                     help='the number of variables in synthetic generated data')
 parser.add_argument('--graph_type', type=str, default='erdos-renyi',
                     help='the type of DAG graph by generation method')
@@ -296,7 +312,7 @@ def update_optimizer(optimizer, original_lr, c_A):
 # training:
 #===================================
 
-def train(epoch, best_val_loss, ground_truth_G, lambda_A, c_A, optimizer):
+def train(epoch, best_val_loss, ground_truth_G, lambda_A, c_A, optimizer, hasGroundtruth=True):
     t = time.time()
     nll_train = []
     kl_train = []
@@ -374,14 +390,17 @@ def train(epoch, best_val_loss, ground_truth_G, lambda_A, c_A, optimizer):
         graph = origin_A.data.clone().numpy()
         graph[np.abs(graph) < args.graph_threshold] = 0
 
-        fdr, tpr, fpr, shd, nnz = count_accuracy(ground_truth_G, nx.DiGraph(graph))
+        if hasGroundtruth:
+            fdr, tpr, fpr, shd, nnz = count_accuracy(ground_truth_G, nx.DiGraph(graph))
+        else:
+            shd = 0
 
 
         mse_train.append(F.mse_loss(preds, target).item())
         nll_train.append(loss_nll.item())
         kl_train.append(loss_kl.item())
         shd_trian.append(shd)
-
+   
     print(h_A.item())
     nll_val = []
     acc_val = []
@@ -438,7 +457,8 @@ try:
     for step_k in range(k_max_iter):
         while c_A < 1e+20:
             for epoch in range(args.epochs):
-                ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer)
+                # ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer)
+                ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer, hasGroundtruth=False)
                 if ELBO_loss < best_ELBO_loss:
                     best_ELBO_loss = ELBO_loss
                     best_epoch = epoch

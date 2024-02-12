@@ -9,8 +9,12 @@ from const import DEFAULT_MODEL_PARA, DEFAULT_LGBM_PARA, DEFAULT_GAM_PARA
 
 
 args = easydict.EasyDict({
-    'data_file': 'alram_simulate.csv',  # location and name of data file
-    'cat_index': ['2','3','4','7','8','10','11','13','16','17','18','19','21','22','27','33','36','37'],
+    # 'data_file': 'alram_simulate.csv',  # location and name of data file
+    'data_file': 'ukb_8_outcomes_data_nolab_his_sm.csv',
+    # 'cat_index': ['2','3','4','7','8','10','11','13','16','17','18','19','21','22','27','33','36','37'], #for alarm
+    # 'cat_index': ['2','12','13','14','15','16','17','18','19','20','21','22','23','27','28','29','30','31','32','33','34','35','36','37','38'], # for ukb data
+    'cat_index': ['Sex','Insomnia','Smoke', 'Alcohol', 'famHisHypertension','famHisDiabetes', 'famHisBreastMalignancy', 'famHisProstateMalignancy',	
+                  'Hypertension','Diabetes','BreastMalignancy',	'ProstateMalignancy','Hypothyroidism','NutritionalAnaemias','InfectiousGastroenteritis',	'Septicemia'],
     # 'true_G':'alarm.csv',  # location and name of true graph
     'true_G' : '',
     'model_para': {'step1_maxr': 1, 'step3_maxr': 3, 'num_f': 100,
@@ -21,7 +25,8 @@ args = easydict.EasyDict({
     # can used for test step 2's performance with different setting. i.e.,
     # if you already have skeleton file 'alaram_simulate_skl.csv'
     # then you can use it to avoid run step 1 again
-    'skl_file': './alram_simulate_skl.csv',
+    # 'skl_file': './alram_simulate_skl.csv',
+    'skl_file':'./ukb_8_outcomes_data_nolab_his_sm_skl.csv',
     'base_model':'lgbm',  # 'lgbm' or 'gam'
     # 'base_model':'gam', 
     'base_model_para': {},
