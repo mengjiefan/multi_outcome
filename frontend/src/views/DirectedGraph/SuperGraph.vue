@@ -30,7 +30,7 @@
 <script>
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
-
+import axios from "axios";
 import { ref } from "vue";
 import "/node_modules/jointjs/dist/joint.css";
 import { createChart } from "@/plugin/charts";
@@ -97,6 +97,7 @@ export default {
         },
       });
     },
+
     trulyDelete() {
       this.simplePos = null;
       console.log("delete edge");
@@ -766,6 +767,7 @@ export default {
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
+
   },
 };
 </script>

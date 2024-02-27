@@ -7,6 +7,8 @@
 # Create your views here.
 
 import json
+
+import torch
 from django.shortcuts import render
 from django.views import View
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, HttpResponseNotFound
@@ -31,13 +33,12 @@ from causallearn.utils.cit import chisq, fisherz, gsq, kci, mv_fisherz
 from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 import copy
-import subprocess
-import os
-import signal
+
+from .daggnn.utils import load_data
+from .daggnn.train import _h_A, args, train, init_model
+
 import time
-from threading import Timer
-import psutil
-import keyboard
+import threading
 
 sys.path.append("")
 
@@ -68,50 +69,109 @@ ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
 clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
 
-def run_dag_gnn_command():
-    try:
 
-        # 进入新的文件夹
-        os.chdir('./DAG_from_GNN_main')
+thread_event = threading.Event()
+stop_Thread = False
 
-        # 启动命令并获取进程对象
-        process = subprocess.Popen(['python', '-m', 'DAG_from_GNN'],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   text=True)
+best_MSE_graph = []
+def thread_task(data):
+    global stop_Thread
+    global best_MSE_graph
+    train_loader = load_data(args, args.batch_size, data)
+    best_ELBO_loss = np.inf
+    best_NLL_loss = np.inf
+    best_MSE_loss = np.inf
+    best_epoch = 0
+    best_ELBO_graph = []
+    best_NLL_graph = []
+    # optimizer step on hyparameters
+    c_A = args.c_A
+    lambda_A = args.lambda_A
+    h_A_new = torch.tensor(1.)
+    h_tol = args.h_tol
+    k_max_iter = int(args.k_max_iter)
+    h_A_old = np.inf
+    for step_k in range(k_max_iter):
+        if stop_Thread:
+            break
+        while c_A < 1e+20:
+            if stop_Thread:
+                break
+            for epoch in range(args.epochs):
+                if stop_Thread:
+                    break
+                # ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer)
+                ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss,  lambda_A, c_A,  train_loader)
+                if ELBO_loss < best_ELBO_loss:
+                    best_ELBO_loss = ELBO_loss
+                    best_epoch = epoch
+                    best_ELBO_graph = graph
 
-        try:
-            # 设置超时时间
-            timeout_seconds = 60  # 设置为你需要的超时时间
+                if NLL_loss < best_NLL_loss:
+                    best_NLL_loss = NLL_loss
+                    best_epoch = epoch
+                    best_NLL_graph = graph
 
-            # 等待命令执行
-            process.wait(timeout=timeout_seconds)
+                if MSE_loss < best_MSE_loss:
+                    best_MSE_loss = MSE_loss
+                    best_epoch = epoch
+                    best_MSE_graph = graph
 
-        except subprocess.TimeoutExpired:
-            # 终止进程
-            process.terminate()
+            print("Optimization Finished!")
+            print("Best Epoch: {:04d}".format(best_epoch))
+            if ELBO_loss > 2 * best_ELBO_loss:
+                break
 
-            # 等待一段时间确保进程被终止
-            time.sleep(1)
+            # update parameters
+            A_new = origin_A.data.clone()
+            h_A_new = _h_A(A_new, args.data_variable_size)
+            if h_A_new.item() > 0.25 * h_A_old:
+                c_A*=10
+            else:
+                break
 
-            # 如果进程仍在运行，强制终止
-            if process.poll() is None:
-                process.kill()
+            # update parameters
+            # h_A, adj_A are computed in loss anyway, so no need to store
+        h_A_old = h_A_new.item()
+        lambda_A += c_A * h_A_new.item()
 
-        # 读取输出结果
-        stdout, stderr = process.communicate()
+        if h_A_new.item() <= h_tol:
+            break
 
-        # 打印输出结果
-        print(stdout)
+def start_loop(request):
+    global stop_Thread
+    stop_Thread=False
+    print("start loop!")
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    dataset = json_result['dataset']
+    fileName = "./myApp/MissingValue_fill_data_all.csv"
+    if dataset == 'ukb':
+        fileName = ukb_file
+    elif dataset == 'clhls':
+        fileName = clhls_file
+    data = pd.read_csv(fileName)
+    init_model(len(nodesList))
+    thread = threading.Thread(target=thread_task, args=(data[nodesList],))
+    thread.start()
+    thread.join()
+    print("thread is killed")
+    return JsonResponse({'msg': 'start daggnn loop'})
 
-        # 如果有错误输出，也可以打印
-        if stderr:
-            print(f"Error: {stderr}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-
-
+def numpy_to_json(obj):
+    if isinstance(obj, np.ndarray):
+        obj = obj.tolist() # 将NumPy数组转换为列表
+    return json.dumps(obj)
+def stop_loop(request):
+    global stop_Thread
+    stop_Thread=True
+    print("stop loop!", best_MSE_graph)
+    #get result
+    return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
+def get_temp_result(request):
+    print("in loop!")
+    return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
 def get_list(request):
     num_top = request.GET.get("CovariantNum")  # CovariantNum
     num_top = int(num_top)

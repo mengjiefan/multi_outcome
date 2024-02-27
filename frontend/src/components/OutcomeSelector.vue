@@ -240,12 +240,12 @@ export default {
       this.loadingInstance = Loading.service(options);
     },
     saveSingleData() {
-      let nodesList = [];
       if (!this.Variables_result.nodes) {
         this.showErrorMsg("Please confirm first!");
         return;
       }
       let linksList = this.Variables_result.links;
+
       localStorage.setItem(
         "GET_JSON_RESULT",
         JSON.stringify({

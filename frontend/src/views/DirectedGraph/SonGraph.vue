@@ -905,7 +905,7 @@ export default {
   height: 90% !important;
 }
 .one-line-operator {
-  height: 10%;
+  padding-bottom: 16px;
   width: 100%;
   display: flex;
   align-items: center;

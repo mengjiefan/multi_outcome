@@ -1,7 +1,7 @@
 
 import threading
 import time
-import keyboard
+
 def thread_task():
     thread_event.wait()  # Wait until the event is set
     print("Thread is now resumed.")

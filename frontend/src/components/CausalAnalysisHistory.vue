@@ -289,7 +289,6 @@ export default {
         let nodesList = [];
         let linksList = [];
         selections = this.removeDuplicate(selections);
-        let allNumber = selections.length;
         for (let sI = 0; sI < selections.length; sI++) {
           let selection = selections[sI];
 

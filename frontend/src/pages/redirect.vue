@@ -1,6 +1,5 @@
 <template>
-  <div class="blank-content">
-  </div>
+  <div class="blank-content"></div>
 </template>
 
 <script>

@@ -38,6 +38,9 @@
         <el-button @click="trulyDelete()" type="success" round size="small">
           Relayout
         </el-button>
+        <el-button @click="pauseLoop()" type="success" round size="small">
+          Pause
+        </el-button>
       </div>
 
       <div id="paper" class="sum-svg"></div>
@@ -103,7 +106,29 @@ export default {
         },
       });
     },
-
+    pauseLoop() {
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/stop_loop",
+        //参数
+        data: {},
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (this.timer) window.clearInterval(this.timer);
+    },
+    getTempResult() {
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/checkpoint_result",
+        //参数
+        data: {},
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
     trulyDelete() {
       console.log("delete edge");
       this.simplePos = null;
@@ -689,6 +714,30 @@ export default {
       });
       this.setGraph();
     }
+    console.log(this.$route.params);
+    if (result) {
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/start_loop",
+        //参数
+        data: {
+          nodesList: this.checkedVariables,
+          dataset: datasetType,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      this.timer = window.setInterval(() => {
+        setTimeout(() => {
+          this.getTempResult();
+        }, 0);
+      }, 3000);
+    }
+  },
+
+  destroyed() {
+    this.pauseLoop();
   },
 };
 </script>
