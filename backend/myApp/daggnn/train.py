@@ -336,7 +336,6 @@ def train(epoch, best_val_loss, lambda_A, c_A, train_loader):
 
 
     for batch_idx, (data, relations) in enumerate(train_loader):
-
         if args.cuda:
             data, relations = data.cuda(), relations.cuda()
         data, relations = Variable(data).double(), Variable(relations).double()

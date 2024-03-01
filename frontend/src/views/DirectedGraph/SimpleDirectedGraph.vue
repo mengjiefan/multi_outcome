@@ -31,24 +31,29 @@
     </div>
     <hr />
     <div class="drawing-canvas">
-      <div class="drawing-buttons">
-        <el-button @click="saveToTable" type="success" size="small" round
-          >Save to Table</el-button
-        >
-        <el-button @click="trulyDelete()" type="success" round size="small">
-          Relayout
-        </el-button>
+      <div class="button-line">
+        <div class="drawing-buttons">
+          <el-button @click="saveToTable" type="success" size="small" round
+            >Save to Table</el-button
+          >
+          <el-button @click="trulyDelete()" type="success" round size="small">
+            Relayout
+          </el-button>
+        </div>
         <div class="algorithm-type" v-if="gnnType">
+          <div
+            class="color-hint"
+            :style="[{ 'background-color': 'rgb(66, 103, 172)' }]"
+          ></div>
           <div
             class="algorithm-name"
             @mouseenter="hoverDagGnnLinks"
             @mouseleave="noHoverOnDagGnn"
           >
-            DAG-GNN：
+            DAG-GNN
           </div>
           <el-button
             v-if="gnnType === 'continue'"
-            type="success"
             @click="continueLoop()"
             round
             size="small"
@@ -56,7 +61,6 @@
           ></el-button>
           <el-button
             v-else
-            type="success"
             @click="pauseLoop()"
             round
             size="small"
@@ -65,7 +69,6 @@
             <i class="ri-pause-line"></i>
           </el-button>
           <el-button
-            type="success"
             round
             size="small"
             @click="stopLoop"
@@ -75,7 +78,6 @@
           </el-button>
         </div>
       </div>
-
       <div id="paper" class="sum-svg"></div>
     </div>
   </div>
@@ -281,13 +283,13 @@ export default {
       });
     },
     hoverDagGnnLinks() {
-      console.log('hover')
+      console.log("hover");
       this.hoverType = "daggnn";
       LinksManagement.highLightGnnLinks(this.paper);
       this.drawGnnLinks();
     },
     noHoverOnDagGnn() {
-      console.log('no hover on dg')
+      console.log("no hover on dg");
       this.hoverType = "PC";
       LinksManagement.removeLightGnnLinks(this.paper);
       this.drawGnnLinks();
@@ -921,19 +923,31 @@ export default {
   flex-direction: column;
   flex: 1;
 }
+.button-line {
+  display: flex;
+  height: 10;
+  padding: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
 .drawing-buttons {
   display: flex;
   align-items: center;
   gap: 20px;
-  height: 10;
-  padding: 16px;
 }
 .algorithm-type {
   display: flex;
   align-items: center;
 }
+.color-hint {
+  height: 16px;
+  width: 16px;
+  border-radius: 16px;
+  margin-right: 4px;
+}
 .algorithm-name {
   cursor: pointer;
+  margin-right: 8px;
 }
 .graph-svg {
   width: 100%;

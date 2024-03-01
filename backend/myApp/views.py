@@ -72,11 +72,13 @@ clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
 thread_event = threading.Event()
 stop_Thread = False
+suspend_lock = None
 
 best_MSE_graph = []
 def thread_task(data):
     global stop_Thread
     global best_MSE_graph
+    global suspend_lock
     train_loader = load_data(args, args.batch_size, data)
     best_ELBO_loss = np.inf
     best_NLL_loss = np.inf
@@ -94,14 +96,20 @@ def thread_task(data):
     for step_k in range(k_max_iter):
         if stop_Thread:
             break
+        suspend_lock.acquire()
+        suspend_lock.release()
         while c_A < 1e+20:
             if stop_Thread:
                 break
+            suspend_lock.acquire()
+            suspend_lock.release()
             for epoch in range(args.epochs):
                 if stop_Thread:
                     break
                 # ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer)
                 ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss,  lambda_A, c_A,  train_loader)
+                suspend_lock.acquire()
+                suspend_lock.release()
                 if ELBO_loss < best_ELBO_loss:
                     best_ELBO_loss = ELBO_loss
                     best_epoch = epoch
@@ -140,7 +148,9 @@ def thread_task(data):
 
 def start_loop(request):
     global stop_Thread
+    global suspend_lock
     stop_Thread=False
+    suspend_lock = threading.Lock()
     print("start loop!")
     postBody = request.body
     json_result = json.loads(postBody)
@@ -163,8 +173,21 @@ def numpy_to_json(obj):
     if isinstance(obj, np.ndarray):
         obj = obj.tolist() # 将NumPy数组转换为列表
     return json.dumps(obj)
+
+def pause_loop(request):
+    global suspend_lock
+    suspend_lock.acquire()
+    return JsonResponse({'msg': 'loop paused'})
+
+def continue_loop(request):
+    global suspend_lock
+    suspend_lock.release()
+    return JsonResponse({'msg': 'loop continues'})
 def stop_loop(request):
+    global suspend_lock
     global stop_Thread
+    if suspend_lock and suspend_lock.locked():
+        suspend_lock.release()
     stop_Thread=True
     print("stop loop!", best_MSE_graph)
     #get result
