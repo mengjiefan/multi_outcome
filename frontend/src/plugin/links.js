@@ -97,7 +97,12 @@ export class linksOperation {
 
     let source = realLink.source;
     let target = realLink.target;
-
+    if (curveType === "DagGnnCurve") {
+      let color = "rgba(66,103,172,0.3)";
+      if (attrs.highlight) color = "rgba(66,103,172,1)";
+      path.attr("line/stroke", color);
+      path.attr("line/targetMarker/stroke", color);
+    }
     if (curveType === "TreeCurve") {
       source = attrs.source;
       target = attrs.target;

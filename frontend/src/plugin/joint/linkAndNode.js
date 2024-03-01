@@ -4,6 +4,53 @@ const getNode = (nodeView) => {
   return nodeView.model.attributes.attrs.title;
 };
 export class LinksManagement {
+  static highLightGnnLinks(paper) {
+    let graph = paper.model.attributes.cells.graph;
+    graph.getLinks().forEach((link) => {
+      let linkView = link.findView(paper);
+      let color = linkView.model.attributes.attrs.line.stroke;
+      if (color.includes("rgba(0,139,139"))
+        //AAAI
+        linkView.model.attr("line/stroke", "rgba(0,139,139,0.3)");
+      else if (!color.includes("rgba(66,103,172"))
+        //PC
+        linkView.model.attr("line/stroke", "rgba(0,0,0,0.3)");
+    });
+  }
+  static removeLightGnnLinks(paper) {
+    let graph = paper.model.attributes.cells.graph;
+    graph.getLinks().forEach((link) => {
+      let linkView = link.findView(paper);
+      let color = linkView.model.attributes.attrs.line.stroke;
+      if (color.includes("rgba(0,139,139"))
+        //AAAI
+        linkView.model.attr("line/stroke", "rgba(0,139,139,0.3)");
+      else if (!color.includes("rgba(66,103,172"))
+        //PC
+        linkView.model.attr("line/stroke", "black");
+    });
+  }
+  static removeGNNLinks(paper, links) {
+    let graph = paper.model.attributes.cells.graph;
+
+    links.forEach((link) => {
+      let realLink = null;
+      graph.getLinks().forEach((realItem) => {
+        let item = this.getLinkNode(paper, realItem);
+        if (
+          (link.source === item.source && link.target === item.target) ||
+          (link.target === item.source && link.source === item.target)
+        )
+          realLink = realItem;
+      });
+      if (realLink) {
+        let linkView = realLink.findView(paper);
+        let color = linkView.model.attributes.attrs.line.stroke;
+        if (color.includes("rgba(66,103,172"))
+          linkView.model.remove({ ui: true });
+      }
+    });
+  }
   static getNodeByName(paper, link) {
     let graph = paper.model.attributes.cells.graph;
     let sourceNode = null;

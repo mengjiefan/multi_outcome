@@ -18,6 +18,7 @@ import store from './store/index'
 // import 'babel-polyfill'
 import ElementUI from 'element-ui';             //全局引入element
 import 'element-ui/lib/theme-chalk/index.css';    //全局引入element的样式
+import 'remixicon/fonts/remixicon.css'
 
 import * as echarts from "echarts";
 //关闭vue的生产提示

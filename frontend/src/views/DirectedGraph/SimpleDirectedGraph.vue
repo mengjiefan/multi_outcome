@@ -38,9 +38,42 @@
         <el-button @click="trulyDelete()" type="success" round size="small">
           Relayout
         </el-button>
-        <el-button @click="pauseLoop()" type="success" round size="small">
-          Pause
-        </el-button>
+        <div class="algorithm-type" v-if="gnnType">
+          <div
+            class="algorithm-name"
+            @mouseenter="hoverDagGnnLinks"
+            @mouseleave="noHoverOnDagGnn"
+          >
+            DAG-GNN：
+          </div>
+          <el-button
+            v-if="gnnType === 'continue'"
+            type="success"
+            @click="continueLoop()"
+            round
+            size="small"
+            ><i class="ri-arrow-right-s-fill"></i
+          ></el-button>
+          <el-button
+            v-else
+            type="success"
+            @click="pauseLoop()"
+            round
+            size="small"
+            :disabled="gnnType === 'stopped'"
+          >
+            <i class="ri-pause-line"></i>
+          </el-button>
+          <el-button
+            type="success"
+            round
+            size="small"
+            @click="stopLoop"
+            :disabled="gnnType === 'stopped'"
+          >
+            <i class="ri-square-line"></i>
+          </el-button>
+        </div>
       </div>
 
       <div id="paper" class="sum-svg"></div>
@@ -71,7 +104,10 @@ export default {
   },
   data() {
     return {
+      hoverType: ref(),
       deleteLinkView: ref(),
+      gnnType: ref(),
+      gnnLinks: ref(),
       paper: ref(),
       dataset: ref(),
       chartVisible: ref(false),
@@ -106,7 +142,8 @@ export default {
         },
       });
     },
-    pauseLoop() {
+    stopLoop() {
+      this.gnnType = "stopped";
       axios({
         method: "post",
         url: "http://localhost:8000/api/stop_loop",
@@ -118,6 +155,30 @@ export default {
       });
       if (this.timer) window.clearInterval(this.timer);
     },
+    pauseLoop() {
+      this.gnnType = "continue";
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/pause_loop",
+        //参数
+        data: {},
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    continueLoop() {
+      this.gnnType = "pause";
+      axios({
+        method: "post",
+        url: "http://localhost:8000/api/continue_loop",
+        //参数
+        data: {},
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
     getTempResult() {
       axios({
         method: "post",
@@ -127,7 +188,26 @@ export default {
         headers: {
           "Content-Type": "application/json",
         },
-      });
+      })
+        .then((response) => {
+          let graph = eval("(" + JSON.parse(response.data.graph) + ")");
+          console.log("graph", graph);
+          this.gnnLinks = [];
+          for (let i = 0; i < graph.length; i++) {
+            for (let j = 0; j < graph[i].length; j++) {
+              if (graph[i][j] !== 0)
+                this.gnnLinks.push({
+                  source: this.multipleSearchValue.nodesList[i].id,
+                  target: this.multipleSearchValue.nodesList[j].id,
+                  value: graph[i][j],
+                });
+            }
+          }
+          this.drawGnnLinks();
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
     },
     trulyDelete() {
       console.log("delete edge");
@@ -184,6 +264,39 @@ export default {
       );
       let value = this.multipleSearchValue.linksList[index].value;
       return value.toFixed(3);
+    },
+    drawGnnLinks() {
+      let _this = this;
+      LinksManagement.removeGNNLinks(this.paper, this.gnnLinks);
+      this.gnnLinks.forEach((link) => {
+        linksOperation.addLink(
+          _this.simplePos,
+          link,
+          _this.paper,
+          "DagGnnCurve",
+          {
+            highlight: _this.hoverType === "daggnn",
+          }
+        );
+      });
+    },
+    hoverDagGnnLinks() {
+      console.log('hover')
+      this.hoverType = "daggnn";
+      LinksManagement.highLightGnnLinks(this.paper);
+      this.drawGnnLinks();
+    },
+    noHoverOnDagGnn() {
+      console.log('no hover on dg')
+      this.hoverType = "PC";
+      LinksManagement.removeLightGnnLinks(this.paper);
+      this.drawGnnLinks();
+    },
+    checkPCLink(linkView) {
+      let color = linkView.model.attributes.attrs.line.stroke;
+      if (color.includes("rgba(0,139,139") || color.includes("rgba(66,103,172"))
+        return false;
+      else return true;
     },
     drawGraph() {
       this.simplePos.nodesList.forEach((node) => {
@@ -298,11 +411,11 @@ export default {
       graph.on("change:source change:target", function (link) {
         if (link.get("source").id && link.get("target").id) {
           _this.deleteLinkView = link.findView(paper);
-
           let realLink = LinksManagement.getLinkNode(paper, link);
           let flag = true;
-          graph.getCells().forEach((item) => {
-            if (item.attributes.type.includes("Link")) {
+          graph.getLinks().forEach((item) => {
+            let itemLinkView = item.findView(paper);
+            if (_this.checkPCLink(itemLinkView)) {
               if (LinksManagement.dubplicateLink(paper, link, item)) {
                 //原来就有边,什么也不做
                 flag = false;
@@ -316,7 +429,7 @@ export default {
                 flag = false;
                 //原来边方向相反，相当于反转边
                 _this.deleteLinkView.model.remove({ ui: true });
-                _this.deleteLinkView = item.findView(paper);
+                _this.deleteLinkView = itemLinkView;
 
                 _this.changeEdge(realLink.target, realLink.source);
               }
@@ -329,38 +442,44 @@ export default {
       paper.on("link:mouseenter", function (linkView, d) {
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
-        linkView.model.attr("line/stroke", "#1f77b4");
-        if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
+        if (_this.checkPCLink(linkView)) {
+          linkView.model.attr("line/stroke", "#1f77b4");
+          if (attributes.line.targetMarker)
+            linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
 
-        let width = "";
-        if (router) width = _this.getWidth(router);
-        if (!_this.tip2Show)
-          _this.tipVisible(router + ": " + width, {
-            pageX: d.pageX,
-            pageY: d.pageY,
-          });
+          let width = "";
+          if (router) width = _this.getWidth(router);
+          if (!_this.tip2Show)
+            _this.tipVisible(router + ": " + width, {
+              pageX: d.pageX,
+              pageY: d.pageY,
+            });
+        }
       });
       paper.on("link:mouseout", function (linkView) {
-        linkView.model.attr("line/stroke", "black");
-        if (linkView.model.attributes.attrs.line.targetMarker)
-          linkView.model.attr("line/targetMarker/stroke", "black");
+        if (_this.checkPCLink(linkView)) {
+          linkView.model.attr("line/stroke", "black");
+          if (linkView.model.attributes.attrs.line.targetMarker)
+            linkView.model.attr("line/targetMarker/stroke", "black");
 
-        _this.tipHidden();
+          _this.tipHidden();
+        }
       });
       paper.on("link:pointerclick", function (linkView, d) {
-        let router = linkView.model.attributes.attrs.id;
-        let hintHtml =
-          "<div class='operate-header'><div class='hint-list'>Operate</div><div class='close-button'>x</div></div><hr/>\
+        if (_this.checkPCLink(linkView)) {
+          let router = linkView.model.attributes.attrs.id;
+          let hintHtml =
+            "<div class='operate-header'><div class='hint-list'>Operate</div><div class='close-button'>x</div></div><hr/>\
                 <div class='operate-menu'>Delete edge<br/>" +
-          router +
-          "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
-        _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
-        _this.deleteLinkView = linkView;
+            router +
+            "</div><hr/><div class='operate-menu'>Reverse Direction</div>";
+          _this.tip2Visible(hintHtml, { pageX: d.pageX, pageY: d.pageY });
+          _this.deleteLinkView = linkView;
 
-        setTimeout(() => {
-          document.addEventListener("click", _this.listener);
-        }, 0);
+          setTimeout(() => {
+            document.addEventListener("click", _this.listener);
+          }, 0);
+        }
       });
       paper.on("element:mouseover", function (elementView, evt) {
         addHighLight(elementView);
@@ -713,9 +832,11 @@ export default {
         return node.id;
       });
       this.setGraph();
+
+      if (!this.multipleSearchValue.dagLinks) this.gnnType = "pause"; //开始计算
     }
-    console.log(this.$route.params);
-    if (result) {
+
+    if (this.gnnType === "pause") {
       axios({
         method: "post",
         url: "http://localhost:8000/api/start_loop",
@@ -737,7 +858,7 @@ export default {
   },
 
   destroyed() {
-    this.pauseLoop();
+    this.stopLoop();
   },
 };
 </script>
@@ -801,8 +922,18 @@ export default {
   flex: 1;
 }
 .drawing-buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
   height: 10;
   padding: 16px;
+}
+.algorithm-type {
+  display: flex;
+  align-items: center;
+}
+.algorithm-name {
+  cursor: pointer;
 }
 .graph-svg {
   width: 100%;

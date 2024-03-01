@@ -27,6 +27,35 @@ const countXPos = (x) => {
 const countYPos = (y) => {
   return y * gap;
 };
+const moveLeftBottom = (points, width) => {
+  let value = width / 2 + 4;
+  let newPoints = [];
+  if (points[points.length - 1].x === points[0].x)
+    return points.map((point) => {
+      let newx = point.x - value;
+      return { x: newx, y: point.y };
+    });
+  // Find the slope of the line connecting the first and last points
+  const slope =
+    (points[points.length - 1].y - points[0].y) /
+    (points[points.length - 1].x - points[0].x);
+
+  // Find the angle of the line
+  const angle = Math.atan(slope);
+
+  // Calculate the horizontal and vertical shifts
+  const shiftX = Math.cos(angle) * value;
+  const shiftY = Math.sin(angle) * value;
+  // Adjust each point
+  newPoints = points.map((point) => {
+    let newX = point.x - shiftX;
+    let newY = point.y + shiftY;
+    return { x: newX, y: newY };
+  });
+
+  return newPoints;
+};
+
 const countAnchor = (last, center, radius) => {
   let distance = Math.sqrt(
     (center.x - last.x) * (center.x - last.x) +
@@ -299,7 +328,33 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
 
     return Gen(points);
   };
+  joint.connectors.DagGnnCurve = function (
+    sourcePoint,
+    targetPoint,
+    vertices,
+    args
+  ) {
+    let points = args.points.concat([]);
+    if (points.length > 1) {
+      let radius = 6.8;
+      if (points.length > 2) {
+        points[0] = countAnchor(points[1], points[0], radius);
+        if (points[points.length - 1].y < points[0].y)
+          radius = radius + args.value;
+        points[points.length - 1] = countAnchor(
+          points[points.length - 2],
+          points[points.length - 1],
+          radius
+        );
+      } else {
+        points[0] = countAnchor(points[1], points[0], 12);
+        points[1] = countAnchor(points[0], points[1], 12);
+      }
+    }
+    //let newPoints = moveLeftBottom(points, args.value);
 
+    return Gen(points);
+  };
   linksList.forEach((link) => {
     let path = new joint.shapes.standard.Link({});
 
