@@ -1,4 +1,5 @@
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import { circle } from "dagre-d3/lib/intersect";
 import * as joint from "jointjs";
 
 export class findLink {
@@ -52,6 +53,32 @@ export class linksOperation {
     let newV = Math.abs(value);
     return Math.log(newV + 1.01) / Math.log(2);
   }
+  static addNode(nodes, paper, type) {
+    let graph = paper.model.attributes.cells.graph;
+    nodes.forEach((node) => {
+      let nodeView = null;
+      graph.getElements().forEach((circle) => {
+        if (circle.findView(paper).model.attributes.attrs.title === node)
+          nodeView = circle.findView(paper);
+      });
+      let newCircle = new joint.shapes.standard.Circle();
+      let color = "rgba(66,103,172,1)";
+      if (type === "AAAI") color = "rgba(240,157,68,1)";
+      let position = nodeView.model.attributes.position;
+      newCircle.attr({
+        body: {
+          fill: color,
+          stroke: "transparent",
+        },
+      });
+      newCircle.resize(24, 24);
+      if (type === "AAAI") newCircle.position(position.x - 5, position.y - 5);
+      else newCircle.position(position.x + 5, position.y + 5);
+      newCircle.set('z',0)
+      newCircle.addTo(paper.model);
+
+    });
+  }
   static addLink(pos, link, paper, curveType, attrs) {
     let linksList = pos.linksList;
     let nodesList = pos.nodesList;
@@ -102,7 +129,13 @@ export class linksOperation {
       if (attrs.highlight) color = "rgba(66,103,172,1)";
       path.attr("line/stroke", color);
       path.attr("line/targetMarker/stroke", color);
+    } else if (curveType === "AAAICurve") {
+      let color = "rgba(240,157,68,0.3)";
+      if (attrs.highlight) color = "rgba(240,157,68,1)";
+      path.attr("line/stroke", color);
+      path.attr("line/targetMarker/stroke", color);
     }
+
     if (curveType === "TreeCurve") {
       source = attrs.source;
       target = attrs.target;

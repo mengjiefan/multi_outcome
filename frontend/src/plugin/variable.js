@@ -1,5 +1,4 @@
 export const defaultFactors = [
-  "Unnamed: 0",
   "frailty_base_tri",
   "age_group_decade",
   "a1_sex",

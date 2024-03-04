@@ -4,36 +4,92 @@ const getNode = (nodeView) => {
   return nodeView.model.attributes.attrs.title;
 };
 export class LinksManagement {
+  static highLightGnnLink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (color.includes("rgba(66,103,172")) {
+      //daggnn
+      linkView.model.attr("line/targetMarker/stroke", "rgba(66,103,172,1)");
+      linkView.model.attr("line/stroke", "rgba(66,103,172,1)");
+    }
+  }
+  static highLightAAAILink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (color.includes("rgba(240,157,68")) {
+      linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,1)");
+      linkView.model.attr("line/stroke", "rgba(240,157,68,1)");
+    }
+  }
+  static removeLightAAAILink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (color.includes("rgba(240,157,68")) {
+      linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,0.3)");
+      linkView.model.attr("line/stroke", "rgba(240,157,68,0.3)");
+    }
+  }
+  static removeLightGnnLink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (color.includes("rgba(66,103,172")) {
+      //daggnn
+      linkView.model.attr("line/targetMarker/stroke", "rgba(66,103,172,0.3)");
+      linkView.model.attr("line/stroke", "rgba(66,103,172,0.3)");
+    }
+  }
+  static highLightPCLink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (
+      !color.includes("rgba(66,103,172") &&
+      !color.includes("rgba(240,157,68")
+    ) {
+      //PC
+      linkView.model.attr("line/targetMarker/stroke", "black");
+      linkView.model.attr("line/stroke", "black");
+    }
+  }
+  static removeLightPCLink(linkView) {
+    let color = linkView.model.attributes.attrs.line.stroke;
+    if (
+      !color.includes("rgba(66,103,172") &&
+      !color.includes("rgba(240,157,68")
+    ) {
+      //PC
+      linkView.model.attr("line/targetMarker/stroke", "rgba(0,0,0,0.3)");
+      linkView.model.attr("line/stroke", "rgba(0,0,0,0.3)");
+    }
+  }
   static highLightGnnLinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      let color = linkView.model.attributes.attrs.line.stroke;
-      if (color.includes("rgba(0,139,139")) {
-        //AAAI
-        linkView.model.attr("line/targetMarker/stroke", "rgba(0,139,139,0.3)");
-        linkView.model.attr("line/stroke", "rgba(0,139,139,0.3)");
-      } else if (!color.includes("rgba(66,103,172")) {
-        //PC
-        linkView.model.attr("line/targetMarker/stroke", "rgba(0,0,0,0.3)");
-        linkView.model.attr("line/stroke", "rgba(0,0,0,0.3)");
-      }
+      this.highLightGnnLink(linkView);
+      this.removeLightAAAILink(linkView);
+      this.removeLightPCLink(linkView);
     });
   }
-  static removeLightGnnLinks(paper) {
+  static highLightAAAILinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      let color = linkView.model.attributes.attrs.line.stroke;
-      if (color.includes("rgba(0,139,139")) {
-        //AAAI
-        linkView.model.attr("line/targetMarker/stroke", "rgba(0,139,139,0.3)");
-        linkView.model.attr("line/stroke", "rgba(0,139,139,0.3)");
-      } else if (!color.includes("rgba(66,103,172")) {
-        //PC
-        linkView.model.attr("line/targetMarker/stroke", "black");
-        linkView.model.attr("line/stroke", "black");
-      }
+      this.removeLightGnnLink(linkView);
+      this.highLightAAAILink(linkView);
+      this.removeLightPCLink(linkView);
+    });
+  }
+  static highLightPCLinks(paper) {
+    let graph = paper.model.attributes.cells.graph;
+    graph.getLinks().forEach((link) => {
+      let linkView = link.findView(paper);
+      this.removeLightGnnLink(linkView);
+      this.removeLightAAAILink(linkView);
+      this.highLightPCLink(linkView);
+    });
+  }
+  static removeLightLinks(paper) {
+    let graph = paper.model.attributes.cells.graph;
+    graph.getLinks().forEach((link) => {
+      let linkView = link.findView(paper);
+      this.highLightGnnLink(linkView);
+      this.highLightAAAILink(linkView);
+      this.highLightPCLink(linkView);
     });
   }
   static removeGNNLinks(paper) {

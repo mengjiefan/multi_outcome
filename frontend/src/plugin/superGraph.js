@@ -27,8 +27,9 @@ const countXPos = (x) => {
 const countYPos = (y) => {
   return y * gap;
 };
-const moveLeftBottom = (points, width) => {
-  let value = width / 2 + 4;
+
+const moveRight = (points) => {
+  let value = 5;
   let newPoints = [];
   if (points[points.length - 1].x === points[0].x)
     return points.map((point) => {
@@ -44,12 +45,48 @@ const moveLeftBottom = (points, width) => {
   const angle = Math.atan(slope);
 
   // Calculate the horizontal and vertical shifts
-  const shiftX = Math.cos(angle) * value;
-  const shiftY = Math.sin(angle) * value;
+  let shiftY = Math.cos(angle) * value;
+  let shiftX = Math.sin(angle) * value;
+  if (shiftX < 0) {
+    shiftX = 0 - shiftX;
+    shiftY = 0 - shiftY;
+  }
   // Adjust each point
   newPoints = points.map((point) => {
-    let newX = point.x - shiftX;
-    let newY = point.y + shiftY;
+    let newX = point.x + shiftX;
+    let newY = point.y - shiftY;
+    return { x: newX, y: newY };
+  });
+
+  return newPoints;
+};
+const moveLeft = (points) => {
+  let value = 5;
+  let newPoints = [];
+  if (points[points.length - 1].x === points[0].x)
+    return points.map((point) => {
+      let newx = point.x - value;
+      return { x: newx, y: point.y };
+    });
+  // Find the slope of the line connecting the first and last points
+  const slope =
+    (points[points.length - 1].y - points[0].y) /
+    (points[points.length - 1].x - points[0].x);
+
+  // Find the angle of the line
+  const angle = Math.atan(slope);
+
+  // Calculate the horizontal and vertical shifts
+  let shiftY = Math.cos(angle) * value;
+  let shiftX = Math.sin(angle) * value;
+  if (shiftX > 0) {
+    shiftX = 0 - shiftX;
+    shiftY = 0 - shiftY;
+  }
+  // Adjust each point
+  newPoints = points.map((point) => {
+    let newX = point.x + shiftX;
+    let newY = point.y - shiftY;
     return { x: newX, y: newY };
   });
 
@@ -257,7 +294,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     faRect.attr({
       body: {
         strokeWidth: 0,
-        stroke: "white",
+        stroke: "#565aa0",
         strokeDasharray: 2,
         rx: 20 * gap,
         ry: 20 * gap,
@@ -273,6 +310,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     });
     if (nodesList[nodeI].type === 0) faRect.attr("body/strokeWidth", 3);
 
+    faRect.set("z", 100);
     for (let i = 0; i < indexes.length; i++) {
       let circle = new joint.shapes.standard.Circle();
       let offset = 360 / indexes.length;
@@ -290,6 +328,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         countXPos(nodesList[nodeI].x) - 6 * gap,
         countYPos(nodesList[nodeI].y) - 6 * gap
       );
+      circle.set("z", 10);
       circle.addTo(graph);
     }
     nodesList[nodeI]["node"] = faRect;
@@ -351,9 +390,36 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         points[1] = countAnchor(points[0], points[1], 12);
       }
     }
-    //let newPoints = moveLeftBottom(points, args.value);
+    let newPoints = moveRight(points);
 
-    return Gen(points);
+    return Gen(newPoints);
+  };
+  joint.connectors.AAAICurve = function (
+    sourcePoint,
+    targetPoint,
+    vertices,
+    args
+  ) {
+    let points = args.points.concat([]);
+    if (points.length > 1) {
+      let radius = 6.8;
+      if (points.length > 2) {
+        points[0] = countAnchor(points[1], points[0], radius);
+        if (points[points.length - 1].y < points[0].y)
+          radius = radius + args.value;
+        points[points.length - 1] = countAnchor(
+          points[points.length - 2],
+          points[points.length - 1],
+          radius
+        );
+      } else {
+        points[0] = countAnchor(points[1], points[0], 12);
+        points[1] = countAnchor(points[0], points[1], 12);
+      }
+    }
+    let newPoints = moveLeft(points);
+
+    return Gen(newPoints);
   };
   linksList.forEach((link) => {
     let path = new joint.shapes.standard.Link({});
