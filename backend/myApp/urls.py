@@ -6,6 +6,7 @@ urlpatterns = [
     # path('',views.index,name='index'), #将该路由myproject.urls加入到总路由C:\MyProjects_yuxi\6-comparativeVis\Django+vue前后端交互\multiOutcomeInter\multiOutcomeInter\urls.py中
     # path('add/',views.add,name='add'), #调用views中的add方法
     path("covariant/",views.get_list,name='get_list'),
+    path("get_aaai_result", views.get_aaai, name='get_aaai'),
     path("start_loop", views.start_loop, name='start_loop'),
     path("checkpoint_result", views.get_temp_result, name='get_temp_result'),
     path("stop_loop", views.stop_loop, name='stop_loop'),

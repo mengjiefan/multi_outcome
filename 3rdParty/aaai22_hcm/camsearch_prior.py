@@ -15,6 +15,7 @@ def greedy_edgeadding(df, X_encode, selMat, maxNumParents,base_model_para,
     # first encode the prior knowledge in selMat, remove no directed edge
     if prior_adj is not None:
         if prior_adj.shape != selMat.shape:
+            print(prior_adj.shape, selMat.shape)
             raise ValueError("the shape of prior_adj is not same as selMat")
         selMat = selMat & (prior_adj >= 0)
         must_have = np.argwhere(prior_adj > 0)

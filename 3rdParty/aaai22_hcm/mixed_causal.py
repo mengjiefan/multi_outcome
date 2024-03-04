@@ -117,6 +117,7 @@ def data_processing(df, cat_index, normalize='biweight'):
         BiweightScaler = FunctionTransformer(normalize_biweight)
         standardize = [(col, None) if col in cat_index else
                        ([col], BiweightScaler) for col in columns]
+
         x_mapper = DataFrameMapper(standardize)
         df = x_mapper.fit_transform(df).astype('float32')
         df = pd.DataFrame(df, columns=columns)
@@ -168,7 +169,7 @@ def mixed_causal(df, X_encode,model_para, base_model_para,
         step1_train_time = time.time() - t1
     else:
         step1_train_time = 0
-
+    print('skel', selMat, len(selMat))
     #######################################################################
     # step 2: create dag based on the greedy search
     if base_model == "lgbm":
@@ -199,7 +200,7 @@ def mixed_causal(df, X_encode,model_para, base_model_para,
                   alpha=indep_pvalue, priorAdj=prior_adj)
 
     step3_train_time = time.time() - t3
-
+    print(selMat)
     return(selMat, dag2, dag, step1_train_time,
            step2_train_time, step3_train_time)
 

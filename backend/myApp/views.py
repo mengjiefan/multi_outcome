@@ -36,6 +36,7 @@ import copy
 
 from .daggnn.utils import load_data
 from .daggnn.train import _h_A, args, train, init_model
+from .aaai.run import runAAAI
 
 import time
 import threading
@@ -69,10 +70,9 @@ ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
 clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
 
-
-thread_event = threading.Event()
 stop_Thread = False
 suspend_lock = None
+thread = None
 
 best_MSE_graph = []
 def thread_task(data):
@@ -149,7 +149,8 @@ def thread_task(data):
 def start_loop(request):
     global stop_Thread
     global suspend_lock
-    stop_Thread=False
+    global thread
+    global best_MSE_graph
     suspend_lock = threading.Lock()
     print("start loop!")
     postBody = request.body
@@ -162,13 +163,26 @@ def start_loop(request):
     elif dataset == 'clhls':
         fileName = clhls_file
     data = pd.read_csv(fileName)
+    if thread:
+        thread.join()#防止之前的thread还未完全结束，而init中改变了全局变量导致出错
+    stop_Thread=False
+    best_MSE_graph = []
     init_model(len(nodesList))
     thread = threading.Thread(target=thread_task, args=(data[nodesList],))
     thread.start()
-    thread.join()
-    print("thread is killed")
     return JsonResponse({'msg': 'start daggnn loop'})
 
+def get_aaai(request):
+    postBody = request.body
+    json_result = json.loads(postBody)
+    nodesList = np.array(json_result['nodesList'])
+    dataset = json_result['dataset']
+    skel = json_result['skel']
+    skel = np.array([True if element == 1 else False for element in skel])
+    skel = skel.reshape(len(nodesList),len(nodesList))
+
+    dag = runAAAI(dataset, nodesList, skel)
+    return JsonResponse({'graph': json.dumps(dag, default=numpy_to_json)})
 def numpy_to_json(obj):
     if isinstance(obj, np.ndarray):
         obj = obj.tolist() # 将NumPy数组转换为列表
@@ -186,12 +200,17 @@ def continue_loop(request):
 def stop_loop(request):
     global suspend_lock
     global stop_Thread
+    global thread
     if suspend_lock and suspend_lock.locked():
         suspend_lock.release()
     stop_Thread=True
     print("stop loop!", best_MSE_graph)
+    if thread:
+        thread.join()
+        print("thread is killed")
+    thread = None
     #get result
-    return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
+    return JsonResponse({'msg': 'stop loop'})
 def get_temp_result(request):
     print("in loop!")
     return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
