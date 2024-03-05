@@ -354,13 +354,16 @@ export default {
             };
           })
         );
+        let data = {
+          nodesList: nodes,
+          linksList: selections[0].links,
+          history: selections[0].history,
+        };
+        if (selections[0].aaaiLinks) data.aaaiLinks = selections[0].aaaiLinks;
+        if (selections[0].dagLinks) data.dagLinks = selections[0].dagLinks;
         localStorage.setItem(
           "GET_JSON_RESULT",
-          JSON.stringify({
-            nodesList: nodes,
-            linksList: selections[0].links,
-            history: selections[0].history,
-          })
+          JSON.stringify(data)
         );
         this.routeToGraph();
       }
@@ -392,7 +395,7 @@ export default {
         path: this.$route.path,
       });
     },
-    saveRow(outcome, linksList, history) {
+    saveRow(outcome, linksList, history, aaaiLinks, dagLinks) {
       let nextNodes = [];
       nextNodes.push(outcome);
 
@@ -416,13 +419,16 @@ export default {
 
       nextNodes.splice(0, 1);
       if (!this.tableData) this.tableData = [];
-      this.tableData.push({
+      let newRowData = {
         CovariantNum: nextNodes.length,
         outcome: outcome,
         Variables: nextNodes,
         history: history,
         links: linksList,
-      });
+      };
+      if (aaaiLinks) newRowData.aaaiLinks = aaaiLinks;
+      if (dagLinks) newRowData.dagLinks = dagLinks;
+      this.tableData.push(newRowData);
     },
     getDifferentRows(newRow) {
       let nodesList = newRow.nodesList;
@@ -442,7 +448,13 @@ export default {
           else return false;
         });
         let outcome = nodesList[index].id;
-        _this.saveRow(outcome, newRow.linksList, newRow.history);
+        _this.saveRow(
+          outcome,
+          newRow.linksList,
+          newRow.history,
+          newRow.aaaiLinks,
+          newRow.dagLinks
+        );
       }
       localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
     },

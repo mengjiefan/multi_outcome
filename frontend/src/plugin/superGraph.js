@@ -33,7 +33,7 @@ const moveRight = (points) => {
   let newPoints = [];
   if (points[points.length - 1].x === points[0].x)
     return points.map((point) => {
-      let newx = point.x - value;
+      let newx = point.x + value;
       return { x: newx, y: point.y };
     });
   // Find the slope of the line connecting the first and last points
@@ -51,6 +51,7 @@ const moveRight = (points) => {
     shiftX = 0 - shiftX;
     shiftY = 0 - shiftY;
   }
+
   // Adjust each point
   newPoints = points.map((point) => {
     let newX = point.x + shiftX;
@@ -83,6 +84,7 @@ const moveLeft = (points) => {
     shiftX = 0 - shiftX;
     shiftY = 0 - shiftY;
   }
+
   // Adjust each point
   newPoints = points.map((point) => {
     let newX = point.x + shiftX;
@@ -294,7 +296,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
     faRect.attr({
       body: {
         strokeWidth: 0,
-        stroke: "#565aa0",
+        stroke: "white",
         strokeDasharray: 2,
         rx: 20 * gap,
         ry: 20 * gap,
@@ -328,7 +330,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         countXPos(nodesList[nodeI].x) - 6 * gap,
         countYPos(nodesList[nodeI].y) - 6 * gap
       );
-      circle.set("z", 10);
+      circle.set("z", 50);
       circle.addTo(graph);
     }
     nodesList[nodeI]["node"] = faRect;

@@ -43,23 +43,35 @@
         <div class="algorithm-type">
           <div
             class="algorithm-title"
+            :class="`${pcEnabled ? 'enabled' : 'disabled'}-title`"
             @mouseenter="hoverPCLinks"
             @mouseleave="noHoverOn"
+            @click="enablePC"
           >
             <div
               class="color-hint"
-              :style="[{ 'background-color': 'black' }]"
+              :style="[
+                pcEnabled
+                  ? { 'background-color': 'black' }
+                  : { 'background-color': 'rgba(0, 0, 0, 0.3)' },
+              ]"
             ></div>
             <div>PC</div>
           </div>
           <div
             class="algorithm-title"
+            :class="`${dagEnabled ? 'enabled' : 'disabled'}-title`"
             @mouseenter="hoverDagGnnLinks"
             @mouseleave="noHoverOn"
+            @click="enableDagGnn"
           >
             <div
               class="color-hint"
-              :style="[{ 'background-color': 'rgb(66, 103, 172)' }]"
+              :style="[
+                dagEnabled
+                  ? { 'background-color': 'rgb(66, 103, 172)' }
+                  : { 'background-color': 'rgba(66, 103, 172, 0.3)' },
+              ]"
             ></div>
             <div>DAG-GNN</div>
           </div>
@@ -92,12 +104,18 @@
           </div>
           <div
             class="algorithm-title"
+            :class="`${hcmEnabled ? 'enabled' : 'disabled'}-title`"
             @mouseenter="hoverAAAILinks"
             @mouseleave="noHoverOn"
+            @click="enableHCM"
           >
             <div
               class="color-hint"
-              :style="[{ 'background-color': 'rgb(240,157,68)' }]"
+              :style="[
+                hcmEnabled
+                  ? { 'background-color': 'rgb(240,157,68)' }
+                  : { 'background-color': 'rgba(240,157,68, 0.3)' },
+              ]"
             ></div>
             <div>HCM</div>
             <div class="loading-img">
@@ -135,6 +153,9 @@ export default {
   data() {
     return {
       loadingUrl: { url: require("../../assets/Spinner-1s-200px.gif") },
+      dagEnabled: ref(true),
+      pcEnabled: ref(true),
+      hcmEnabled: ref(true),
       hoverType: ref(),
       deleteLinkView: ref(),
       gnnType: ref(),
@@ -193,6 +214,7 @@ export default {
           else skel.push(0);
         }
       }
+      console.log(skel);
       axios({
         method: "post",
         url: "http://localhost:8000/api/get_aaai_result",
@@ -219,7 +241,7 @@ export default {
               this.aaaiLinks.push({
                 source: this.multipleSearchValue.nodesList[i].id,
                 target: this.multipleSearchValue.nodesList[j].id,
-                value: graph[i][j],
+                value: 0.7,
               });
           }
         }
@@ -300,7 +322,6 @@ export default {
         },
       }).then((response) => {
         let graph = eval(JSON.parse(response.data.graph));
-        console.log("graph", graph);
         this.gnnLinks = [];
         for (let i = 0; i < graph.length; i++) {
           for (let j = 0; j < graph[i].length; j++) {
@@ -374,12 +395,10 @@ export default {
       return value.toFixed(3);
     },
     drawGnnLinks() {
+      if (!this.dagEnabled) return;
       let _this = this;
-      let nodes = [];
-      LinksManagement.removeGNNLinks(this.paper, this.gnnLinks);
+      LinksManagement.removeLinks(this.paper, "daggnn");
       this.gnnLinks.forEach((link) => {
-        if (!nodes.includes(link.source)) nodes.push(link.source);
-        if (!nodes.includes(link.target)) nodes.push(link.target);
         linksOperation.addLink(
           _this.simplePos,
           link,
@@ -390,14 +409,28 @@ export default {
           }
         );
       });
-      linksOperation.addNode(nodes, _this.paper, "DagGnn");
+      //linksOperation.addNode(nodes, _this.paper, "DagGnn");
+    },
+    drawPCLinks() {
+      if (!this.pcEnabled) return;
+      let _this = this;
+      this.multipleSearchValue.linksList.forEach((link) => {
+        linksOperation.addLink(
+          _this.simplePos,
+          link,
+          _this.paper,
+          "SuperCurve",
+          {
+            highlight:
+              _this.hoverType !== "daggnn" && _this.hoverType !== "aaai",
+          }
+        );
+      });
     },
     drawAAAILinks() {
+      if (!this.hcmEnabled) return;
       let _this = this;
-      let nodes = [];
       this.aaaiLinks.forEach((link) => {
-        if (!nodes.includes(link.source)) nodes.push(link.source);
-        if (!nodes.includes(link.target)) nodes.push(link.target);
         linksOperation.addLink(
           _this.simplePos,
           link,
@@ -408,22 +441,48 @@ export default {
           }
         );
       });
-      linksOperation.addNode(nodes, _this.paper, "AAAI");
+      //linksOperation.addNode(nodes, _this.paper, "AAAI");
     },
-    hoverDagGnnLinks() {
-      this.hoverType = "daggnn";
-      LinksManagement.highLightGnnLinks(this.paper);
+    enableDagGnn() {
+      this.dagEnabled = !this.dagEnabled;
+      if (this.dagEnabled) this.drawGnnLinks();
+      else {
+        LinksManagement.removeLinks(this.paper, "daggnn");
+        this.noHoverOn();
+      }
+    },
+    enablePC() {
+      this.pcEnabled = !this.pcEnabled;
+      if (this.pcEnabled) this.drawPCLinks();
+      else {
+        LinksManagement.removeLinks(this.paper, "pc");
+        this.noHoverOn();
+      }
+    },
+    enableHCM() {
+      this.hcmEnabled = !this.hcmEnabled;
+      if (this.hcmEnabled) this.drawAAAILinks();
+      else {
+        LinksManagement.removeLinks(this.paper, "aaai");
+        this.noHoverOn();
+      }
     },
     noHoverOn() {
       this.hoverType = null;
       LinksManagement.removeLightLinks(this.paper);
     },
+    hoverDagGnnLinks() {
+      if (!this.dagEnabled) return;
+      this.hoverType = "daggnn";
+      LinksManagement.highLightGnnLinks(this.paper);
+    },
     hoverAAAILinks() {
+      if (!this.hcmEnabled) return;
       this.hoverType = "aaai";
       LinksManagement.highLightAAAILinks(this.paper);
     },
-
     hoverPCLinks() {
+      if (!this.pcEnabled) return;
       this.hoverType = "pc";
       LinksManagement.highLightPCLinks(this.paper);
     },
@@ -584,9 +643,9 @@ export default {
         let attributes = linkView.model.attributes.attrs;
         let router = attributes.id;
         if (_this.checkPCLink(linkView)) {
-          linkView.model.attr("line/stroke", "#1f77b4");
-          if (attributes.line.targetMarker)
-            linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
+          //linkView.model.attr("line/stroke", "#1f77b4");
+          //if (attributes.line.targetMarker)
+          //linkView.model.attr("line/targetMarker/stroke", "#1f77b4");
 
           let width = "";
           if (router) width = _this.getWidth(router);
@@ -599,9 +658,9 @@ export default {
       });
       paper.on("link:mouseout", function (linkView) {
         if (_this.checkPCLink(linkView)) {
-          linkView.model.attr("line/stroke", "black");
-          if (linkView.model.attributes.attrs.line.targetMarker)
-            linkView.model.attr("line/targetMarker/stroke", "black");
+          // linkView.model.attr("line/stroke", "black");
+          //if (linkView.model.attributes.attrs.line.targetMarker)
+          //linkView.model.attr("line/targetMarker/stroke", "black");
 
           _this.tipHidden();
         }
@@ -1070,6 +1129,9 @@ export default {
   gap: 4px;
   align-items: center;
   cursor: pointer;
+}
+.disabled-title {
+  color: rgba(0, 0, 0, 0.3);
 }
 .color-hint {
   height: 16px;

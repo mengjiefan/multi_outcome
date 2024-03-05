@@ -129,11 +129,13 @@ export class linksOperation {
       if (attrs.highlight) color = "rgba(66,103,172,1)";
       path.attr("line/stroke", color);
       path.attr("line/targetMarker/stroke", color);
+      path.set("z", -1);
     } else if (curveType === "AAAICurve") {
       let color = "rgba(240,157,68,0.3)";
       if (attrs.highlight) color = "rgba(240,157,68,1)";
       path.attr("line/stroke", color);
       path.attr("line/targetMarker/stroke", color);
+      path.set("z", -1);
     }
 
     if (curveType === "TreeCurve") {
