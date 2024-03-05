@@ -51,7 +51,7 @@ const countControl = (source, target, mid) => {
 export class linksOperation {
   static recalLinkValue(value) {
     let newV = Math.abs(value);
-    return Math.log(newV + 1.01) / Math.log(2);
+    return Math.log(newV + 1.2) / Math.log(2);
   }
   static addNode(nodes, paper, type) {
     let graph = paper.model.attributes.cells.graph;
