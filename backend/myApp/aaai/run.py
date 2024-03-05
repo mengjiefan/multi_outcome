@@ -8,7 +8,7 @@ import chardet
 
 from .const import DEFAULT_MODEL_PARA, DEFAULT_LGBM_PARA, DEFAULT_GAM_PARA
 
-default_index = [
+default_index= [
                  "frailty_base_tri",
                  "age_group_decade",
                  "a1_sex",
@@ -49,35 +49,27 @@ default_index = [
                  'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid'
                  ]
 ukb_index = [
-    "Sex",
-    "Sleep duration",
-    "Insomnia",
-    "Smoke",
-    "Cooked vegetable intake",
-    "Fresh fruit intake",
-    "Oily fish intake",
-    "Processed meat intake",
-    "Cheese intake",
-    "Cereal intake",
-    "Salt added to food",
-    "Tea intake",
-    "Alcohol",
-    "Illnesses of father",
-    "Illnesses of mother",
-    "Illnesses of siblings",
-    "famHisHypertension",
-    "famHisDiabetes",
-    "famHisBreastMalignancy",
-    "famHisProstateMalignancy",
-    'Hypertension',
-    'Diabetes',
-    'BreastMalignancy',
-    'ProstateMalignancy',
-    'Hypothyroidism',
-    'NutritionalAnaemias',
-    'InfectiousGastroenteritis',
-    'Septicemia',
-]
+        "Sex",
+        "Insomnia",
+        "Smoke",
+        "Salt added to food",
+        "Alcohol",
+        "Illnesses of father",
+        "Illnesses of mother",
+        "Illnesses of siblings",
+        "famHisHypertension",
+        "famHisDiabetes",
+        "famHisBreastMalignancy",
+        "famHisProstateMalignancy",
+        'Hypertension',
+        'Diabetes',
+        'BreastMalignancy',
+        'ProstateMalignancy',
+        'Hypothyroidism',
+        'NutritionalAnaemias',
+        'InfectiousGastroenteritis',
+        'Septicemia',
+    ]
 
 clhls_index = [
     "frailty_base_tri",
@@ -98,8 +90,6 @@ clhls_index = [
     "income",
     "f64_sum",
     "a51_byte",
-    "f31_sum",
-    "f5_whocaresick",
     "dependence_base",
     'g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD', 'g15n1_RA', 'g15o1_dementia',
     'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base'

@@ -204,7 +204,6 @@ def stop_loop(request):
     if suspend_lock and suspend_lock.locked():
         suspend_lock.release()
     stop_Thread=True
-    print("stop loop!", best_MSE_graph)
     if thread:
         thread.join()
         print("thread is killed")
