@@ -21,16 +21,16 @@ export class LinksManagement {
   static removeLightAAAILink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(240,157,68")) {
-      linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,0.2)");
-      linkView.model.attr("line/stroke", "rgba(240,157,68,0.2)");
+      linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,0.1)");
+      linkView.model.attr("line/stroke", "rgba(240,157,68,0.1)");
     }
   }
   static removeLightGnnLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(66,103,172")) {
       //daggnn
-      linkView.model.attr("line/targetMarker/stroke", "rgba(66,103,172,0.2)");
-      linkView.model.attr("line/stroke", "rgba(66,103,172,0.2)");
+      linkView.model.attr("line/targetMarker/stroke", "rgba(66,103,172,0.1)");
+      linkView.model.attr("line/stroke", "rgba(66,103,172,0.1)");
     }
   }
   static highLightPCLink(linkView) {
@@ -51,8 +51,8 @@ export class LinksManagement {
       !color.includes("rgba(240,157,68")
     ) {
       //PC
-      linkView.model.attr("line/targetMarker/stroke", "rgba(0,0,0,0.2)");
-      linkView.model.attr("line/stroke", "rgba(0,0,0,0.2)");
+      linkView.model.attr("line/targetMarker/stroke", "rgba(0,0,0,0.1)");
+      linkView.model.attr("line/stroke", "rgba(0,0,0,0.1)");
     }
   }
   static highLightGnnLinks(paper) {
