@@ -35,7 +35,10 @@
               >
             </div>
           </div>
-          <div :id="'paper' + index" class="svg-content"></div>
+          <div class="son-graph">
+            <div :id="'paper' + index + '-overview'" class="thumbnail"></div>
+            <div :id="'paper' + index" class="svg-content"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -52,7 +55,7 @@ import {
 } from "@/plugin/extracted/CountPos";
 import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
-import { drawExtractedGraph } from "@/plugin/superGraph";
+import { drawExtractedGraph, drawSuperGraph } from "@/plugin/superGraph";
 import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
@@ -136,8 +139,48 @@ export default {
       else await this.getCurveLayout(name);
 
       setTimeout(() => {
+        this.drawSuperGraphs();
         this.drawSonGraphs();
       }, 0);
+    },
+    drawSuperGraphs() {
+      for (let i = 0; i < this.sonNum; i++) {
+        let dom = document.getElementById("paper" + (i + 1) + "-overview");
+        let minW = 50000;
+        let maxW = 0;
+        let minH = 5000;
+        let maxH = 0;
+        let simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
+        console.log(simplePos)
+        simplePos.nodesList.forEach((node) => {
+          if (node.x > maxW) maxW = node.x;
+          if (node.x < minW) minW = node.x;
+          if (node.y > maxH) maxH = node.y;
+          if (node.y < minH) minH = node.y;
+        });
+        simplePos.linksList.forEach((link) => {
+          link.points.forEach((node) => {
+            if (node.x > maxW) maxW = node.x;
+            if (node.x < minW) minW = node.x;
+            if (node.y > maxH) maxH = node.y;
+            if (node.y < minH) minH = node.y;
+          });
+        });
+        let gap = 1200 / (maxW - minW);
+        let startX = (dom.clientWidth / gap - (maxW - minW)) / 2;
+        let startY = (dom.clientHeight / gap - (maxH - minH)) / 3;
+        let scale = {
+          startX,
+          startY,
+          gap,
+        };
+        drawSuperGraph(
+          dom,
+          simplePos.nodesList,
+         simplePos.linksList,
+          scale
+        );
+      }
     },
     drawSonGraphs() {
       const graphs = this.sonGraphs;
@@ -495,7 +538,6 @@ export default {
     //   // return {control1X, control1Y, control2X, control2Y}
     //   return {controlX, controlY}
 
-
     // },
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -711,12 +753,9 @@ export default {
 
         // let { controlX, controlY } = this.countControl(source, target);
 
-
         // // 将控制点添加到链接对象的 points 属性中
         // // link["points"] = [source, { x: control1X, y: control1Y }, { x: control2X, y: control2Y }, target];
         // link["points"] = [source, { x: controlX, y: controlY }, target];
-
-        
       }
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
@@ -900,9 +939,26 @@ export default {
   flex: 1 1/3;
   min-width: 30%;
 }
-.svg-content {
+.son-graph {
   width: 100%;
   height: 90% !important;
+  display: flex;
+  position: relative;
+}
+.svg-content {
+  position: relative;
+  width: 100%;
+  height: 100% !important;
+}
+.thumbnail {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1000;
+  width: 30%!important;
+  height: 30%!important;
+  border: 1px solid rgba(151, 151, 151, 0.49);
+  background: white;
 }
 .one-line-operator {
   padding-bottom: 16px;
