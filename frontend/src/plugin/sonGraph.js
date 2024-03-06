@@ -11,10 +11,9 @@ const cmap = [
   "#FF595E",
   "#FF924C",
   "#FFCA3A",
-  "#C5CA30",
-  "#8AC926",
-  "#36949D",
-  "#1982C4",
+  "#70d6ff",
+  "#7678ed",
+  "#2176ff",
   "#4267AC",
   "#565AA0",
   "#6A4C93",
@@ -40,8 +39,8 @@ const addOffset = (x, y, offset, graph) => {
     arrow.attr("body/refPoints", "0,20 -10,10 0,0");
   }
   arrow.addTo(graph);
-  let width = 6 / Math.abs(offset);
-  let number = Math.floor(20 / width);
+  let width =1.2;
+  let number = Math.floor(20 / (6 / Math.abs(offset)));
   for (let i = 0; i < number; i++) {
     let rect = new joint.shapes.standard.Rectangle();
     rect.resize(width, 10);
@@ -269,8 +268,8 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
     drawGrid: {
       name: "doubleMesh",
       args: [
-        { color: "white", thickness: 1 }, 
-        { color: "#bbbbbb", scaleFactor: 5, thickness: 1 }, 
+        { color: "white", thickness: 1 },
+        { color: "#bbbbbb", scaleFactor: 5, thickness: 1 },
       ],
     },
     gridSize: 16,
@@ -638,7 +637,7 @@ export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
 
     path.connector("TightenedCurve", {
       points: points,
-      value
+      value,
     });
   });
 

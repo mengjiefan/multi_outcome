@@ -73,10 +73,9 @@ export default {
         "#FF595E",
         "#FF924C",
         "#FFCA3A",
-        "#C5CA30",
-        "#8AC926",
-        "#36949D",
-        "#1982C4",
+        "#70d6ff",
+        "#7678ed",
+        "#2176ff",
         "#4267AC",
         "#565AA0",
         "#6A4C93",
@@ -766,7 +765,6 @@ export default {
     if (this.multipleSearchValue) {
       this.drawGraph();
     }
-
   },
 };
 </script>

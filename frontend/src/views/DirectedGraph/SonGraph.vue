@@ -102,10 +102,9 @@ export default {
         "#FF595E",
         "#FF924C",
         "#FFCA3A",
-        "#C5CA30",
-        "#8AC926",
-        "#36949D",
-        "#1982C4",
+        "#70d6ff",
+        "#7678ed",
+        "#2176ff",
         "#4267AC",
         "#565AA0",
         "#6A4C93",
@@ -155,7 +154,6 @@ export default {
         let minH = 15000;
         let maxH = 0;
         let simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-        console.log(simplePos);
         simplePos.nodesList.forEach((node) => {
           if (node.x > maxW) maxW = node.x;
           if (node.x < minW) minW = node.x;
@@ -170,10 +168,10 @@ export default {
             if (node.y < minH) minH = node.y;
           });
         });
-        let gap = 150 / (maxW - minW);
-        console.log(dom.clientWidth, gap, maxW - minW);
-        let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
-        let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
+        let gap = (dom.clientWidth - 16) / (maxW - minW);
+        let startX = 16;
+        let startY = 16;
+
         let scale = {
           startX,
           startY,
@@ -759,6 +757,7 @@ export default {
     },
     countLinks(index) {
       const nodes = this.sonGraphs[index].nodesList;
+
       let dom = document.getElementById("paper" + (index + 1));
 
       let links = LinksManagement.getFinalLinks(
@@ -771,7 +770,6 @@ export default {
         let tIndex = nodes.findIndex((node) => node.id === link.target);
         let source = nodes[sIndex];
         let target = nodes[tIndex];
-
         let point = this.countControl(source, target, this.scales[index].mid);
 
         link["points"] = [source, point, target];
@@ -824,10 +822,13 @@ export default {
       this.ifCurve = true;
       let graphs = await countCurveSonPos(this.finalPos, name);
       this.sonGraphs = [];
-
       graphs.forEach((graph) => {
-        this.sonGraphs.push({
-          nodesList: graph.map((node) => {
+        this.sonGraphs.push({ nodesList: [], linksList: [] });
+      });
+      graphs.forEach((graph) => {
+        let outIndex = graph.findIndex((node) => node.outcome);
+        this.sonGraphs[graph[outIndex].group[0]].nodesList = graph.map(
+          (node) => {
             return {
               id: node.node,
               offset: node.new_order - node.order,
@@ -836,9 +837,8 @@ export default {
               indexes: node.group,
               type: node.outcome ? 0 : 1,
             };
-          }),
-          linksList: [],
-        });
+          }
+        );
       });
     },
     saveData() {
@@ -899,11 +899,11 @@ export default {
       this.multipleSearchValue = JSON.parse(
         localStorage.getItem("GET_JSON_RESULT")
       );
-      console.log(this.graphType);
+      console.log("graph Type", this.graphType);
       if (this.graphType === "TightenedSubGraph")
         this.finalPos = JSON.parse(localStorage.getItem("SON_POS"));
       else this.finalPos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-      console.log(this.finalPos);
+      console.log("finalPos", this.finalPos);
       if (this.multipleSearchValue) this.drawGraph();
     },
   },

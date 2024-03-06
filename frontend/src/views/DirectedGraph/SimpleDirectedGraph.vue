@@ -24,7 +24,6 @@
       >
         Plot the nodes selected
       </el-button>
-
     </div>
     <hr />
     <div class="drawing-canvas">
@@ -495,7 +494,7 @@ export default {
     },
     drawGraph() {
       this.simplePos.nodesList.forEach((node) => {
-        if (node.type === 0) node["indexes"] = ["8"];
+        if (node.type === 0) node["indexes"] = ["7"];
         else node["indexes"] = ["0"];
       });
       if (this.tooltip) {
