@@ -74,10 +74,21 @@ export class linksOperation {
       newCircle.resize(24, 24);
       if (type === "AAAI") newCircle.position(position.x - 5, position.y - 5);
       else newCircle.position(position.x + 5, position.y + 5);
-      newCircle.set('z',0)
+      newCircle.set("z", 0);
       newCircle.addTo(paper.model);
-
     });
+  }
+  static addRange(x, y, width, height, paper) {
+    let rect = new joint.shapes.standard.Rectangle({});
+    rect.position(x, y);
+    rect.resize(width, height);
+    rect.attr({
+      body: {
+        fill: "transparent",
+        stroke: "red",
+      },
+    });
+    rect.addTo(paper.model);
   }
   static addLink(pos, link, paper, curveType, attrs) {
     let linksList = pos.linksList;

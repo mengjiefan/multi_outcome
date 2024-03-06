@@ -24,10 +24,7 @@
       >
         Plot the nodes selected
       </el-button>
-      <div class="hint">
-        <span>Note: </span>Modifying Nodes will affect previous changes to
-        edges; Re-layout is only possible after removing or reversing edges
-      </div>
+
     </div>
     <hr />
     <div class="drawing-canvas">

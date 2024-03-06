@@ -55,7 +55,11 @@ import {
 } from "@/plugin/extracted/CountPos";
 import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
-import { drawExtractedGraph, drawSuperGraph } from "@/plugin/superGraph";
+import {
+  drawExtractedGraph,
+  drawOverViewGraph,
+  drawSuperGraph,
+} from "@/plugin/superGraph";
 import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
@@ -146,12 +150,12 @@ export default {
     drawSuperGraphs() {
       for (let i = 0; i < this.sonNum; i++) {
         let dom = document.getElementById("paper" + (i + 1) + "-overview");
-        let minW = 50000;
+        let minW = 150000;
         let maxW = 0;
-        let minH = 5000;
+        let minH = 15000;
         let maxH = 0;
         let simplePos = JSON.parse(localStorage.getItem("SIMPLE_POS"));
-        console.log(simplePos)
+        console.log(simplePos);
         simplePos.nodesList.forEach((node) => {
           if (node.x > maxW) maxW = node.x;
           if (node.x < minW) minW = node.x;
@@ -166,19 +170,43 @@ export default {
             if (node.y < minH) minH = node.y;
           });
         });
-        let gap = 1200 / (maxW - minW);
-        let startX = (dom.clientWidth / gap - (maxW - minW)) / 2;
-        let startY = (dom.clientHeight / gap - (maxH - minH)) / 3;
+        let gap = 150 / (maxW - minW);
+        console.log(dom.clientWidth, gap, maxW - minW);
+        let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
+        let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
         let scale = {
           startX,
           startY,
           gap,
         };
-        drawSuperGraph(
+        let sonPaper = drawOverViewGraph(
           dom,
           simplePos.nodesList,
-         simplePos.linksList,
+          simplePos.linksList,
           scale
+        );
+        let nodesList = this.sonGraphs[i].nodesList.map((node) => node.id);
+        minW = 150000;
+        maxW = 0;
+        minH = 15000;
+        maxH = 0;
+        nodesList.forEach((node) => {
+          let index = simplePos.nodesList.findIndex((item) => {
+            if (item.id === node) return true;
+            else return false;
+          });
+          let nodePos = simplePos.nodesList[index];
+          if (nodePos.x < minW) minW = nodePos.x;
+          if (nodePos.x > maxW) maxW = nodePos.x;
+          if (nodePos.y > maxH) maxH = nodePos.y;
+          if (nodePos.y < minH) minH = nodePos.y;
+        });
+        linksOperation.addRange(
+          minW - 20,
+          minH - 20,
+          maxW - minW + 40,
+          maxH - minH + 40,
+          sonPaper
         );
       }
     },
@@ -955,8 +983,8 @@ export default {
   left: 0;
   bottom: 0;
   z-index: 1000;
-  width: 30%!important;
-  height: 30%!important;
+  width: 30% !important;
+  height: 30% !important;
   border: 1px solid rgba(151, 151, 151, 0.49);
   background: white;
 }

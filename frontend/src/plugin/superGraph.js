@@ -499,6 +499,135 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
 
   return paper;
 };
+export const drawOverViewGraph = (dom, nodesList, links, scale) => {
+  startX = scale.startX;
+  startY = scale.startY;
+  let paperScale = scale.gap / gap;
+  let linksList = links.filter((link) => !link.hidden);
+  linksList = linksList.map((link) => {
+    let points = link.points.concat([]);
+    if (link.reverse)
+      return {
+        source: link.target,
+        target: link.source,
+        value: link.value,
+        points: points.reverse(),
+      };
+    else return link;
+  });
+  let graph = new joint.dia.Graph({});
+
+  let paper = new joint.dia.Paper({
+    el: dom,
+    model: graph,
+    width: "100%",
+    height: "100%",
+    async: true,
+    sorting: joint.dia.Paper.sorting.APPROX,
+    linkPinning: false,
+    defaultLink: () => new joint.shapes.standard.Link(),
+    connectionStrategy: joint.connectionStrategies.pinAbsolute,
+    interactive: function (cellView, method) {
+      return null;
+    },
+  });
+  for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
+    let faRect = new joint.shapes.standard.Rectangle();
+
+    faRect.resize(24 * gap, 24 * gap);
+    faRect.position(
+      countXPos(nodesList[nodeI].x) - 12 * gap,
+      countYPos(nodesList[nodeI].y) - 12 * gap
+    );
+    let indexes = nodesList[nodeI].indexes;
+    faRect.attr({
+      body: {
+        strokeWidth: 0,
+        stroke: "white",
+        strokeDasharray: 2,
+        rx: 20 * gap,
+        ry: 20 * gap,
+        fill: "transparent",
+      },
+      title: nodesList[nodeI].id,
+    });
+    if (nodesList[nodeI].type === 0) faRect.attr("body/strokeWidth", 3);
+
+    faRect.set("z", 100);
+    for (let i = 0; i < indexes.length; i++) {
+      let circle = new joint.shapes.standard.Circle();
+      let offset = 360 / indexes.length;
+      circle.attr({
+        body: {
+          strokeDasharray: 12 * gap * 3.1415926,
+          strokeDashoffset: ((12 * gap * 3.1415926) / 360) * (offset * i),
+          fill: "transparent",
+          stroke: cmap[indexes[i]],
+          strokeWidth: 12 * gap,
+        },
+      });
+      circle.resize(12 * gap, 12 * gap);
+      circle.position(
+        countXPos(nodesList[nodeI].x) - 6 * gap,
+        countYPos(nodesList[nodeI].y) - 6 * gap
+      );
+      circle.set("z", 50);
+      circle.addTo(graph);
+    }
+    nodesList[nodeI]["node"] = faRect;
+    faRect.addTo(graph);
+    addTool(faRect, paper);
+  }
+
+  linksList.forEach((link) => {
+    let path = new joint.shapes.standard.Link({});
+
+    let sindex = nodesList.findIndex((item) => {
+      if (item.id === link.source) return true;
+      else return false;
+    });
+    let tindex = nodesList.findIndex((item) => {
+      if (item.id === link.target) return true;
+      else return false;
+    });
+    let value = linksOperation.recalLinkValue(link.value);
+    path.attr({
+      id: "(" + link.source + ", " + link.target + ")",
+      line: {
+        strokeWidth: value + "",
+        targetMarker: {
+          // minute hand
+          type: "path",
+          stroke: "black",
+          "stroke-width": value,
+          fill: "transparent",
+          d: "M 10 -5 0 0 10 5 ",
+        },
+      },
+    });
+    if (link.value < 0) {
+      path.attr("line/strokeDasharray", "4 4");
+    }
+    let realLink = LinksManagement.getNodeByName(paper, link);
+    let source = realLink.source;
+    let target = realLink.target;
+    if (nodesList[sindex].y < nodesList[tindex].y)
+      path.attr("line/targetMarker", null);
+
+    path.source(source);
+    path.target(target);
+    path.addTo(graph);
+
+    path.connector("SuperCurve", {
+      points: link.points,
+      value,
+    });
+  });
+
+  paper.scale(paperScale);
+  paper.translate(startX, startY);
+  return paper;
+};
 export const drawExtractedGraph = (dom, nodesList, links, scale) => {
   let linksList = links.filter((link) => !link.hidden && link.points?.length);
   linksList = linksList.map((link) => {
