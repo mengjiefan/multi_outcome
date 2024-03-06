@@ -198,9 +198,21 @@ export default {
           let nodes = this.Variables_result.nodes.filter(
             (node) => node.type === 1
           );
+          let allValues = [];
+          for (
+            let i = 0;
+            i < this.Variables_result.allValue.variable.length;
+            i++
+          ) {
+            allValues.push({
+              axis: this.Variables_result.allValue.variable[i],
+              value: this.Variables_result.allValue.outcome[i],
+            });
+          }
+          allValues.sort((a, b) => Math.abs(a.value) - Math.abs(b.value));
           this.allChart = {
-            axis: this.Variables_result.allValue.variable,
-            value: this.Variables_result.allValue.outcome,
+            axis: allValues.map((item) => item.axis),
+            value: allValues.map((item) => item.value),
           };
           this.SelectedVariables = nodes.map((node) => {
             return node.id;

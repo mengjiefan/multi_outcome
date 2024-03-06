@@ -1031,7 +1031,11 @@ export default {
       });
       this.setGraph();
 
-      if (!this.multipleSearchValue.dagLinks) this.startLoop();
+      if (
+        !this.multipleSearchValue.dagLinks &&
+        this.multipleSearchValue.linksList
+      )
+        this.startLoop();
       else this.gnnLinks = this.multipleSearchValue.dagLinks;
       if (!this.multipleSearchValue.aaaiLinks) this.getAAAI();
       else this.aaaiLinks = this.multipleSearchValue.aaaiLinks;

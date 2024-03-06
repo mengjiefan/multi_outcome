@@ -1,10 +1,15 @@
 <template>
   <div class="mainPlot">
     <router-view></router-view>
-    <div class="open-button" @click="drawer = true">
+    <div
+      v-if="$route.path.includes('/simple')"
+      class="open-button"
+      @click="drawer = true"
+    >
       <i class="el-icon-caret-left"></i>
     </div>
     <el-drawer
+      v-if="$route.path.includes('/simple')"
       custom-class="right-side"
       :size="500"
       :modal="false"
@@ -18,7 +23,7 @@
  
 <script>
 import AppMainCharacter from "./AppMainCharacter.vue";
-
+import { ref } from "vue";
 export default {
   components: { AppMainCharacter },
   name: "AppMainPlot",
@@ -52,12 +57,10 @@ export default {
   align-items: center;
   box-shadow: rgb(174, 174, 174) 0px 0px 10px;
 }
-
 </style>
 <style>
-
 #el-drawer__title {
-  color: black ;
+  color: black;
   font-weight: bold;
 }
 </style>
