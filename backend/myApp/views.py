@@ -24,6 +24,7 @@ import numpy as np
 import linecache  # 用于读取指定行
 import sys
 import warnings
+
 warnings.filterwarnings("ignore")
 import networkx as nx
 from dowhy import CausalModel
@@ -43,6 +44,7 @@ import threading
 
 sys.path.append("")
 
+
 # SETTINGS.verbose = True
 
 # Create your views here.
@@ -58,27 +60,30 @@ sys.path.append("")
 def test11(request):
     return HttpResponse("test...")  # 测试成功
 
-#根据outcome和factor获取所有节点和边
+
+# 根据outcome和factor获取所有节点和边
 # 实际中，不需要再次计算此步，直接拿第一步中的经过交互完成之后的经专家确认的多个子图中的节点和边（去重后），交给dagre绘制即可
 
 ukb_outcomes = ['Hypertension', 'Diabetes', 'BreastMalignancy', 'ProstateMalignancy',
-           'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
+                'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
 clhls_outcomes = ['g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD',
-          'g15n1_RA', 'g15o1_dementia', 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base']
+                  'g15n1_RA', 'g15o1_dementia', 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base']
 
 ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
 clhls_file = "./myApp/clhls_10_outcomes_data.csv"
 
-
 stop_Thread = False
 suspend_lock = None
 thread = None
-
+epoch_loss = None
 best_MSE_graph = []
+
+
 def thread_task(data):
     global stop_Thread
     global best_MSE_graph
     global suspend_lock
+    global epoch_loss
     train_loader = load_data(args, args.batch_size, data)
     best_ELBO_loss = np.inf
     best_NLL_loss = np.inf
@@ -107,7 +112,8 @@ def thread_task(data):
                 if stop_Thread:
                     break
                 # ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, ground_truth_G, lambda_A, c_A, optimizer)
-                ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss,  lambda_A, c_A,  train_loader)
+                ELBO_loss, NLL_loss, MSE_loss, graph, origin_A = train(epoch, best_ELBO_loss, lambda_A, c_A,
+                                                                       train_loader)
                 suspend_lock.acquire()
                 suspend_lock.release()
                 if ELBO_loss < best_ELBO_loss:
@@ -124,7 +130,12 @@ def thread_task(data):
                     best_MSE_loss = MSE_loss
                     best_epoch = epoch
                     best_MSE_graph = graph
-
+                epoch_loss = {
+                    'epoch': epoch,
+                    'ELBO_loss': ELBO_loss,
+                    'NLL_loss': NLL_loss,
+                    'MSE_loss': MSE_loss
+                }
             print("Optimization Finished!")
             print("Best Epoch: {:04d}".format(best_epoch))
             if ELBO_loss > 2 * best_ELBO_loss:
@@ -134,7 +145,7 @@ def thread_task(data):
             A_new = origin_A.data.clone()
             h_A_new = _h_A(A_new, args.data_variable_size)
             if h_A_new.item() > 0.25 * h_A_old:
-                c_A*=10
+                c_A *= 10
             else:
                 break
 
@@ -146,11 +157,13 @@ def thread_task(data):
         if h_A_new.item() <= h_tol:
             break
 
+
 def start_loop(request):
     global stop_Thread
     global suspend_lock
     global thread
     global best_MSE_graph
+    global epoch_loss
     suspend_lock = threading.Lock()
     print("start loop!")
     postBody = request.body
@@ -164,13 +177,15 @@ def start_loop(request):
         fileName = clhls_file
     data = pd.read_csv(fileName)
     if thread:
-        thread.join()#防止之前的thread还未完全结束，而init中改变了全局变量导致出错
-    stop_Thread=False
+        thread.join()  # 防止之前的thread还未完全结束，而init中改变了全局变量导致出错
+    stop_Thread = False
     best_MSE_graph = []
+    epoch_loss = None
     init_model(len(nodesList))
     thread = threading.Thread(target=thread_task, args=(data[nodesList],))
     thread.start()
     return JsonResponse({'msg': 'start daggnn loop'})
+
 
 def get_aaai(request):
     postBody = request.body
@@ -178,41 +193,62 @@ def get_aaai(request):
     nodesList = np.array(json_result['nodesList'])
     dataset = json_result['dataset']
     skel = json_result['skel']
-    skel = np.array([True if element == 1 else False for element in skel])
-    skel = skel.reshape(len(nodesList),len(nodesList))
-
-    dag = runAAAI(dataset, nodesList, skel)
+    skelMap = np.array([True if element == 1 else False for element in skel])
+    skelMap = skelMap.reshape(len(nodesList), len(nodesList))
+    if sum(skel) == 0:
+        skel = np.array(skel)
+        skel = skel.reshape(len(nodesList), len(nodesList))
+        return JsonResponse({'graph': json.dumps(skel, default=numpy_to_json)})
+    dag = runAAAI(dataset, nodesList, skelMap)
     return JsonResponse({'graph': json.dumps(dag, default=numpy_to_json)})
+
+
 def numpy_to_json(obj):
     if isinstance(obj, np.ndarray):
-        obj = obj.tolist() # 将NumPy数组转换为列表
+        obj = obj.tolist()  # 将NumPy数组转换为列表
     return json.dumps(obj)
+
 
 def pause_loop(request):
     global suspend_lock
     suspend_lock.acquire()
     return JsonResponse({'msg': 'loop paused'})
 
+
 def continue_loop(request):
     global suspend_lock
     suspend_lock.release()
     return JsonResponse({'msg': 'loop continues'})
+
+
 def stop_loop(request):
     global suspend_lock
     global stop_Thread
     global thread
     if suspend_lock and suspend_lock.locked():
         suspend_lock.release()
-    stop_Thread=True
+    stop_Thread = True
     if thread:
         thread.join()
         print("thread is killed")
     thread = None
-    #get result
+    # get result
     return JsonResponse({'msg': 'stop loop'})
+
+
 def get_temp_result(request):
     print("in loop!")
-    return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
+    if epoch_loss:
+        print(epoch_loss)
+        return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json),
+                         'epoch': epoch_loss['epoch'],
+                         'ELBO_loss': epoch_loss['ELBO_loss'],
+                         'NLL_loss': epoch_loss['NLL_loss'],
+                         'MSE_loss': epoch_loss['MSE_loss']
+                         })
+    else:
+        return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
+
 def get_list(request):
     num_top = request.GET.get("CovariantNum")  # CovariantNum
     num_top = int(num_top)
@@ -220,10 +256,10 @@ def get_list(request):
     dataset = request.GET.get('dataset')
     fileName = "./myApp/MissingValue_fill_data_all.csv"
     outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
+                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
     if dataset == 'ukb':
         fileName = ukb_file
-        outcomes =ukb_outcomes
+        outcomes = ukb_outcomes
     elif dataset == 'clhls':
         fileName = clhls_file
         outcomes = clhls_outcomes
@@ -379,7 +415,7 @@ def get_list(request):
             estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
             if estimate is not None:
                 effect_values[(source, target)] = estimate.value
-                #link["effect_value"] = estimate.value
+                # link["effect_value"] = estimate.value
                 link["value"] = estimate.value
             else:
                 print(f"Causal effect estimation failed for {source} to {target}")
@@ -389,17 +425,19 @@ def get_list(request):
     # 输出所有因果效应值
     print("All causal effect values:", effect_values)
     return JsonResponse({'outcome': outcome, 'CovariantNum': num_top,
-                         'nodes':nodes_variables,'links':links, 'allValue': {'outcome': all_values, 'variable': all_variables}})
+                         'nodes': nodes_variables, 'links': links,
+                         'allValue': {'outcome': all_values, 'variable': all_variables}})
+
 
 def get_causal_edges(request):
     outcome = request.GET.get("outcome")
     dataset = request.GET.get('dataset')
     fileName = "./myApp/MissingValue_fill_data_all.csv"
     outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-           'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
+                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
     if dataset == 'ukb':
         fileName = ukb_file
-        outcomes =ukb_outcomes
+        outcomes = ukb_outcomes
     elif dataset == 'clhls':
         fileName = clhls_file
         outcomes = clhls_outcomes
@@ -530,9 +568,10 @@ def get_causal_edges(request):
     # 输出所有因果效应值
     print("All causal effect values:", effect_values)
     return JsonResponse({'outcome': outcome,
-                         'nodes':nodes_variables,'links':links})
+                         'nodes': nodes_variables, 'links': links})
 
-#modify graph and recaculate effect_value
+
+# modify graph and recaculate effect_value
 def get_values_for_node(request):
     outcome = request.GET.get("id")
 
@@ -560,7 +599,9 @@ def get_values_for_node(request):
             'id': factor,
             'value': value
         })
-    return JsonResponse({'target':outcome, 'values': values})
+    return JsonResponse({'target': outcome, 'values': values})
+
+
 def count_value(source, target, dataset):
     G = nx.DiGraph()
     fileName = "./myApp/MissingValue_fill_data_all.csv"
@@ -595,14 +636,16 @@ def count_value(source, target, dataset):
         if estimate is not None:
             effect_value = estimate.value
     return effect_value
+
+
 def get_value_of_graph(request):
     source = request.GET.get('source')
     target = request.GET.get('target')
     dataset = request.GET.get('dataset')
-    value = count_value(source, target,dataset)
-
+    value = count_value(source, target, dataset)
 
     return JsonResponse({'value': value})
+
 
 # 定义一个去列表(列表元素是字典)重复的函数
 def list_dict_duplicate_removal(request):
@@ -636,6 +679,7 @@ def list_dict_duplicate_removal(request):
 
     # return JsonResponse((list_dict_duplicate_removal(selection.[0].nodes, selection.[1].nodes)))
 
+
 # 测试成功，所以留意读取文件
 def variable_show(request):
     # 通过 num = request.GET.get("num")，来获取前端get请求中的参数"num"的值
@@ -645,12 +689,16 @@ def variable_show(request):
     outcome = "death"
     print(CovariantNum)
     return JsonResponse({'CovariantNum': CovariantNum, 'outcome': outcome, 'message': 'success'})
+
+
 def pre_process(nodesList):
     fixed_nodes_supergraph = get_fixedNodes(nodesList)
     max_order_ori_supergraph_fixedNodes, min_order_ori_supergraph_fixedNodes = get_fixedNodes_order(
         fixed_nodes_supergraph)
     fixed_order_ori_center_supergraph = (max_order_ori_supergraph_fixedNodes + min_order_ori_supergraph_fixedNodes) / 2
     return fixed_order_ori_center_supergraph
+
+
 def calculate_tree_layout(request):
     postBody = request.body
     json_result = json.loads(postBody)
@@ -659,9 +707,11 @@ def calculate_tree_layout(request):
     grouped_data_subgraph = grouped_data_supergraph = get_grouped_data(nodesList, linksList)
     fixed_order_ori_center_supergraph = pre_process(nodesList)
     # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
-    all_groups_nodes_new = get_tree_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph) # 为按组区分的dag，每个dag内均有新生成的的nodes列表
+    all_groups_nodes_new = get_tree_order_new(grouped_data_subgraph,
+                                              fixed_order_ori_center_supergraph)  # 为按组区分的dag，每个dag内均有新生成的的nodes列表
 
     return JsonResponse({'graph': all_groups_nodes_new})
+
 
 def calculate_aggregate_layout(request):
     postBody = request.body
@@ -672,8 +722,11 @@ def calculate_aggregate_layout(request):
     fixed_order_ori_center_supergraph = pre_process(nodesList)
     fixed_nodes_supergraph = get_fixedNodes(nodesList)
     # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
-    all_groups_nodes_new = get_aggregate_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph, fixed_nodes_supergraph)
+    all_groups_nodes_new = get_aggregate_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph,
+                                                   fixed_nodes_supergraph)
     return JsonResponse({'graph': all_groups_nodes_new})
+
+
 def calculate_center_layout(request):
     postBody = request.body
     json_result = json.loads(postBody)
@@ -687,6 +740,7 @@ def calculate_center_layout(request):
 
     return JsonResponse({'graph': all_groups_nodes_new})
 
+
 def calculate_relative_layout(request):
     postBody = request.body
     json_result = json.loads(postBody)
@@ -696,8 +750,11 @@ def calculate_relative_layout(request):
     fixed_order_ori_center_supergraph = pre_process(nodesList)
     fixed_nodes_supergraph = get_fixedNodes(nodesList)
     # 生成按组区分的所有节点（即每个dag图--后续可考虑用outcome名称来命名组）的更新之后的节点列表，，其中的order为新更新的
-    all_groups_nodes_new = get_relative_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph, fixed_nodes_supergraph)
+    all_groups_nodes_new = get_relative_order_new(grouped_data_subgraph, fixed_order_ori_center_supergraph,
+                                                  fixed_nodes_supergraph)
     return JsonResponse({'graph': all_groups_nodes_new})
+
+
 def get_fixedNodes(nodes):
     # 根据fixed属性获取超图得到的固定节点
     fixed_nodes = []
@@ -705,6 +762,7 @@ def get_fixedNodes(nodes):
         if node['fixed'] == True:
             fixed_nodes.append(node)
     return fixed_nodes
+
 
 def get_fixedNodes_order(fixed_nodes):
     # 根据传入的fixed_nodes列表获取其内的固定节点的原始order
@@ -718,13 +776,14 @@ def get_fixedNodes_order(fixed_nodes):
     for node in fixed_nodes:
         current_order = node['order']
         if current_order < min_order:
-            min_order = current_order   # 通过遍历得到最小order值
+            min_order = current_order  # 通过遍历得到最小order值
         if current_order > max_order:
-            max_order = current_order   # 通过遍历得到最大order值
+            max_order = current_order  # 通过遍历得到最大order值
 
     return max_order, min_order
 
-def get_grouped_data(nodes,edges):
+
+def get_grouped_data(nodes, edges):
     # 创建一个字典，用于存储每个组的节点列表和边列表
     grouped_data = {}
 
@@ -746,6 +805,7 @@ def get_grouped_data(nodes,edges):
 
     return grouped_data  # 所有组dag的字典
 
+
 def get_nonFixedNodes(nodes):
     # 根据fixed属性获取非固定节点
     non_fixed_nodes = []
@@ -753,6 +813,7 @@ def get_nonFixedNodes(nodes):
         if node['fixed'] == False:
             non_fixed_nodes.append(node)
     return non_fixed_nodes
+
 
 def get_center_order_new(grouped_data):
     final_nodes_new = []  # 用于存储最终的节点列表
@@ -764,10 +825,10 @@ def get_center_order_new(grouped_data):
         max_order_current_group_fixed_nodes, min_order_current_group_fixed_nodes = get_fixedNodes_order(
             current_group_fixed_nodes)
 
-        fixed_order_ori_center_current_group = (max_order_current_group_fixed_nodes + min_order_current_group_fixed_nodes) / 2
+        fixed_order_ori_center_current_group = (
+                                                           max_order_current_group_fixed_nodes + min_order_current_group_fixed_nodes) / 2
 
         print("当前组的固定节点的水平中心点为：\n{}".format(fixed_order_ori_center_current_group))
-
 
         # 创建一个字典来存储每个rank值对应的全部节点列表
         rank_to_nodes = {}
@@ -821,20 +882,20 @@ def get_center_order_new(grouped_data):
                             if is_even_non_fixed:  # 偶数
                                 if i < (center_index_non_fixed - 0.5):
                                     node_data['new_order'] = fixed_order_ori_center_current_group - (
-                                                (center_index_non_fixed - 0.5) - i)
+                                            (center_index_non_fixed - 0.5) - i)
                                 else:
                                     node_data['new_order'] = fixed_order_ori_center_current_group + (
-                                                i - (center_index_non_fixed - 0.5))
+                                            i - (center_index_non_fixed - 0.5))
                             else:  # 奇数
                                 # node_data['new_order'] = fixed_order_ori_center_current_group + ((i - center_index_non_fixed)  )
                                 if i == center_index_non_fixed:
                                     node_data['new_order'] = fixed_order_ori_center_current_group
                                 elif i < center_index_non_fixed:
                                     node_data['new_order'] = fixed_order_ori_center_current_group - (
-                                                center_index_non_fixed - i)
+                                            center_index_non_fixed - i)
                                 else:
                                     node_data['new_order'] = fixed_order_ori_center_current_group + (
-                                                i - center_index_non_fixed)
+                                            i - center_index_non_fixed)
 
         # 遍历rank值分组
         for rank, nodes in sorted(rank_to_nodes.items()):
@@ -842,7 +903,6 @@ def get_center_order_new(grouped_data):
             sorted_nodes = sorted(nodes, key=lambda x: x['order'])
 
             for i, node_data in enumerate(sorted_nodes):
-
                 print(node_data)
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
@@ -853,6 +913,8 @@ def get_center_order_new(grouped_data):
 
     # # 最终的节点列表包含了所有组的数据
     return final_nodes_new
+
+
 def get_aggregate_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
     final_nodes_new = []  # 用于存储最终的节点列表
 
@@ -882,13 +944,12 @@ def get_aggregate_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph)
                 min_order_current_rela = current_order  # 通过遍历得到最小order值
             if current_order > max_order_current_rela:
                 max_order_current_rela = current_order  # 通过遍历得到最大order值
-            center_current_rela = (max_order_current_rela + min_order_current_rela)/2
+            center_current_rela = (max_order_current_rela + min_order_current_rela) / 2
         print("当前组节点的相对水平中心点为：\n{}".format(center_current_rela))
         for node in sorted_all_nodes_subgraph:
             # 方法三：获取了每个子图中所有节点的水平相对顺序 order_relative_sub_all_nodes 之后，保持相对顺序不变的情况下，计算所有节点相对于超图中心点的顺序 new_order
             node['new_order'] = node['order_relative_sub_all_nodes'] - center_current_rela + nodes_centerx
             node['distance'] = node['new_order'] - node['order']
-
 
         rank_to_nodes = {}
         # 创建一个字典来存储每个rank值对应的非固定节点列表
@@ -907,7 +968,6 @@ def get_aggregate_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph)
             sorted_nodes = sorted(nodes, key=lambda x: x['order'])
 
             for i, node_data in enumerate(sorted_nodes):
-
                 print(node_data)
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
@@ -917,6 +977,8 @@ def get_aggregate_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph)
 
     # # 最终的节点列表包含了所有组的数据
     return final_nodes_new
+
+
 def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
     final_nodes_new = []  # 用于存储最终的节点列表
 
@@ -947,7 +1009,6 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
         for node in sorted_all_fixed_nodes:
             node['order_fixed_relative_compact'] = node['order_sup_fixed_nodes_rela'] - center_sup_fixed + nodes_centerx
 
-
         group_nodes = data['nodes']
         sorted_all_nodes_subgraph = sorted(group_nodes, key=lambda x: x['order'])
         # 生成新的'order_relative_sub_all_nodes'值
@@ -960,9 +1021,7 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
                 current_order = node['order']
             node['order_relative_sub_all_nodes'] = order_relative_sub_all_nodes
 
-
         print(sorted_all_nodes_subgraph)
-
 
         # 调用函数并获取返回值
         current_group_fixed_nodes = get_fixedNodes(group_nodes)
@@ -1008,14 +1067,17 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
                 node['new_order'] = node['order_fixed_relative_compact']
             else:
                 if node['order_relative_sub_all_nodes'] <= min_order_current_fixed:
-                    node['new_order'] = min_order_current_fixed_optimal + node['order_relative_sub_all_nodes'] - min_order_current_fixed
+                    node['new_order'] = min_order_current_fixed_optimal + node[
+                        'order_relative_sub_all_nodes'] - min_order_current_fixed
                 if node['order_relative_sub_all_nodes'] >= max_order_current_fixed:
-                    node['new_order'] = max_order_current_fixed_optimal + node['order_relative_sub_all_nodes'] - max_order_current_fixed
+                    node['new_order'] = max_order_current_fixed_optimal + node[
+                        'order_relative_sub_all_nodes'] - max_order_current_fixed
                 else:
                     # node['new_order'] = nodes_centerx
                     # 生成间隔为1的区间列表
                     # 从current_group_fixed_nodes列表中提取'order_relative_sub_all_nodes'的值
-                    order_relative_sub_all_nodes_values = [item['order_relative_sub_all_nodes'] for item in current_group_fixed_nodes]
+                    order_relative_sub_all_nodes_values = [item['order_relative_sub_all_nodes'] for item in
+                                                           current_group_fixed_nodes]
 
                     # 去除重复值并排序
                     unique_sorted_values = sorted(set(order_relative_sub_all_nodes_values))
@@ -1037,9 +1099,12 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
                             for fixed_node in current_group_fixed_nodes:
                                 if fixed_node['order_relative_sub_all_nodes'] == interval[0]:
                                     order_fixed_rela_start = fixed_node['order_fixed_relative_compact']
-                                    print(f"找到匹配的节点：{node['node']}，order_fixed_rela_start值为 {order_fixed_rela_start}")
+                                    print(
+                                        f"找到匹配的节点：{node['node']}，order_fixed_rela_start值为 {order_fixed_rela_start}")
                                     # 计算逻辑：起点的值加上倍数个间隔
-                                    node['new_order'] = order_fixed_rela_start + (node['order_relative_sub_all_nodes'] - interval[0])/(interval[1] - interval[0])
+                                    node['new_order'] = order_fixed_rela_start + (
+                                                node['order_relative_sub_all_nodes'] - interval[0]) / (
+                                                                    interval[1] - interval[0])
                                 # else:
                                 #     print(f"未找到匹配的节点")
 
@@ -1069,7 +1134,6 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
             sorted_nodes = sorted(nodes, key=lambda x: x['order'])
 
             for i, node_data in enumerate(sorted_nodes):
-
                 print(node_data)
                 # 将节点添加到当前组的节点列表中
                 current_group_nodes.append(node_data)
@@ -1082,6 +1146,7 @@ def get_relative_order_new(grouped_data, nodes_centerx, fixed_nodes_supergraph):
 
     # # 最终的节点列表包含了所有组的数据
     return final_nodes_new
+
 
 def get_tree_order_new(grouped_data, nodes_centerx):
     final_nodes_new = []  # 用于存储最终的节点列表
