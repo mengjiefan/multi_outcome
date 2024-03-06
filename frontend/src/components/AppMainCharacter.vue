@@ -1,6 +1,7 @@
 <template>
   <div class="mainCharacter">
     <div v-for="(node, index) in nodes" :key="index" class="node-chart">
+     <div class="factor-title"> {{ node }}</div>
       <div :id="'chart' + index" class="chart-canvas"></div>
     </div>
     <!-- <button>
@@ -124,16 +125,18 @@ export default {
   padding: 16px;
   font-size: 20px;
   max-width: 500px;
-  height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 一行两列 */
+  row-gap: 10px; /* 设置列之间的间距 */
 }
 .node-chart {
-  flex: 1;
+  height: fit-content;
+}
+.factor-title {
+  font-size: 14px;
 }
 .chart-canvas {
   width: 100%;
-  height: auto;
+  height: fit-content;
 }
 </style>
