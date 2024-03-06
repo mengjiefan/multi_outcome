@@ -961,6 +961,8 @@ export default {
   flex-wrap: wrap;
 }
 .paper-svg {
+  display: flex;
+  flex-direction: column;
   padding: 1%;
   margin: 0.5%;
   border: 1px solid rgba(151, 151, 151, 0.49);
@@ -969,7 +971,7 @@ export default {
 }
 .son-graph {
   width: 100%;
-  height: 90% !important;
+  flex: 1;
   display: flex;
   position: relative;
 }
@@ -990,6 +992,7 @@ export default {
 }
 .one-line-operator {
   padding-bottom: 16px;
+  height: 54px;
   width: 100%;
   display: flex;
   align-items: center;

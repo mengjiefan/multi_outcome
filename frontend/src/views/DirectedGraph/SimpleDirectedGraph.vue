@@ -121,11 +121,13 @@
         </div>
       </div>
       <div id="paper" class="sum-svg"></div>
+      <div v-if="gnnType" id="loss-chart"></div>
     </div>
   </div>
 </template>
 
 <script>
+import * as echarts from "echarts";
 import * as d3 from "d3";
 import * as dagreD3 from "dagre-d3";
 import axios from "axios";
@@ -149,6 +151,12 @@ export default {
   data() {
     return {
       loadingUrl: { url: require("../../assets/Spinner-1s-200px.gif") },
+      lossChart: ref(),
+      lossData: ref({
+        ELBO_loss: [],
+        NLL_loss: [],
+        MSE_loss: [],
+      }),
       dagEnabled: ref(true),
       pcEnabled: ref(true),
       hcmEnabled: ref(true),
@@ -270,6 +278,60 @@ export default {
         }, 3000);
       });
     },
+    drawEpochLossChart() {
+      var chartDom = document.getElementById("loss-chart");
+      if (!this.lossChart) this.lossChart = echarts.init(chartDom);
+
+      let epoch = this.lossData.ELBO_loss.length;
+      let xAxis = [...Array(epoch + 1).keys()].slice(1, epoch + 1);
+      let option = {
+        title: {
+          text: "Epoch-Loss",
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+        legend: {
+          data: ["ELBO_loss", "NLL_loss", "MSE_loss"],
+        },
+        grid: {
+          left: "3%",
+          right: "4%",
+          bottom: "3%",
+          containLabel: true,
+        },
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+          data: xAxis,
+        },
+        yAxis: {
+          type: "value",
+        },
+        series: [
+          {
+            name: "ELBO_loss",
+            type: "line",
+            stack: "Total",
+            data: this.lossData.ELBO_loss,
+          },
+          {
+            name: "NLL_loss",
+            type: "line",
+            stack: "Total",
+            data: this.lossData.NLL_loss,
+          },
+          {
+            name: "MSE_loss",
+            type: "line",
+            stack: "Total",
+            data: this.lossData.MSE_loss,
+          },
+        ],
+      };
+
+      this.lossChart.setOption(option);
+    },
     stopLoop() {
       this.gnnType = "stopped";
       axios({
@@ -318,6 +380,16 @@ export default {
         },
       }).then((response) => {
         let graph = eval(JSON.parse(response.data.graph));
+        console.log(response.data)
+        if (
+          response.data.epoch &&
+          this.lossData.ELBO_loss.length < response.data.epoch
+        ) {
+          this.lossData.ELBO_loss.push(response.data.ELBO_loss);
+          this.lossData.NLL_loss.push(response.data.NLL_loss);
+          this.lossData.MSE_loss.push(response.data.MSE_loss);
+          this.drawEpochLossChart();
+        }
         this.gnnLinks = [];
         for (let i = 0; i < graph.length; i++) {
           for (let j = 0; j < graph[i].length; j++) {
@@ -1193,7 +1265,11 @@ export default {
 .sum-svg {
   display: flex;
   width: 100%;
-  height: 90%;
+  height: calc(90%-400px);
   padding: 16px;
+}
+#loss-chart {
+  width: 40%;
+  height: 400px;
 }
 </style>
