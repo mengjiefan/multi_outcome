@@ -218,7 +218,6 @@ export default {
           else skel.push(0);
         }
       }
-      console.log(skel);
       axios({
         method: "post",
         url: "http://localhost:8000/api/get_aaai_result",
@@ -234,10 +233,8 @@ export default {
           "Content-Type": "application/json",
         },
       }).then((response) => {
-        console.log(response);
         this.aaaiWait = false;
         let graph = eval(JSON.parse(response.data.graph));
-        console.log("graph", graph);
         this.aaaiLinks = [];
         for (let i = 0; i < graph.length; i++) {
           for (let j = 0; j < graph[i].length; j++) {
@@ -380,14 +377,11 @@ export default {
         },
       }).then((response) => {
         let graph = eval(JSON.parse(response.data.graph));
-        console.log(response.data)
-        if (
-          response.data.epoch &&
-          this.lossData.ELBO_loss.length < response.data.epoch
-        ) {
-          this.lossData.ELBO_loss.push(response.data.ELBO_loss);
-          this.lossData.NLL_loss.push(response.data.NLL_loss);
-          this.lossData.MSE_loss.push(response.data.MSE_loss);
+
+        if (this.lossData.ELBO_loss.length < response.data.epoch) {
+          this.lossData.ELBO_loss.push(response.data.ELBO_loss.toFixed(3));
+          this.lossData.NLL_loss.push(response.data.NLL_loss.toFixed(3));
+          this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
           this.drawEpochLossChart();
         }
         this.gnnLinks = [];
@@ -1271,5 +1265,7 @@ export default {
 #loss-chart {
   width: 40%;
   height: 400px;
+  border: 1px solid rgba(151, 151, 151, 0.49);
+  border-bottom: none;
 }
 </style>

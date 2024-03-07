@@ -577,7 +577,37 @@ export const drawOverViewGraph = (dom, nodesList, links, scale) => {
     faRect.addTo(graph);
     addTool(faRect, paper);
   }
+  var Gen = d3
+    .line()
+    .x((p) => countXPos(p.x))
+    .y((p) => countYPos(p.y))
+    .curve(d3.curveBasis);
+  joint.connectors.SuperCurve = function (
+    sourcePoint,
+    targetPoint,
+    vertices,
+    args
+  ) {
+    let points = args.points.concat([]);
+    if (points.length > 1) {
+      let radius = 6.8;
+      if (points.length > 2) {
+        points[0] = countAnchor(points[1], points[0], radius);
+        if (points[points.length - 1].y < points[0].y)
+          radius = radius + args.value;
+        points[points.length - 1] = countAnchor(
+          points[points.length - 2],
+          points[points.length - 1],
+          radius
+        );
+      } else {
+        points[0] = countAnchor(points[1], points[0], 12);
+        points[1] = countAnchor(points[0], points[1], 12);
+      }
+    }
 
+    return Gen(points);
+  };
   linksList.forEach((link) => {
     let path = new joint.shapes.standard.Link({});
 
