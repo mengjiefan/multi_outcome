@@ -6,7 +6,7 @@
 export default {
   mounted() {
     //刷新数据用的
-    const path = "/AppMainPlot/" + this.$route.query.next;
+    const path = "/" + this.$route.query.next;
     setTimeout(() => {
       this.$router.push({
         path: path,

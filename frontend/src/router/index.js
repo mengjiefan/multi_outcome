@@ -3,7 +3,7 @@
 import VueRouter from "vue-router";
 //引入组件
 import AppMainCharacter from "../components/AppMainCharacter";
-import AppMainPlot from "../components/AppMainPlot";
+
 // import SubPopulation from '../pages/populationControl.vue'
 // import DimensionView from '../pages/dimensionView.vue'
 import CausalGraph from "../components/CausalGraphView";
@@ -22,90 +22,76 @@ export default new VueRouter({
       name: "AppMainCharacter", // 路由名称
       component: AppMainCharacter, // 组件对象
     },
+
     {
-      path: "/AppMainPlot",
-      name: "AppMainPlot", // 路由名称
-      component: AppMainPlot, // 组件对象
+      path: "/redirect",
+      component: () => import("../pages/redirect.vue"),
+    },
+    {
+      path: "/CausalGraphView",
+      component: CausalGraph,
+    },
+    {
+      path: "/MultiOutcomesView",
+      component: MultiOutcomes,
+    },
+    {
+      name: "DirectedGraphView",
+      path: "/DirectedGraphView",
+      component: DirectedGraph,
       children: [
         {
-          path: "/AppMainPlot/redirect",
-          component: () => import("../pages/redirect.vue"),
+          name: "SimpleDirectedGraph",
+          path: "/DirectedGraphView/simple",
+          component: () =>
+            import("../views/DirectedGraph/SimpleDirectedGraph.vue"),
         },
         {
-          path: "/AppMainPlot/CausalGraphView",
-          component: CausalGraph,
-        },
-        {
-          path: "/AppMainPlot/MultiOutcomesView",
-          component: MultiOutcomes,
-        },
-        {
-          name: "DirectedGraphView",
-          path: "/AppMainPlot/DirectedGraphView",
-          component: DirectedGraph,
+          name: "MultipleDirectedGraph",
+          path: "/DirectedGraphView/multiple",
+          component: () =>
+            import("../views/DirectedGraph/MultipleDirectedGraph.vue"),
           children: [
             {
-              name: "SimpleDirectedGraph",
-              path: "/AppMainPlot/DirectedGraphView/simple",
-              component: () =>
-                import("../views/DirectedGraph/SimpleDirectedGraph.vue"),
+              name: "DirectedSuperGraph",
+              path: "/DirectedGraphView/multiple/super-graph",
+              component: () => import("../views/DirectedGraph/SuperGraph.vue"),
             },
             {
-              name: "MultipleDirectedGraph",
-              path: "/AppMainPlot/DirectedGraphView/multiple",
-              component: () =>
-                import("../views/DirectedGraph/MultipleDirectedGraph.vue"),
-              children: [
-                {
-                  name: "DirectedSuperGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/super-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SuperGraph.vue"),
-                },
-                {
-                  name: "ExtractedSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/extracted-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-                {
-                  name: "TightenedSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/tightened-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-                {
-                  name: "CenterSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/center-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-                {
-                  name: "AggregateSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/aggregate-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-                {
-                  name: "RelativeSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/relative-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-                {
-                  name: "TreeSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/tree-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
+              name: "ExtractedSubGraph",
+              path: "/DirectedGraphView/multiple/extracted-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "TightenedSubGraph",
+              path: "/DirectedGraphView/multiple/tightened-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "CenterSubGraph",
+              path: "/DirectedGraphView/multiple/center-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "AggregateSubGraph",
+              path: "/DirectedGraphView/multiple/aggregate-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "RelativeSubGraph",
+              path: "/DirectedGraphView/multiple/relative-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "TreeSubGraph",
+              path: "/DirectedGraphView/multiple/tree-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
 
-                {
-                  name: "OriginalSubGraph",
-                  path: "/AppMainPlot/DirectedGraphView/multiple/original-sub-graph",
-                  component: () =>
-                    import("../views/DirectedGraph/SonGraph.vue"),
-                },
-              ],
+            {
+              name: "OriginalSubGraph",
+              path: "/DirectedGraphView/multiple/original-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
             },
           ],
         },

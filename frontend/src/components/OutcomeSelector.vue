@@ -271,7 +271,7 @@ export default {
     },
     routeToGraph() {
       this.$router.push({
-        path: "/AppMainPlot/redirect",
+        path: "/redirect",
         query: { next: this.graphType },
       });
     },
@@ -304,7 +304,7 @@ export default {
         localStorage.setItem("DATATYPE", dataset);
         if (this.$route.name !== "DirectedGraphView")
           this.$router.push({
-            path: "/AppMainPlot/redirect",
+            path: "/redirect",
             query: { next: "DirectedGraphView" },
           });
       }

@@ -175,7 +175,7 @@ export default {
     },
     toDirectedGraph() {
       this.$router.push({
-        path: "/AppMainPlot/redirect",
+        path: "/redirect",
         query: { next: "DirectedGraphView" },
       });
     },
@@ -371,7 +371,7 @@ export default {
     },
     routeToGraph() {
       this.$router.push({
-        path: "/AppMainPlot/redirect",
+        path: "/redirect",
         query: { next: this.graphType },
       });
     },

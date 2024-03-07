@@ -121,8 +121,20 @@
         </div>
       </div>
       <div id="paper" class="sum-svg"></div>
-      <div v-if="gnnType" id="loss-chart"></div>
+      <div v-if="gnnType && !loadingInstance" id="loss-chart"></div>
     </div>
+    <div class="open-button" @click="drawer = true">
+      <i class="el-icon-caret-left"></i>
+    </div>
+    <el-drawer
+      v-if="!loadingInstance"
+      custom-class="right-side"
+      :modal="false"
+      title="Scatterplot Matrix"
+      :visible.sync="drawer"
+    >
+      <app-main-character></app-main-character>
+    </el-drawer>
   </div>
 </template>
 
@@ -142,14 +154,17 @@ import { countSimplePos } from "@/plugin/extracted/CountPos";
 import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
+import AppMainCharacter from "@/components/AppMainCharacter.vue";
 
 export default {
+  components: { AppMainCharacter },
   name: "DirectedGraph",
   setup() {
     return {};
   },
   data() {
     return {
+      drawer: ref(false),
       loadingUrl: { url: require("../../assets/Spinner-1s-200px.gif") },
       lossChart: ref(),
       lossData: ref({
@@ -293,11 +308,12 @@ export default {
         },
         grid: {
           left: "3%",
-          right: "4%",
+          right: "8%",
           bottom: "3%",
           containLabel: true,
         },
         xAxis: {
+          name: 'epoch',
           type: "category",
           boundaryGap: false,
           data: xAxis,
@@ -330,6 +346,12 @@ export default {
       this.lossChart.setOption(option);
     },
     stopLoop() {
+      this.lossChart = null;
+      this.lossData = {
+        ELBO_loss: [],
+        NLL_loss: [],
+        MSE_loss: [],
+      };
       this.gnnType = "stopped";
       axios({
         method: "post",
@@ -1168,6 +1190,7 @@ export default {
   transition-duration: 0.1s;
 }
 .drawing-canvas {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -1190,6 +1213,7 @@ export default {
   gap: 8px;
 }
 .algorithm-title {
+  font-size: 18px;
   margin-left: 8px;
   display: flex;
   gap: 4px;
@@ -1263,9 +1287,37 @@ export default {
   padding: 16px;
 }
 #loss-chart {
-  width: 40%;
-  height: 400px;
+  position: absolute;
+  background: white;
+  bottom: 0;
+  left:0;
+  width: 700px;
+  height: 300px;
   border: 1px solid rgba(151, 151, 151, 0.49);
   border-bottom: none;
+}
+.open-button {
+  position: absolute;
+  z-index: 100;
+  top: 50%;
+  right: 0;
+  width: 32px;
+  border-top-left-radius: 15px;
+  border-bottom-left-radius: 15px;
+  font-size: 24px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  box-shadow: rgb(174, 174, 174) 0px 0px 10px;
+}
+</style>
+<style>
+#el-drawer__title {
+  color: black;
+  font-size: 24px;
+  font-weight: bold;
+}
+.right-side {
+  width: fit-content !important;
 }
 </style>
