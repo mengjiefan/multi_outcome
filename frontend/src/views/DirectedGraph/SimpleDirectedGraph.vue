@@ -130,7 +130,7 @@
       v-if="!loadingInstance"
       custom-class="right-side"
       :modal="false"
-      title="Scatterplot Matrix"
+      title="Matrix"
       :visible.sync="drawer"
     >
       <app-main-character></app-main-character>
@@ -313,7 +313,7 @@ export default {
           containLabel: true,
         },
         xAxis: {
-          name: 'epoch',
+          name: "epoch",
           type: "category",
           boundaryGap: false,
           data: xAxis,
@@ -842,6 +842,7 @@ export default {
           this.saveData();
           this.setGraph();
           this.countingGraph = false;
+          this.getAAAI();
           this.startLoop();
         })
         .catch((error) => {
@@ -1104,6 +1105,8 @@ export default {
   },
 
   mounted() {
+    this.stopLoop();//刷新
+    this.gnnType = null;
     let result = localStorage.getItem("GET_JSON_RESULT");
     let datasetType = localStorage.getItem("DATATYPE");
     if (datasetType === "default") this.VariablesOptions = defaultFactors;
@@ -1290,7 +1293,7 @@ export default {
   position: absolute;
   background: white;
   bottom: 0;
-  left:0;
+  left: 0;
   width: 700px;
   height: 300px;
   border: 1px solid rgba(151, 151, 151, 0.49);
