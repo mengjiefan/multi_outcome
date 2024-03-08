@@ -211,7 +211,7 @@ export default {
               value: this.Variables_result.allValue.outcome[i],
             });
           }
-          allValues.sort((a, b) => Math.abs(a.value) - Math.abs(b.value));
+          allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
           this.allChart = {
             axis: allValues.map((item) => item.axis),
             value: allValues.map((item) => item.value),

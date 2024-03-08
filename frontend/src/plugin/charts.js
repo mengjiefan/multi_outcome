@@ -82,7 +82,15 @@ export const creatAllChart = (dom, data) => {
     series: [
       {
         data: data.value.map((value) => Math.abs(value).toFixed(3)),
-        type: "bar"
+        type: "bar",
+        itemStyle: {
+          normal: {
+            color: function (params) {
+              if (data.value[params.dataIndex] >= 0) return "rgb(92,111,196)";
+              else return "#c23531";
+            },
+          },
+        },
       },
     ],
   };
