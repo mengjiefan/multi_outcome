@@ -53,10 +53,12 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
+    <!--
     <div v-for="(item, index) in SelectedVariables" :key="index">
       {{ SelectedVariables[index] }}
       <div class="variable-chart"></div>
     </div>
+    -->
     <div v-if="Variables_result">
       Correlation Value
       <div class="variable-chart"></div>
@@ -229,12 +231,13 @@ export default {
     },
     createChart() {
       let charts = document.getElementsByClassName("variable-chart");
+      /*
       for (let i = 0; i < this.SelectedVariables.length; i++) {
         let dom = charts[i];
         let id = this.SelectedVariables[i];
         createCharts(id, dom, this.Variables_result.nodes[i].range);
-      }
-      creatAllChart(charts[charts.length - 1], this.allChart);
+      }*/
+      creatAllChart(charts[0], this.allChart);
     },
     showErrorMsg(msg) {
       this.$message({

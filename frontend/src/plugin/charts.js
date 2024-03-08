@@ -1,5 +1,5 @@
 import * as echarts from "echarts";
-import { nodeRequest } from "@/plugin/request/node";
+//import { nodeRequest } from "@/plugin/request/node";
 const tooltip = {
   trigger: "axis",
   axisPointer: {
@@ -8,8 +8,8 @@ const tooltip = {
 };
 const grid = {
   left: "0%",
-  right: "0%",
-  bottom: "8%",
+  right: "12%",
+  bottom: "3%",
   top: "6%",
   containLabel: true,
 };
@@ -72,7 +72,6 @@ export const creatAllChart = (dom, data) => {
     xAxis: {
       type: "category",
       data: data.axis,
-
       axisLabel: {
         show: false,
       },
@@ -209,7 +208,7 @@ const createBMIChart = (myChart, data) => {
   myChart.setOption(option);
 };
 const createAgeRangeChart = (myChart, data) => {
-  let min = 200;
+  let min = 100;
   let max = 0;
 
   data.forEach((one) => {
@@ -311,7 +310,7 @@ const createChart1 = (myChart, data) => {
     },
     series: [
       {
-        barWidth: 200 / axis.length,
+        barWidth: 75 / axis.length,
         data: value,
         type: "bar",
       },
@@ -418,7 +417,7 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
     },
     series: [
       {
-        barWidth: 200 / axis.length,
+        barWidth: 75 / axis.length,
         data: number,
         type: "bar",
       },
@@ -458,7 +457,7 @@ const createChartOfInter = (myChart, data, labels) => {
     },
     series: [
       {
-        barWidth: 200 / values.length,
+        barWidth: 75 / values.length,
         data: values.map((value) => {
           return value.count;
         }),
@@ -519,6 +518,6 @@ const createChartWithIBound = (
     ],
   };
   if (nogap) option.series[0]["barCategoryGap"] = 0;
-  else option.series["barWidth"] = 200 / axis.length;
+  else option.series["barWidth"] = 75 / axis.length;
   myChart.setOption(option);
 };

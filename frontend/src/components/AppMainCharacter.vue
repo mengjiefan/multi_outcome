@@ -25,6 +25,7 @@
 import * as d3 from "d3";
 import { ukb_index, default_index, clhls_index } from "@/plugin/variable";
 import { ref } from "vue";
+import { createCharts } from "@/plugin/charts";
 export default {
   name: "AppMainCharacter",
   data() {
@@ -33,6 +34,20 @@ export default {
     };
   },
   methods: {
+    getRandomSubarray(arr, size) {
+      var shuffled = arr.slice(0),
+        i = arr.length,
+        min = i - size,
+        temp,
+        index;
+      while (i-- > min) {
+        index = Math.floor((i + 1) * Math.random());
+        temp = shuffled[index];
+        shuffled[index] = shuffled[i];
+        shuffled[i] = temp;
+      }
+      return shuffled.slice(min);
+    },
     drawDiscreteChart(item, source, target, svg, x, y) {
       // Add a scale for bubble size
       let sum = [];
@@ -71,9 +86,8 @@ export default {
         .attr("cx", (d) => x(d.x))
         .attr("cy", (d) => y(d.y))
         .attr("r", (d) => z(d.value))
-        .style("fill", "#69b3a2")
-        .style("opacity", "0.7")
-        .attr("stroke", "black");
+        .style("fill", "rgb(92,111,196)")
+        .style("opacity", "1");
     },
     drawContinuousChart(item, source, target, svg, x, y) {
       // Add dots
@@ -90,7 +104,7 @@ export default {
         })
         .attr("r", 5)
         .attr("fill-opacity", 0.01)
-        .style("fill", "#69b3a2");
+        .style("fill", "rgb(92,111,196)");
     },
     drawMixedChartX(item, disD, conD, svg, histogram, disAxis, conAxis) {
       let sumstat = d3.rollup(
@@ -123,7 +137,7 @@ export default {
           return d[1];
         })
         .style("stroke", "none")
-        .attr("fill", "#69b3a2")
+        .attr("fill", "rgb(92,111,196)")
         .attr(
           "d",
           d3
@@ -170,7 +184,7 @@ export default {
           return d[1];
         })
         .style("stroke", "none")
-        .attr("fill", "#69b3a2")
+        .attr("fill", "rgb(92,111,196)")
         .attr(
           "d",
           d3
@@ -193,7 +207,7 @@ export default {
       const color = d3
         .scaleLinear()
         .domain([0, 0.1]) // Points per square pixel.
-        .range(["white", "#69b3a2"]);
+        .range(["white", "rgb(92,111,196)"]);
 
       // compute the density data
       const densityData = d3
@@ -247,7 +261,7 @@ export default {
         .attr("height", function (d) {
           return height - y(d.length);
         })
-        .style("fill", "#69b3a2");
+        .style("fill", "rgb(92,111,196)");
     },
     drawMatrix() {
       let dataset = localStorage.getItem("DATATYPE");
@@ -255,13 +269,26 @@ export default {
       if (dataset === "ukb") discreateIndexes = ukb_index;
       else if (dataset === "default") discreateIndexes = default_index;
       // set the dimensions and margins of the graph
-      const margin = { top: 10, right: 30, bottom: 30, left: 60 },
-        width = 200 - margin.left - margin.right,
-        height = 200 - margin.top - margin.bottom;
+      const margin = { top: 10, right: 10, bottom: 30, left: 25 },
+        width = 150 - margin.left - margin.right,
+        height = 150 - margin.top - margin.bottom;
 
       let _this = this;
       d3.csv("/" + dataset + ".csv").then(function (item) {
-        item = item.slice(0, 1000);
+        const random = d3.randomUniform(1, 10);
+        console.log(random());
+        item = _this.getRandomSubarray(item, 1000);
+        for (let i = 0; i < _this.nodes.length; i++) {
+          let chart = document.getElementById(
+            "chart" + (i * _this.nodes.length + i)
+          );
+          createCharts(
+            _this.nodes[i],
+            chart,
+            item.map((row) => parseFloat(row[_this.nodes[i]]))
+          );
+          continue;
+        }
         item = item.map((row) => {
           let newRow = {};
           _this.nodes.forEach((node) => {
@@ -273,6 +300,8 @@ export default {
           for (let j = 0; j < _this.nodes.length; j++) {
             let source = _this.nodes[i];
             let target = _this.nodes[j];
+            if (i === j) continue;
+
             let svg = d3
               .select("#chart" + (i * _this.nodes.length + j))
               .append("svg")
@@ -283,10 +312,19 @@ export default {
             let xAxis = item.map((row) => row[source]);
             let yAxis = item.map((row) => row[target]);
 
-            let xMin = d3.min(xAxis) - 0.5;
-            let xMax = d3.max(xAxis) + 0.5;
-            let yMin = d3.min(yAxis) - 0.5;
-            let yMax = d3.max(yAxis) + 0.5;
+            let xMin = d3.min(xAxis);
+            let xMax = d3.max(xAxis);
+            let yMin = d3.min(yAxis);
+            let yMax = d3.max(yAxis);
+            if (source === "Income score") console.log(xMax, xMin);
+            if (discreateIndexes.includes(source)) {
+              xMin = xMin - 0.5;
+              xMax = xMax + 0.5;
+            }
+            if (discreateIndexes.includes(target)) {
+              yMax = yMax + 0.5;
+              yMin = yMin - 0.5;
+            }
 
             const x = d3.scaleLinear().domain([xMin, xMax]).range([0, width]);
             let xTick = Math.ceil(xMax - xMin);
@@ -297,95 +335,72 @@ export default {
             // Add Y axis
             const y = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
 
-            if (i === j) {
-              xMin = d3.min(xAxis) - 1;
-              xMax = d3.max(xAxis) + 1;
-              xTick = Math.ceil(xMax - xMin);
-              while (xTick > 10) xTick = xTick / 2;
-              let strictX = d3
-                .scaleLinear()
-                .domain([xMin, xMax])
-                .range([0, width]);
-              svg.append("g").attr("transform", `translate(0, ${height})`).call(
-                d3.axisBottom(strictX).ticks(xTick) // 设置分段数量为10
-              );
-              var histogram = d3
+            svg
+              .append("g")
+              .attr("transform", `translate(0, ${height})`)
+              .call(d3.axisBottom(x).ticks(xTick));
+            svg.append("g").call(d3.axisLeft(y).ticks(yTick));
+            if (
+              !discreateIndexes.includes(source) &&
+              !discreateIndexes.includes(target)
+            )
+              _this.drawContinuousChart(item, source, target, svg, x, y);
+            //_this.drawDensityChart(item,source, target, svg, x, y, height, width);
+            else if (
+              discreateIndexes.includes(source) &&
+              discreateIndexes.includes(target)
+            ) {
+              _this.drawDiscreteChart(item, source, target, svg, x, y);
+            } else if (discreateIndexes.includes(source)) {
+              let histogram = d3
                 .histogram()
-                .value(function (d) {
-                  return d[source];
-                }) // I need to give the vector of value
-                .domain(strictX.domain()) // then the domain of the graphic
-                .thresholds(strictX.ticks(xTick)); // then the numbers of bins
-              _this.drawHistogram(item, svg, histogram, strictX, y, height);
-            } else {
-              svg.append("g").attr("transform", `translate(0, ${height})`).call(
-                d3.axisBottom(x).ticks(xTick) // 设置分段数量为10
+                .domain(y.domain())
+                .thresholds(y.ticks(yTick)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+                .value((d) => d);
+              let disKinds = [];
+              item.forEach((row) => {
+                if (!disKinds.includes(row[source])) disKinds.push(row[source]);
+              });
+              let disAxis = d3
+                .scaleBand()
+                .range([0, width])
+                .domain(disKinds)
+                .padding(0.05);
+
+              _this.drawMixedChartX(
+                item,
+                source,
+                target,
+                svg,
+                histogram,
+                disAxis,
+                y
               );
-              svg.append("g").call(d3.axisLeft(y).ticks(yTick));
-              if (
-                !discreateIndexes.includes(source) &&
-                !discreateIndexes.includes(target)
-              )
-                _this.drawContinuousChart(item, source, target, svg, x, y);
-              //_this.drawDensityChart(item,source, target, svg, x, y, height, width);
-              else if (
-                discreateIndexes.includes(source) &&
-                discreateIndexes.includes(target)
-              ) {
-                _this.drawDiscreteChart(item, source, target, svg, x, y);
-              } else if (discreateIndexes.includes(source)) {
-                let histogram = d3
-                  .histogram()
-                  .domain(y.domain())
-                  .thresholds(y.ticks(yTick)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
-                  .value((d) => d);
-                let disKinds = [];
-                item.forEach((row) => {
-                  if (!disKinds.includes(row[source]))
-                    disKinds.push(row[source]);
-                });
-                let disAxis = d3
-                  .scaleBand()
-                  .range([0, width])
-                  .domain(disKinds)
-                  .padding(0.05);
+            } else {
+              let histogram = d3
+                .histogram()
+                .domain(x.domain())
+                .thresholds(x.ticks(xTick)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+                .value((d) => d);
+              let disKinds = [];
+              item.forEach((row) => {
+                if (!disKinds.includes(row[target])) disKinds.push(row[target]);
+              });
+              let disAxis = d3
+                .scaleBand()
+                .range([height, 0])
+                .domain(disKinds)
+                .padding(0.05);
 
-                _this.drawMixedChartX(
-                  item,
-                  source,
-                  target,
-                  svg,
-                  histogram,
-                  disAxis,
-                  y
-                );
-              } else {
-                let histogram = d3
-                  .histogram()
-                  .domain(x.domain())
-                  .thresholds(x.ticks(xTick)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
-                  .value((d) => d);
-                let disKinds = [];
-                item.forEach((row) => {
-                  if (!disKinds.includes(row[target]))
-                    disKinds.push(row[target]);
-                });
-                let disAxis = d3
-                  .scaleBand()
-                  .range([height, 0])
-                  .domain(disKinds)
-                  .padding(0.05);
-
-                _this.drawMixedChartY(
-                  item,
-                  target,
-                  source,
-                  svg,
-                  histogram,
-                  disAxis,
-                  x
-                );
-              }
+              _this.drawMixedChartY(
+                item,
+                target,
+                source,
+                svg,
+                histogram,
+                disAxis,
+                x
+              );
             }
           }
         }
@@ -421,13 +436,13 @@ export default {
 }
 .node-chart {
   width: 150px;
-  height: 220px;
-  overflow-x: visible;
+  height: 150px;
 }
 .factor-title {
   font-size: 14px;
 }
 .chart-canvas {
-  width: 100%;
+  width: 150px;
+  height: 150px;
 }
 </style>

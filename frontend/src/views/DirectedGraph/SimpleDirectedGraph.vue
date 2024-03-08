@@ -325,19 +325,16 @@ export default {
           {
             name: "ELBO_loss",
             type: "line",
-            stack: "Total",
             data: this.lossData.ELBO_loss,
           },
           {
             name: "NLL_loss",
             type: "line",
-            stack: "Total",
             data: this.lossData.NLL_loss,
           },
           {
             name: "MSE_loss",
             type: "line",
-            stack: "Total",
             data: this.lossData.MSE_loss,
           },
         ],
@@ -1321,6 +1318,6 @@ export default {
   font-weight: bold;
 }
 .right-side {
-  width: fit-content !important;
+  width: max-content !important;
 }
 </style>
