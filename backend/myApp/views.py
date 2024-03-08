@@ -362,7 +362,6 @@ def get_list(request):
     for node_ele in top_correlated_factors:
         data_col = data[node_ele].to_numpy()
         node_sin = {}
-        node_sin['range'] = data_col.tolist()
         node_sin['id'] = node_ele
         node_sin['type'] = 1
         nodes_variables.append(node_sin)
