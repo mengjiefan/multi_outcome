@@ -626,7 +626,7 @@ export default {
       );
       this.setPaper(paper);
       this.drawAddEdges();
-      if (!this.gnnType) this.drawGnnLinks();
+      if(this.gnnLinks)this.drawGnnLinks();
       if (!this.aaaiWait) this.drawAAAILinks();
     },
     drawAddEdges() {
@@ -1102,7 +1102,7 @@ export default {
   },
 
   mounted() {
-    this.stopLoop();//刷新
+    this.stopLoop(); //刷新
     this.gnnType = null;
     let result = localStorage.getItem("GET_JSON_RESULT");
     let datasetType = localStorage.getItem("DATATYPE");
