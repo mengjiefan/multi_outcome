@@ -175,6 +175,6 @@ def runAAAI(dataset, target_variables, selMat):
     selMat, dag2, dag, step1_time, step2_time, step3_time = mixed_causal(
         df, X_encode, model_para=model_para_out,
         prior_adj=prior_adj, prior_anc=prior_anc,
-        base_model_para=base_model_para_out, selMat=selMat)
+        base_model_para=base_model_para_out, selMat=None)#之前使用PC算出来的骨架，现在重新计算
     return dag2
 
