@@ -67,7 +67,23 @@ export const creatAllChart = (dom, data) => {
   echarts.dispose(dom);
   var myChart = echarts.init(dom);
   let option = {
-    tooltip,
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow",
+      },
+      formatter: function (params) {
+        let str =
+          "<b>" +
+          params[0].marker +
+          data.axis[params[0].dataIndex] +
+          "</b>" +
+          "<hr/>" +
+          data.value[params[0].dataIndex].toFixed(3);
+
+        return str;
+      },
+    },
     grid,
     xAxis: {
       type: "category",
