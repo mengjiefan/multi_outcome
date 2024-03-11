@@ -169,6 +169,7 @@ export default {
       loadingUrl: { url: require("../../assets/Spinner-1s-200px.gif") },
       lossChart: ref(),
       lossData: ref({
+        epoch: [],
         ELBO_loss: [],
         NLL_loss: [],
         MSE_loss: [],
@@ -295,8 +296,6 @@ export default {
       var chartDom = document.getElementById("loss-chart");
       if (!this.lossChart) this.lossChart = echarts.init(chartDom);
 
-      let epoch = this.lossData.ELBO_loss.length;
-      let xAxis = [...Array(epoch + 1).keys()].slice(1, epoch + 1);
       let option = {
         title: {
           text: "Epoch-Loss",
@@ -317,7 +316,7 @@ export default {
           name: "epoch",
           type: "category",
           boundaryGap: false,
-          data: xAxis,
+          data: this.lossData.epoch,
         },
         yAxis: {
           type: "value",
@@ -346,6 +345,7 @@ export default {
     stopLoop() {
       this.lossChart = null;
       this.lossData = {
+        epoch: [],
         ELBO_loss: [],
         NLL_loss: [],
         MSE_loss: [],
@@ -398,7 +398,12 @@ export default {
       }).then((response) => {
         let graph = eval(JSON.parse(response.data.graph));
 
-        if (this.lossData.ELBO_loss.length < response.data.epoch) {
+        if (
+          (this.lossData.epoch.length === 0 && response.data.epoch) ||
+          this.lossData.epoch[this.lossData.epoch.length - 1] <
+            response.data.epoch
+        ) {
+          this.lossData.epoch.push(parseInt(response.data.epoch));
           this.lossData.ELBO_loss.push(response.data.ELBO_loss.toFixed(3));
           this.lossData.NLL_loss.push(response.data.NLL_loss.toFixed(3));
           this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
