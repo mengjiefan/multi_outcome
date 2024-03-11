@@ -102,8 +102,8 @@ export const creatAllChart = (dom, data) => {
         itemStyle: {
           normal: {
             color: function (params) {
-              if (data.value[params.dataIndex] >= 0) return "rgb(92,111,196)";
-              else return "#c23531";
+              if (data.value[params.dataIndex] >= 0) return "#3182bd";
+              else return "#ffbb78";
             },
           },
         },

@@ -3,22 +3,23 @@
   <div class="navbar">
     <el-card class="box-card">
       <el-radio-group v-model="dataset" style="margin-bottom: 30px">
+        <el-radio-button label="benchmark">benchmark</el-radio-button>
         <el-radio-button label="default">default</el-radio-button>
         <el-radio-button label="clhls">clhls</el-radio-button>
         <el-radio-button label="ukb">ukb</el-radio-button>
       </el-radio-group>
-      <el-tabs v-model="activeName">
+      <el-tabs v-model="activeName" v-if="dataset !== 'benchmark'">
         <el-tab-pane label="Single Outcome" name="single">
           <div class="CharacterSelector">
             <OutcomeSelector :dataset="dataset"></OutcomeSelector></div
         ></el-tab-pane>
         <el-tab-pane label="Multiple Outcomes" name="second">
           <div class="AnalysisHistory">
-            <CausalAnalysisHistory
-              :dataset="dataset"
-            ></CausalAnalysisHistory></div
-        ></el-tab-pane>
+            <CausalAnalysisHistory :dataset="dataset"></CausalAnalysisHistory>
+          </div>
+        </el-tab-pane>
       </el-tabs>
+      <benchmark-list v-else></benchmark-list>
     </el-card>
   </div>
 </template>
@@ -26,13 +27,13 @@
 <script>
 // import upload from "./upload";
 import OutcomeSelector from "./OutcomeSelector";
-import VariablesCheckbox from "./VariablesCheckbox.vue";
 // import CausalAnalysisHistory111 from "./CausalAnalysisHistory111";
 import CausalAnalysisHistory from "./CausalAnalysisHistory";
 import { ref } from "vue";
+import BenchmarkList from './BenchmarkList.vue';
 export default {
   name: "AppNavbar",
-  components: { OutcomeSelector, VariablesCheckbox, CausalAnalysisHistory },
+  components: { OutcomeSelector,  CausalAnalysisHistory, BenchmarkList },
   setup() {
     let datasetType = localStorage.getItem("DATATYPE");
     if (!datasetType) datasetType = "default";

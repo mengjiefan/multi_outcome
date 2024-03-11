@@ -7,7 +7,7 @@ import * as d3 from "d3";
 
 import { g } from "jointjs";
 import { linksOperation } from "./links";
-const cmap = [
+[
   "#FF595E",
   "#FF924C",
   "#FFCA3A",
@@ -18,7 +18,18 @@ const cmap = [
   "#565AA0",
   "#6A4C93",
 ];
-
+const cmap = [
+  "#3182bd", //blue
+  "#ff7f0e", //orange
+  "#2ca02c", //green
+  "#ff9896", //pale red
+  "#9467bd", //purple
+  "#8c564b", //brown
+  "#e377c2", //pink
+  "#c7c7c7", //gray
+  "#bcbd22", //yellow green
+  "#17becf", //light blue
+];
 const addOffset = (x, y, offset, graph) => {
   if (offset === 0) return;
   let arrow = new joint.shapes.standard.Polygon();
@@ -39,7 +50,7 @@ const addOffset = (x, y, offset, graph) => {
     arrow.attr("body/refPoints", "0,20 -10,10 0,0");
   }
   arrow.addTo(graph);
-  let width =1.2;
+  let width = 1.2;
   let number = Math.floor(20 / (6 / Math.abs(offset)));
   for (let i = 0; i < number; i++) {
     let rect = new joint.shapes.standard.Rectangle();

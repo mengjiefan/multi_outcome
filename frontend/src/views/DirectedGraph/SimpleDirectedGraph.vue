@@ -134,6 +134,7 @@
       :visible.sync="drawer"
     >
       <app-main-character></app-main-character>
+      <div class="hint">Plotted from 1000 randomly sampled data.</div>
     </el-drawer>
   </div>
 </template>
@@ -579,8 +580,8 @@ export default {
     },
     drawGraph() {
       this.simplePos.nodesList.forEach((node) => {
-        if (node.type === 0) node["indexes"] = ["7"];
-        else node["indexes"] = ["0"];
+        if (node.type === 0) node["indexes"] = ["10"];
+        else node["indexes"] = ["11"];
       });
       if (this.tooltip) {
         this.tipHidden();
@@ -626,7 +627,7 @@ export default {
       );
       this.setPaper(paper);
       this.drawAddEdges();
-      if(this.gnnLinks)this.drawGnnLinks();
+      if (this.gnnLinks) this.drawGnnLinks();
       if (!this.aaaiWait) this.drawAAAILinks();
     },
     drawAddEdges() {
@@ -1169,6 +1170,7 @@ export default {
 .hint {
   font-size: 14px;
   margin-top: 16px;
+  padding-left: 32px;
 }
 .hint span {
   color: red;

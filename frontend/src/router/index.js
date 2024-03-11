@@ -95,6 +95,12 @@ export default new VueRouter({
             },
           ],
         },
+        {
+          name: "BenchmarkDirectedGraph",
+          path: "/DirectedGraphView/benchmark",
+          component: () =>
+          import("../views/DirectedGraph/BenchmarkGraph.vue"),
+        }
       ],
     },
   ],

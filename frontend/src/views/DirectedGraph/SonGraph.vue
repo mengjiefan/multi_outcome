@@ -99,15 +99,16 @@ export default {
         linksList: [],
       }),
       cmap: [
-        "#FF595E",
-        "#FF924C",
-        "#FFCA3A",
-        "#70d6ff",
-        "#7678ed",
-        "#2176ff",
-        "#4267AC",
-        "#565AA0",
-        "#6A4C93",
+        "#3182bd", //blue
+        "#ff7f0e", //orange
+        "#2ca02c", //green
+        "#ff9896", //pale red
+        "#9467bd", //purple
+        "#8c564b", //brown
+        "#e377c2", //pink
+        "#c7c7c7", //gray
+        "#bcbd22", //yellow green
+        "#17becf", //light blue
       ],
     };
   },

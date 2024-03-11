@@ -74,7 +74,7 @@ export class linksOperation {
       newCircle.resize(24, 24);
       if (type === "AAAI") newCircle.position(position.x - 5, position.y - 5);
       else newCircle.position(position.x + 5, position.y + 5);
-      newCircle.set("z", 0);
+      newCircle.set("z", 10);
       newCircle.addTo(paper.model);
     });
   }
