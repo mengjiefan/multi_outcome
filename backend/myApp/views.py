@@ -313,7 +313,7 @@ def get_list(request):
     data_array = outcome_data_df.to_numpy()
 
     # 使用转换后的NumPy数组运行PC算法
-    cg = pc(data_array, 0.05, fisherz, True, 0, 3, outcome_vars)
+    cg = pc(data_array, 0.5, fisherz, True, 0, 3, outcome_vars)
     # Retrieving the graph nodes with labels
     nodes_pc = cg.G.get_nodes()
     node_labels = outcome_vars  # Use variable names as labels
@@ -457,7 +457,7 @@ def get_causal_edges(request):
     data_array = outcome_data_df.to_numpy()
 
     # 使用转换后的NumPy数组运行PC算法
-    cg = pc(data_array, 0.05, fisherz, True, 0, 3, outcome_vars)
+    cg = pc(data_array, 0.5, fisherz, True, 0, 3, outcome_vars)
     # Retrieving the graph nodes with labels
     nodes_pc = cg.G.get_nodes()
     node_labels = outcome_vars  # Use variable names as labels
