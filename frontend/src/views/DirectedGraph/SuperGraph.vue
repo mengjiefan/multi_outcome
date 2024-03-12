@@ -557,7 +557,6 @@ export default {
       this.saveData();
     },
     changeEdge(source, target, value) {
-      console.log(source, target, value);
       let history = {
         source,
         target,

@@ -696,7 +696,9 @@ export default {
       const _this = this;
       let graph = paper.model.attributes.cells.graph;
       graph.on("change:source change:target", function (link) {
-        if (link.get("source").id && link.get("target").id) {
+        if (link.get("target").id === link.get("source").id) {
+          link.findView(paper).remove({ ui: true });
+        } else if (link.get("source").id && link.get("target").id) {
           _this.deleteLinkView = link.findView(paper);
           let realLink = LinksManagement.getLinkNode(paper, link);
           let flag = true;
