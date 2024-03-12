@@ -259,7 +259,8 @@ export const removeHighLight = (elementView) => {
     elementView.model.attr("body/fill", "transparent");
   }
 };
-export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
+export const drawCurveGraph = (dom, nodes, scale, linksList) => {
+  let nodesList = JSON.parse(JSON.stringify(nodes));// deep copy
   let maxX = 0;
   let maxY = 0;
   let minX = 1000;
@@ -487,7 +488,8 @@ export const drawCurveGraph = (dom, nodesList, scale, linksList) => {
 
   return paper;
 };
-export const drawTightenedGraph = (dom, nodesList, links, scale, linksPos) => {
+export const drawTightenedGraph = (dom, nodes, links, scale, linksPos) => {
+  let nodesList = JSON.parse(JSON.stringify(nodes));
   let linksList = links.filter((link) => !link.hidden);
   linksList = linksList.map((link) => {
     if (link.reverse)

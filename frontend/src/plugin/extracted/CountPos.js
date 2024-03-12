@@ -39,8 +39,10 @@ export const countSimplePos = (g, nodes, links) => {
     if (index > -1) {
       let edge = links[index];
       // simplePos: dagre中点的顺序和数组中一样，无需反向
-      edge["points"] = points;
-      linksList.push(edge);
+      linksList.push({
+        ...edge,
+        points: points,
+      });
     }
   });
   return { nodesList, linksList };

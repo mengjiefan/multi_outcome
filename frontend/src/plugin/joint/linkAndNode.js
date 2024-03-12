@@ -200,7 +200,6 @@ export class LinksManagement {
     historyManage.reverseEdge(history, link);
     linksList[index].value = link.value;
     linksList[index].reverse = !linksList[index].reverse;
-
     return this.getFinalLink(linksList[index]);
   }
 }

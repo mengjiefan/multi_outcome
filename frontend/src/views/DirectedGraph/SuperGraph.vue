@@ -69,7 +69,7 @@ export default {
         linksList: [],
       }),
       chartsValue: ref(),
-      cmap:[
+      cmap: [
         "#3182bd", //blue
         "#ff7f0e", //orange
         "#2ca02c", //green
@@ -443,6 +443,7 @@ export default {
       paper.on("element:mouseover", function (elementView, d) {
         addHighLight(elementView);
       });
+      /*
       paper.on("element: pointerclick", function (elementView, d) {
         //TODO?
         _this.chartVisible(elementView.model.attributes.attrs.title, {
@@ -452,7 +453,7 @@ export default {
         setTimeout(() => {
           document.addEventListener("click", _this.listener2);
         }, 0);
-      });
+      });*/
       paper.on("element:mouseout", function (elementView, evt) {
         removeHighLight(elementView);
       });
@@ -489,36 +490,13 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
-    listener2(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      _this.tip2Hidden();
-      if (
-        clickDOM !== "chart-box" &&
-        clickDOM !== "chart-hint" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header" &&
-        clickDOM !== "son-header"
-      ) {
-        document.removeEventListener("click", _this.listener2);
-      }
-    },
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
       let clickDOM = e.target.className;
       _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header" &&
-        clickDOM !== "son-header"
-      ) {
-        document.removeEventListener("click", _this.listener);
-      } else if (clickDOM === "operate-menu") {
+      document.removeEventListener("click", _this.listener);
+      if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         if (text.includes("Delete")) this.deleteEdge(text);
         else {
@@ -579,6 +557,7 @@ export default {
       this.saveData();
     },
     changeEdge(source, target, value) {
+      console.log(source, target, value);
       let history = {
         source,
         target,
@@ -611,7 +590,6 @@ export default {
           link.reverse = !link.reverse;
         }
         this.saveData();
-        this.tip2Hidden();
       }
     },
     reverseDirection(edge) {
@@ -647,7 +625,6 @@ export default {
           else link.hidden = true;
         }
         this.saveData();
-        this.tip2Hidden();
         this.deleteLinkView.model.remove({ ui: true });
       }
     },
@@ -670,7 +647,6 @@ export default {
       this.tip2Hidden();
       this.tipHidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tooltip2
         .transition()
         .duration(0)
@@ -702,7 +678,6 @@ export default {
     tipVisible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
         .duration(0)
@@ -728,7 +703,6 @@ export default {
       this.tip2Hidden();
       this.tipHidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tip2Show = true;
       this.tooltip2
         .transition()

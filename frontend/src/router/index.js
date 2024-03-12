@@ -6,8 +6,8 @@ import AppMainCharacter from "../components/AppMainCharacter";
 
 // import SubPopulation from '../pages/populationControl.vue'
 // import DimensionView from '../pages/dimensionView.vue'
-import CausalGraph from "../components/CausalGraphView";
-import MultiOutcomes from "../components/MultiOutcomesView";
+import CausalGraph from "../components/temp/CausalGraphView";
+import MultiOutcomes from "../components/temp/MultiOutcomesView";
 import DirectedGraph from "../components/DirectedGraphView";
 // import CausalAnalysisHistory from '../pages/causalAnalysisHistory.vue'
 

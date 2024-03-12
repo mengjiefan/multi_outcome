@@ -202,10 +202,11 @@ export default {
         this.hcmLinks,
       ];
       let dom = document.getElementById("paper1");
-      let gap = 600 / (maxW - minW);
-      if (300 / (maxH - minH) < gap) gap = 300 / (maxH - minH);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
+      let gap = 500 / (maxW - minW);
+      if (900 / (maxH - minH) < gap) gap = 900 / (maxH - minH);
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2+70;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
+      console.log(startX)
       let scale = {
         startX,
         startY,
@@ -220,6 +221,7 @@ export default {
             if (this.simplePos.linksList[index].source === link.source)
               links.push(this.simplePos.linksList[index]);
             else {
+
               let points = this.simplePos.linksList[index].points.concat([]);
               links.push({
                 ...link,

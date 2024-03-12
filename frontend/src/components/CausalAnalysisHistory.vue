@@ -98,11 +98,12 @@ export default {
           value: "DirectedGraphView",
           label: "DirectedGraph",
         },
+        /*
         {
           label: "CausalGraphView",
           value: "CausalGraphView",
         },
-        { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },
+        { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },*/
       ],
       graphType: ref("DirectedGraphView"),
       selectType: ref("1"),

@@ -1,13 +1,21 @@
 import { LinksManagement } from "@/plugin/joint/linkAndNode.js";
-import { circle } from "dagre-d3/lib/intersect";
 import * as joint from "jointjs";
 
 export class findLink {
-  static showSameDireLink(originalLink, originalLinkList) {
+  static showSameDireLink(originalLink, linksList) {
     let link = LinksManagement.getFinalLink(originalLink);
-    let linksList = LinksManagement.getFinalLinks(originalLinkList);
     let index = linksList.findIndex((item) => {
-      if (item.source === link.source && item.target === link.target)
+      if (
+        item.source === link.source &&
+        item.target === link.target &&
+        !item.reverse
+      )
+        return true;
+      else if (
+        item.source === link.target &&
+        item.target === link.source &&
+        item.reverse
+      )
         return true;
       else return false;
     });
@@ -23,12 +31,21 @@ export class findLink {
     });
     return index;
   }
-  static showReverseLink(originalLink, originalLinkList) {
+  static showReverseLink(originalLink, linksList) {
     let link = LinksManagement.getFinalLink(originalLink);
-    let linksList = LinksManagement.getFinalLinks(originalLinkList);
 
     let index = linksList.findIndex((item) => {
-      if (item.target === link.source && item.source === link.target)
+      if (
+        item.target === link.source &&
+        item.source === link.target &&
+        !item.reverse
+      )
+        return true;
+      else if (
+        item.target === link.target &&
+        item.source === link.source &&
+        item.reverse
+      )
         return true;
       else return false;
     });

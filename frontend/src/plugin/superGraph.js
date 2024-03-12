@@ -224,7 +224,7 @@ export const setSuperGraph = (g, data) => {
   });
 
   edges.forEach(function (edge) {
-    let edgeValue = edge.value > 0 ? edge.value * 10 : -edge.value * 10;
+    let edgeValue = edge.value > 0 ? edge.value : -edge.value;
     var valString = edgeValue.toString() + "px";
     var widthStr = "stroke-width: " + valString;
     var edgeColor = "stroke: black";

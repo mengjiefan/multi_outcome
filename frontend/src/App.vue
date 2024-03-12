@@ -1,6 +1,5 @@
 <template>
   <div id="app" class="page-box">
-    <AppHeader></AppHeader>
     <div class="content">
       <AppNavbar></AppNavbar>
       <div class="main-part">
@@ -12,14 +11,12 @@
  
 <script>
 // Vue.config.productionTip = false  // 阻止 vue 在启动时生成生产提示
-import AppHeader from "./components/AppHeader";
 import AppNavbar from "./components/AppNavbar";
-import AppMainPlot from "./components/AppMainPlot";
 
 // 导入子组件，缩写格式 AppHeader: AppHeader
 export default {
   name: "App",
-  components: { AppHeader, AppNavbar, AppMainPlot }, // 有s
+  components: { AppNavbar}, // 有s
   mounted() {
     // console.log(Vue.version);
     // console.log('App',this)

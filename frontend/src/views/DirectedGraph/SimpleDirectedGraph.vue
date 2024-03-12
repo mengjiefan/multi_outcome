@@ -786,7 +786,7 @@ export default {
     },
     ifOutCome(node) {
       let allOut = [];
-      this.multipleSearchValue.nodesList.map((row) => {
+      this.multipleSearchValue.nodesList.forEach((row) => {
         if (row.type === 0) allOut.push(row.id);
       });
       if (allOut.includes(node)) return true;
@@ -902,40 +902,14 @@ export default {
       let _this = this;
       let clickDOM = e.target.className;
       _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header" &&
-        clickDOM !== "son-header"
-      ) {
-        document.removeEventListener("click", _this.listener);
-      } else if (clickDOM === "operate-menu") {
+      document.removeEventListener("click", _this.listener);
+      if (clickDOM === "operate-menu") {
         let text = e.target.innerText;
         if (text.includes("Delete")) this.deleteEdge(text);
         else {
           let text = e.srcElement.parentElement.children[2].innerText;
           this.reverseDirection(text);
         }
-      }
-    },
-    listener2(e) {
-      let _this = this;
-      let clickDOM = e.target.className;
-      _this.tip2Hidden();
-      if (
-        clickDOM !== "operate-menu" &&
-        clickDOM !== "hint-menu" &&
-        clickDOM !== "hint-list" &&
-        clickDOM !== "tooltip" &&
-        clickDOM !== "operate-header" &&
-        clickDOM !== "son-header"
-      ) {
-        document.removeEventListener("click", _this.listener2);
-      } else if (clickDOM === "operate-menu") {
-        let text = e.target.innerText;
-        this.deleteNode(text);
       }
     },
 
@@ -999,7 +973,6 @@ export default {
           value: link.value,
         });
         this.saveData();
-        this.tip2Hidden();
       }
     },
     addLinkToPaper(link) {
@@ -1030,7 +1003,6 @@ export default {
           }
         );
         this.saveData();
-        this.tip2Hidden();
         this.deleteLinkView.model.remove({ ui: true });
       }
     },
@@ -1047,7 +1019,6 @@ export default {
     tipVisible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tooltip
         .transition()
         .duration(0)
@@ -1077,7 +1048,6 @@ export default {
     tip2Visible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
-      document.removeEventListener("click", this.listener2);
       this.tip2Show = true;
       this.tooltip2
         .transition()

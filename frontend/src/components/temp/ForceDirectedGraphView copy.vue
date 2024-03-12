@@ -12,11 +12,10 @@
 
   </div>
 </template>
-    
-</template>
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
-import bus from "../componentsInteraction/bus.js";
+import bus from "../../componentsInteraction/bus.js";
 import {mapState,mapGetters,mapMutations,mapActions} from 'vuex'
 export default {
   name: "ForceDirectedGraph",
