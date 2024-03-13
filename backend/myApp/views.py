@@ -287,7 +287,7 @@ def get_list(request):
     # print(outcome_data_df)
 
     # 将选定结局及与其相关的前top个元素一起组成的outcome_data_df，存到 /backend/DAG_from_GNN_main目录下的datasets文件夹[./backend/DAG_from_GNN_main/datasets]下
-    outcome_data_df.to_csv('./DAG_from_GNN_main/datasets/causal_related_data.csv', index=False)
+    # outcome_data_df.to_csv('./DAG_from_GNN_main/datasets/causal_related_data.csv', index=False)
 
     # (1) 运行 dag-gnn
     # 调用函数
