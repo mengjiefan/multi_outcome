@@ -62,9 +62,8 @@ import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
 import {
   drawExtractedGraph,
   drawOverViewGraph,
-  drawSuperGraph,
 } from "@/plugin/superGraph";
-import { drawTightenedGraph } from "@/plugin/sonGraph";
+import { drawTightenedGraph} from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
@@ -236,7 +235,7 @@ export default {
       for (let i = 0; i < this.sonNum; i++) this.drawSonGraph(i);
     },
     drawSonGraph(index) {
-      this.stressList= countStress(
+      this.stressList = countStress(
         this.sonGraphs.map((graph) => graph.nodesList),
         this.multipleSearchValue.selections.map(
           (selection) => selection.linksList
@@ -553,31 +552,7 @@ export default {
         return { x, y };
       } else return { x: x + offset, y };
     },
-    // countControl(source, target){
-    //   const deltaX = target.x - source.x;
-    //   const deltaY = target.y - source.y;
-    //   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    //   // 控制点偏移量
-    //   const controlOffsetX = (deltaY * 0.1 * distance) / distance;
-    //   const controlOffsetY = (deltaX * 0.1 * distance) / distance;
-
-    //   // 使用两个控制点 control1 和 control2 来生成三次贝塞尔曲线。
-    //   // 可以调整 0.2 的值来改变曲线的平滑度。增大这个值会使曲线更加弯曲，减小则使曲线更直。
-    //   // 控制点坐标
-    //   // const control1X = source.x + controlOffsetX;
-    //   // const control1Y = source.y + controlOffsetY;
-    //   // const control2X = target.x - controlOffsetX;
-    //   // const control2Y = target.y - controlOffsetY;
-
-    //   // 控制点坐标,使用一个控制点来生成二次贝塞尔曲线
-    //   const controlX = source.x + controlOffsetX;
-    //   const controlY = source.y + controlOffsetY;
-
-    //   // return {control1X, control1Y, control2X, control2Y}
-    //   return {controlX, controlY}
-
-    // },
     tipVisible(textContent, event) {
       this.tip2Hidden();
       document.removeEventListener("click", this.listener3);
@@ -786,15 +761,6 @@ export default {
         let point = this.countControl(source, target, this.scales[index].mid);
 
         link["points"] = [source, point, target];
-
-        // // 调用 countControl 返回两个控制点的对象
-        // // let { control1X, control1Y, control2X, control2Y } = this.countControl(source, target);
-
-        // let { controlX, controlY } = this.countControl(source, target);
-
-        // // 将控制点添加到链接对象的 points 属性中
-        // // link["points"] = [source, { x: control1X, y: control1Y }, { x: control2X, y: control2Y }, target];
-        // link["points"] = [source, { x: controlX, y: controlY }, target];
       }
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
@@ -835,7 +801,7 @@ export default {
       this.ifCurve = true;
       let graphs = await countCurveSonPos(this.finalPos, name);
       this.sonGraphs = [];
-      graphs.forEach((graph) => {
+      graphs.forEach(() => {
         this.sonGraphs.push({ nodesList: [], linksList: [] });
       });
       graphs.forEach((graph) => {
