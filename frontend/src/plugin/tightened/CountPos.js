@@ -352,7 +352,7 @@ export const countTightenedSonPos = (son, commonNodes, linksList) => {
   }
   return {
     gap: gap,
-    nodesList: sonPos.concat(commonPos),
+    nodesList: sonPos,
     linksList: linksPos,
   };
 };

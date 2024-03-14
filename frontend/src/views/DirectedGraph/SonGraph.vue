@@ -16,6 +16,10 @@
               ></div>
               {{ multipleSearchValue.selections[index - 1].outcome }}
             </div>
+            <div class="stress-score">
+              <div class="stress-func">stress(X):</div>
+              <div class="stress-value">{{ stressList?.[index - 1] }}</div>
+            </div>
             <div class="drawing-buttons">
               <!--Apply Changes to Super Graph-->
               <el-button
@@ -70,6 +74,7 @@ import { createChart } from "@/plugin/charts";
 
 import { findLink, linksOperation } from "@/plugin/links";
 import { linkRequest } from "@/plugin/request/edge.js";
+import { countStress } from "@/plugin/stress";
 
 export default {
   name: "SonGraph",
@@ -81,6 +86,7 @@ export default {
   },
   data() {
     return {
+      stressList: [],
       graphType: ref(),
       ifCurve: ref(false),
       scales: ref([]),
@@ -230,6 +236,12 @@ export default {
       for (let i = 0; i < this.sonNum; i++) this.drawSonGraph(i);
     },
     drawSonGraph(index) {
+      this.stressList= countStress(
+        this.sonGraphs.map((graph) => graph.nodesList),
+        this.multipleSearchValue.selections.map(
+          (selection) => selection.linksList
+        )
+      );
       let dom = document.getElementById("paper" + (index + 1));
       for (let i = 0; i < this.sonGraphs[index].nodesList.length; i++)
         this.sonGraphs[index].nodesList[i]["indexes"] = this.getNodeIndex(
@@ -796,16 +808,17 @@ export default {
       for (let i = 0; i < this.sonNum; i++) {
         let ans = {};
         let selection = this.multipleSearchValue.selections[i];
+        let originalPos = countOriginalSonPos(
+          selection.outcome,
+          selection.variable,
+          selection.linksList
+        );
         switch (this.graphType) {
           case "ExtractedSubGraph":
             ans = countExtractedSonPos(this.finalPos, selection);
             break;
           case "OriginalSubGraph":
-            ans = countOriginalSonPos(
-              selection.outcome,
-              selection.variable,
-              selection.linksList
-            );
+            ans = originalPos;
             break;
           case "TightenedSubGraph":
             ans = countTightenedSonPos(
@@ -814,7 +827,6 @@ export default {
               selection.linksList
             );
         }
-
         this.scales.push({});
         this.sonGraphs.push(ans);
       }
@@ -1025,6 +1037,18 @@ export default {
   font-size: 18px;
   font-weight: bold;
   line-height: 32px;
+}
+.stress-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 24px;
+}
+.stress-func {
+  font-size: 16px;
+}
+.stress-value {
+  font-size: 16px;
 }
 </style>
   <style>
