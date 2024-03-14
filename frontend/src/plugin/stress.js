@@ -27,7 +27,6 @@ const floydWarshall = (graph) => {
 };
 
 export const countStress = (graphNodes, graphLinks) => {
-console.log(graphNodes[3], graphLinks[3])
   let scale = 0;
   let stressList = [];
   for (let index = 0; index < graphNodes.length; index++) {

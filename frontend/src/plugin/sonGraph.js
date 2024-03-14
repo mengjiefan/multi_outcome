@@ -4,20 +4,13 @@
 import * as joint from "jointjs";
 import "/node_modules/jointjs/dist/joint.css";
 import * as d3 from "d3";
-
+import dagre from "@/plugin/dagre/dagre_fixed";
 import { g } from "jointjs";
 import { linksOperation } from "./links";
-[
-  "#FF595E",
-  "#FF924C",
-  "#FFCA3A",
-  "#70d6ff",
-  "#7678ed",
-  "#2176ff",
-  "#4267AC",
-  "#565AA0",
-  "#6A4C93",
-];
+import { countSimplePos } from "./extracted/CountPos";
+import * as dagreD3 from "dagre-d3";
+import { insertSelfEdges } from "./dagre/utils";
+
 const cmap = [
   "#3182bd", //blue
   "#ff7f0e", //orange
@@ -260,7 +253,7 @@ export const removeHighLight = (elementView) => {
   }
 };
 export const drawCurveGraph = (dom, nodes, scale, linksList) => {
-  let nodesList = JSON.parse(JSON.stringify(nodes));// deep copy
+  let nodesList = JSON.parse(JSON.stringify(nodes)); // deep copy
   let maxX = 0;
   let maxY = 0;
   let minX = 1000;
@@ -684,4 +677,50 @@ export const drawTightenedGraph = (dom, nodes, links, scale, linksPos) => {
   });
 
   return paper;
+};
+export const setCurveGraph = (nodes, links) => {
+  let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
+    ranker: "tight-tree",
+  });
+  links = links.filter((edge) => !edge.add);
+  nodes.forEach(function (state) {
+    let node = {
+      label: "",
+      rank: state.y,
+      order: state.x,
+      type: state.type,
+      shape: "circle", // 设置节点形状为圆形
+      width: 10,
+      height: 10,
+    };
+    if (node.type === 0) node["index"] = state.index;
+    g.setNode(state.id, node);
+  });
+
+  links.forEach(function (edge) {
+    let edgeValue = edge.value > 0 ? edge.value : -edge.value;
+    var valString = edgeValue.toString() + "px";
+    var widthStr = "stroke-width: " + valString;
+    var edgeColor = "stroke: black";
+    let completeStyle = edgeColor + ";" + widthStr + ";" + "fill: transparent;";
+    if (edge.hidden) {
+      g.setEdge(edge.source, edge.target, {
+        style:
+          "stroke: transparent; fill: transparent; opacity: 0;stroke-width:0",
+      });
+    } else {
+      if (edge.value < 0) {
+        completeStyle = completeStyle + "stroke-dasharray:4 4";
+      }
+      g.setEdge(edge.source, edge.target, {
+        style: completeStyle,
+        arrowhead: "undirected",
+      });
+    }
+  });
+  dagre.layout(g)
+  const simpleG = g;
+  const simplePos = countSimplePos(simpleG, nodes, links);
+  console.log(simplePos)
+  return simplePos;
 };
