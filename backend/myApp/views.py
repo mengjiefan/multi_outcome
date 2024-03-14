@@ -249,6 +249,25 @@ def get_temp_result(request):
     else:
         return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
 
+def get_correlation(request):
+    outcome = request.GET.get("outcome")
+    dataset = request.GET.get('dataset')
+    fileName = "./myApp/MissingValue_fill_data_all.csv"
+    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
+                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
+    if dataset == 'ukb':
+        fileName = ukb_file
+        outcomes = ukb_outcomes
+    elif dataset == 'clhls':
+        fileName = clhls_file
+        outcomes = clhls_outcomes
+
+    data = pd.read_csv(fileName)
+    factors = [col for col in data.columns if col not in outcomes]
+    outcome_corr = data[factors].corrwith(data[outcome])
+    all_variables = outcome_corr.index.tolist()
+    all_values = outcome_corr.tolist()
+    return JsonResponse({'outcome': all_values, 'variable': all_variables})
 def get_list(request):
     num_top = request.GET.get("CovariantNum")  # CovariantNum
     num_top = int(num_top)
