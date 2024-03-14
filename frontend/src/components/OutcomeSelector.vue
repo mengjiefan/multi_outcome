@@ -19,6 +19,15 @@
         >
         </el-option>
       </el-select>
+      <el-button
+        :disabled="loadingInstance !== null"
+        size="small"
+        class="show-variable-button"
+        type="primary"
+        @click="getAllCorrelation()"
+      >
+        Confirm
+      </el-button>
     </div>
     <div class="outcome-main-title">· Variables</div>
     <!--original h6-->
@@ -28,7 +37,7 @@
 
     <!-- 通过v-model双向绑定，完成input框值获取。 -->
     <div class="number-input-line">
-      <div>Show the top</div>
+      <div>The top</div>
       <div class="outcome-number-input">
         <el-input
           :onkeyup="(CovariantNum = CovariantNum.replace(/[^\d]/g, ''))"
@@ -40,12 +49,16 @@
       <el-button
         :disabled="loadingInstance !== null"
         size="small"
-        class="show-variable-button"
+        class="get-list-button"
         type="primary"
         @click="getOutcomeCovariant()"
       >
-        Confirm
+        Calculate
       </el-button>
+    </div>
+    <div v-if="corrValues" class="correlation-chart">
+      Correlation Value
+      <div class="variable-chart"></div>
     </div>
     <div class="loading-box"></div>
     <ul class="variables">
@@ -53,16 +66,7 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
-    <!--
-    <div v-for="(item, index) in SelectedVariables" :key="index">
-      {{ SelectedVariables[index] }}
-      <div class="variable-chart"></div>
-    </div>
-    -->
-    <div v-if="Variables_result">
-      Correlation Value
-      <div class="variable-chart"></div>
-    </div>
+
     <div class="drawing-command">
       <el-select v-model="graphType" placeholder="请选择">
         <el-option
@@ -79,7 +83,7 @@
         type="primary"
         @click="saveSingleData"
         :disabled="!Variables_result"
-        >Plot the list</el-button
+        >Plot the graph</el-button
       >
     </div>
     <br />
@@ -124,6 +128,7 @@ export default {
       };
     });
     return {
+      corrValues: ref(),
       nowType: ref(datasetType),
       CovariantNum: ref(""),
       value: ref(""),
@@ -158,7 +163,57 @@ export default {
     reselect() {
       console.log("reselect");
       this.Variables_result = null;
+      this.corrValues = null;
       this.SelectedVariables = [];
+    },
+    getAllCorrelation() {
+      var outcome = this.value;
+      this.corrValues = null;
+      if (!outcome) {
+        this.showErrorMsg("Please choose outcome!");
+        return;
+      }
+      this.showLoading();
+      const _this = this;
+      axios({
+        //请求类型
+        method: "GET",
+        //URL
+        url: "http://localhost:8000/api/get_correlation",
+        //参数
+        params: {
+          dataset: this.nowType,
+          outcome: outcome,
+        },
+      })
+        .then((response) => {
+          console.log("variable list", response.data);
+          //hide loading anime
+          this.loadingInstance.close();
+          this.loadingInstance = null;
+          //include node & links & list
+          this.corrValues = response.data;
+
+          let allValues = [];
+          for (let i = 0; i < this.corrValues.variable.length; i++) {
+            allValues.push({
+              axis: this.corrValues.variable[i],
+              value: this.corrValues.outcome[i],
+            });
+          }
+          allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+          this.allChart = {
+            axis: allValues.map((item) => item.axis),
+            value: allValues.map((item) => item.value),
+          };
+
+          setTimeout(() => {
+            _this.createChart();
+          }, 0);
+        })
+        .catch((error) => {
+          console.log("请求失败了", error.message);
+        });
     },
     getOutcomeCovariant() {
       // var outcome = getElementById("outcomeSelector").value
@@ -196,35 +251,36 @@ export default {
           this.loadingInstance.close();
           this.loadingInstance = null;
           //include node & links & list
-          this.Variables_result = response.data;
+          this.Variables_result = {
+            nodes: response.data.nodes,
+            links: response.data.links,
+            CovariantNum: response.data.CovariantNum,
+            outcome: response.data.CovariantNum,
+          };
+          if (!this.corrValues) {
+            this.corrValues = response.data.allValue;
+            let allValues = [];
+            for (let i = 0; i < this.corrValues.variable.length; i++) {
+              allValues.push({
+                axis: this.corrValues.variable[i],
+                value: this.corrValues.outcome[i],
+              });
+            }
+            allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+            this.allChart = {
+              axis: allValues.map((item) => item.axis),
+              value: allValues.map((item) => item.value),
+            };
+            setTimeout(() => {
+              _this.createChart();
+            }, 0);
+          }
           //only the list
           let nodes = this.Variables_result.nodes.filter(
             (node) => node.type === 1
           );
-          let allValues = [];
-          for (
-            let i = 0;
-            i < this.Variables_result.allValue.variable.length;
-            i++
-          ) {
-            allValues.push({
-              axis: this.Variables_result.allValue.variable[i],
-              value: this.Variables_result.allValue.outcome[i],
-            });
-          }
-          allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-          this.allChart = {
-            axis: allValues.map((item) => item.axis),
-            value: allValues.map((item) => item.value),
-          };
-          this.SelectedVariables = nodes.map((node) => {
-            return node.id;
-          });
-          console.log("Variables_result:", this.Variables_result);
 
-          setTimeout(() => {
-            _this.createChart();
-          }, 0);
+          this.SelectedVariables = nodes.map((node) => node.id);
         })
         .catch((error) => {
           console.log("请求失败了", error.message);
@@ -257,7 +313,7 @@ export default {
     },
     saveSingleData() {
       if (!this.Variables_result.nodes) {
-        this.showErrorMsg("Please confirm first!");
+        this.showErrorMsg("Please calculate the graph first!");
         return;
       }
       let linksList = this.Variables_result.links;
@@ -370,14 +426,17 @@ export default {
 }
 
 .outcome-input {
-  width: 280px;
+  width: 100%;
   font-size: 18px;
+  display: flex;
+  gap: 16px;
 }
 .number-input-line {
   display: flex;
   height: 40px;
   align-items: center;
   font-size: 18px;
+  padding-bottom: 16px;
 }
 .outcome-number-input {
   margin-left: 10px;
@@ -388,14 +447,21 @@ export default {
 .loading-box {
   height: 0;
 }
+.correlation-chart {
+  font-weight: bold;
+}
 .variable-chart {
   height: 300px;
   width: 100%;
 }
 .show-variable-button {
-  margin-left: 50px;
   height: 36px;
   display: flex;
+}
+.get-list-button {
+  height: 36px;
+  display: flex;
+  margin-left: 16px;
 }
 .drawing-command {
   display: flex;
