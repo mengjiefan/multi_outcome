@@ -106,7 +106,6 @@ export default {
         { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },*/
       ],
       graphType: ref("DirectedGraphView"),
-      selectType: ref("1"),
       multipleSelection: [],
       dataString: ref("tableData"),
       selection: [],
@@ -272,19 +271,7 @@ export default {
         });
         return;
       }
-      if (this.selectType === "2") {
-        let outcomes = [];
-        let factors = [];
-        selections.forEach((selection) => {
-          if (!outcomes.includes(selection.outcome)) {
-            outcomes.push(selection.outcome);
-          }
-          selection.Variables.forEach((variable) => {
-            if (!factors.includes(variable)) factors.push(variable);
-          });
-        });
-        this.getLinks(outcomes, factors);
-      } else if (selections.length > 1) {
+      if (selections.length > 1) {
         //combine all the data and relayout!
         let nodes = [];
         let nodesList = [];
@@ -362,10 +349,7 @@ export default {
         };
         if (selections[0].aaaiLinks) data.aaaiLinks = selections[0].aaaiLinks;
         if (selections[0].dagLinks) data.dagLinks = selections[0].dagLinks;
-        localStorage.setItem(
-          "GET_JSON_RESULT",
-          JSON.stringify(data)
-        );
+        localStorage.setItem("GET_JSON_RESULT", JSON.stringify(data));
         this.routeToGraph();
       }
       return;

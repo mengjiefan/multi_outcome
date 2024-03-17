@@ -323,7 +323,6 @@ export default {
         JSON.stringify({
           nodesList: this.Variables_result.nodes,
           linksList: linksList,
-          CovariantNum: this.Variables_result.CovariantNum,
           history: [],
         })
       );
