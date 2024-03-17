@@ -286,12 +286,11 @@ hr {
 }
 .chart-box {
   display: flex;
-  padding: 8px;
-  flex-direction: column;
-  height: 180px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+  padding-top: 5px;
   justify-content: center;
-
-  width: 300px;
   align-items: center;
 }
 .chart-hint {

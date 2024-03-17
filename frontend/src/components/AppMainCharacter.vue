@@ -278,17 +278,6 @@ export default {
         const random = d3.randomUniform(1, 10);
         console.log(random());
         item = _this.getRandomSubarray(item, 1000);
-        for (let i = 0; i < _this.nodes.length; i++) {
-          let chart = document.getElementById(
-            "chart" + (i * _this.nodes.length + i)
-          );
-          createCharts(
-            _this.nodes[i],
-            chart,
-            item.map((row) => parseFloat(row[_this.nodes[i]]))
-          );
-          continue;
-        }
         item = item.map((row) => {
           let newRow = {};
           _this.nodes.forEach((node) => {
@@ -296,6 +285,18 @@ export default {
           });
           return newRow;
         });
+        for (let i = 0; i < _this.nodes.length; i++) {
+          let chart = document.getElementById(
+            "chart" + (i * _this.nodes.length + i)
+          );
+          createCharts(
+            _this.nodes[i],
+            chart,
+            item.map((row) => row[_this.nodes[i]])
+          );
+          continue;
+        }
+
         for (let i = 0; i < _this.nodes.length; i++) {
           for (let j = 0; j < _this.nodes.length; j++) {
             let source = _this.nodes[i];

@@ -388,10 +388,9 @@ export default {
     },
     getTempResult() {
       axios({
-        method: "post",
+        method: "get",
         url: "http://localhost:8000/api/checkpoint_result",
         //参数
-        data: {},
         headers: {
           "Content-Type": "application/json",
         },
@@ -434,12 +433,17 @@ export default {
       );
       //去除孤点
       //remove unrelated nodes
+      let allLinks = linksList;
+      if (this.multipleSearchValue.gnnLinks)
+        allLinks = allLinks.concat(this.multipleSearchValue.gnnLinks);
+      if (this.multipleSearchValue.aaaiLinks)
+        allLinks = allLinks.concat(this.multipleSearchValue.aaaiLinks);
       let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
-        let index = linksList.findIndex((link) => {
+        let index = allLinks.findIndex((link) => {
           if (link.source === node.id || link.target === node.id) return true;
           else return false;
         });
-        return index > -1;
+        return index > -1 || node.type === 0;
       });
       this.multipleSearchValue.linksList = linksList;
       this.multipleSearchValue.nodesList = nodesList;
@@ -1027,15 +1031,9 @@ export default {
         .style("opacity", 1)
         .style("display", "block");
       this.tooltip
-        .html(
-          '<div class="chart-box">' +
-            textContent +
-            '<div class="chart-hint ' +
-            textContent +
-            '"></div></div>'
-        )
+        .html('<div class="chart-box">' + textContent + "</div>")
         .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY + 15}px`);
+        .style("top", `${event.pageY - 40}px`);
 
       const _this = this;
       setTimeout(() => {
@@ -1048,6 +1046,7 @@ export default {
     },
     //display delete-menu tooltip
     tip2Visible(textContent, event) {
+      this.tipHidden();
       this.tip2Hidden();
       document.removeEventListener("click", this.listener);
       this.tip2Show = true;
