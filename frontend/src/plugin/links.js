@@ -52,20 +52,22 @@ export class findLink {
     return index;
   }
 }
-const countControl = (source, target, mid) => {
-  let x = (source.x + target.x) / 2;
-  let y = (source.y + target.y) / 2;
-
-  let offset = (target.y - source.y) * 0.15;
-  if (source.x !== target.x) {
-    offset = Math.abs(offset);
-    if (x < mid) x = x - offset;
-    else x = x + offset;
-    return { x, y };
-  } else return { x: x + offset, y };
-};
 
 export class linksOperation {
+  static countControl(source, target, mid) {
+    let x = (source.x + target.x) / 2;
+    let y = (source.y + target.y) / 2;
+
+    let offset = (target.y - source.y) * 0.17;
+    if (source.x !== target.x) {
+      offset = Math.abs(offset);
+      if (x < mid) x = x - offset;
+      else x = x + offset;
+      if (source.id === "Sex" && target.id.includes("fam"))
+        console.log(x, y, mid, source.x, target.x);
+      return { x, y };
+    } else return { x: x + offset, y };
+  }
   static recalLinkValue(value) {
     let newV = Math.abs(value);
     return Math.log(newV + 1.2) / Math.log(2);
@@ -169,7 +171,11 @@ export class linksOperation {
     if (curveType === "TreeCurve") {
       source = attrs.source;
       target = attrs.target;
-      let point = countControl(nodesList[sIndex], nodesList[tIndex], attrs.mid);
+      let point = this.countControl(
+        nodesList[sIndex],
+        nodesList[tIndex],
+        attrs.mid
+      );
       points = [nodesList[sIndex], point, nodesList[tIndex]];
       path.connector("TreeCurve", { points: points, value: value });
     } else if (!points.length) {

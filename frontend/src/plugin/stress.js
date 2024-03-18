@@ -33,6 +33,7 @@ export const countStress = (graphNodes, graphLinks) => {
     let nodesList = graphNodes[index];
     let linksList = graphLinks[index];
     let graph = [];
+    //初始化邻接矩阵
     for (let i = 0; i < nodesList.length; i++) {
       graph.push([]);
       for (let j = 0; j < nodesList.length; j++) graph[i].push(Infinity);
@@ -47,11 +48,13 @@ export const countStress = (graphNodes, graphLinks) => {
       graph[sIndex][tIndex] = 1;
       graph[tIndex][sIndex] = 1;
     }
+    //最短路径
     graph = floydWarshall(graph);
 
     let maxY = -15000;
     let minY = 15000;
     let nowH = 1;
+    //缩放第一张子图到同等大小（高为5），记录缩放比例
     if (!scale) {
       nodesList.forEach((node) => {
         if (node.y > maxY) maxY = node.y;

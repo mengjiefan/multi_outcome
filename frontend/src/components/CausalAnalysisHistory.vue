@@ -327,7 +327,7 @@ export default {
             );
 
           _this.routeToGraph();
-        }, 500);
+        }, 0);
       } else {
         let nodes = [
           {

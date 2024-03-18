@@ -109,13 +109,31 @@ export default {
       } //add
     });
   },
+  getRelevantRecord(records, record) {
+    return records.filter(
+      (history) =>
+        (history.source === record.source &&
+          history.target === record.target) ||
+        (history.target === record.source && history.source === record.target)
+    );
+  },
+  getIdleRecord(records, record) {
+    return records.filter((historyy) => {
+      !(
+        historyy.source === record.source && historyy.target === record.target
+      ) &&
+        !(
+          historyy.target === record.source && historyy.source === record.target
+        );
+    });
+  },
   combineHistory(records) {
     let resrecord = [];
     records.forEach((record) => {
       resrecord = resrecord.concat(record);
     });
     let flag = true;
-
+    let changeRecords = [];
     while (flag) {
       flag = false;
       let index = resrecord.findIndex((record) => {
@@ -125,19 +143,27 @@ export default {
       if (index > -1) {
         flag = true;
         let record = resrecord[index];
-        resrecord = resrecord.filter(
-          (historyy) =>
-            !(
-              historyy.source === record.source &&
-              historyy.target === record.target
-            ) &&
-            !(
-              historyy.target === record.source &&
-              historyy.source === record.target
-            )
-        );
+        let relevantRecords = this.getRelevantRecord(resrecord, record);
+        let addRecords = relevantRecords.filter((history) => history.add);
+        let hidRecords = relevantRecords.filter((history) => history.hidden);
+        let idleRecords = this.getIdleRecord(resrecord, record); //删除所有相关操作
+
+        if (addRecords.length > hidRecords.length) {
+          resrecord = idleRecords.concat(
+            relevantRecords.filter((history) => history.reverse)
+          ); //无关操作+翻转操作
+          changeRecords.push(addRecords[0]);
+        } else if (addRecords.length < hidRecords.length) {
+          changeRecords.push(hidRecords[0]);
+          resrecord = idleRecords; //无关操作
+        } //删增相等
+        else
+          resrecord = idleRecords.concat(
+            relevantRecords.filter((history) => history.reverse)
+          ); //无关操作+翻转操作
       }
     }
+    resrecord = resrecord.concat(changeRecords);
     flag = true;
     let newRecord = [];
     while (flag) {
