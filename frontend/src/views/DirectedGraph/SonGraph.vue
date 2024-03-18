@@ -735,15 +735,16 @@ export default {
         let link = links[i];
         let source = nodes[nodes.findIndex((node) => node.id === link.source)];
         let target = nodes[nodes.findIndex((node) => node.id === link.target)];
-
+        
         let point = linksOperation.countControl(
           source,
           target,
           this.countMid(nodes, source, target)
         );
-
+        //控制点：起点、自定义算法计算所得的点、终点
         link["points"] = [source, point, target];
       }
+      //使用jointjs绘制，nodes: 点及点坐标{id, type, x, y}，links: 边及边控制点坐标{source, target, points}
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
 
