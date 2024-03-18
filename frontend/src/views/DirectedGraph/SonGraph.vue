@@ -547,15 +547,9 @@ export default {
         .style("opacity", 1)
         .style("display", "block");
       this.tooltip
-        .html(
-          '<div class="chart-box">' +
-            textContent +
-            '<div class="chart-hint ' +
-            textContent +
-            '"></div></div>'
-        )
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY + 15}px`);
+        .html('<div class="chart-box">' + textContent + "</div>")
+        .style("left", `${event.pageX + 5}px`)
+        .style("top", `${event.pageY - 40}px`);
 
       const _this = this;
       setTimeout(() => {

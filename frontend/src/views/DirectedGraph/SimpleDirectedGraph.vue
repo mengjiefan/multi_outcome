@@ -995,12 +995,9 @@ export default {
         this.multipleSearchValue.linksList
       );
       if (index > -1) {
-        this.multipleSearchValue.linksList[index] = {
-          source: nodes[0],
-          target: nodes[1],
-          value: this.multipleSearchValue.linksList[index].value,
-          hidden: true,
-        };
+        let link = this.multipleSearchValue.linksList[index];
+        if (link.add) this.multipleSearchValue.linksList.splice(index, 1);
+        else link.hidden = true;
         this.multipleSearchValue.history = historyManage.deleteEdge(
           this.multipleSearchValue.history,
           {
@@ -1032,7 +1029,7 @@ export default {
         .style("display", "block");
       this.tooltip
         .html('<div class="chart-box">' + textContent + "</div>")
-        .style("left", `${event.pageX + 15}px`)
+        .style("left", `${event.pageX + 5}px`)
         .style("top", `${event.pageY - 40}px`);
 
       const _this = this;
