@@ -335,7 +335,7 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
       circle.set("z", 50);
       circle.addTo(graph);
     }
-    nodesList[nodeI]["node"] = faRect;
+    //nodesList[nodeI]["node"] = faRect;
     faRect.addTo(graph);
     addTool(faRect, paper);
   }
@@ -451,9 +451,9 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         },
       },
     });
-    if (link.value < 0) {
+    if (link.value < 0) 
       path.attr("line/strokeDasharray", "4 4");
-    }
+
     let realLink = LinksManagement.getNodeByName(paper, link);
     let source = realLink.source;
     let target = realLink.target;
