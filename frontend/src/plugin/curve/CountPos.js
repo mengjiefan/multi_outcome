@@ -88,7 +88,6 @@ export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
     let startX = (clientWidth - minGap * midX[i]) / 2;
 
     scales.push({
-      mid: { x: midX[i] / 2, y: (maxH + minH) / 2 },
       startX,
       startY,
       gap: minGap,

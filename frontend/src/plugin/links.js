@@ -63,8 +63,6 @@ export class linksOperation {
       offset = Math.abs(offset);
       if (x < mid) x = x - offset;
       else x = x + offset;
-      if (source.id === "Sex" && target.id.includes("fam"))
-        console.log(x, y, mid, source.x, target.x);
       return { x, y };
     } else return { x: x + offset, y };
   }

@@ -59,11 +59,8 @@ import {
 } from "@/plugin/extracted/CountPos";
 import { countOriginalSonPos } from "@/plugin/original/CountPos";
 import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
-import {
-  drawExtractedGraph,
-  drawOverViewGraph,
-} from "@/plugin/superGraph";
-import { drawTightenedGraph} from "@/plugin/sonGraph";
+import { drawExtractedGraph, drawOverViewGraph } from "@/plugin/superGraph";
+import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
 import { LinksManagement } from "@/plugin/joint/linkAndNode";
 import { addHighLight, removeHighLight } from "@/plugin/sonGraph";
@@ -540,18 +537,6 @@ export default {
         });
       });
     },
-    countControl(source, target, mid) {
-      let x = (source.x + target.x) / 2;
-      let y = (source.y + target.y) / 2;
-
-      let offset = (target.y - source.y) * 0.2;
-      if (source.x !== target.x) {
-        offset = Math.abs(offset);
-        if (x < mid) x = x - offset;
-        else x = x + offset;
-        return { x, y };
-      } else return { x: x + offset, y };
-    },
 
     tipVisible(textContent, event) {
       this.tip2Hidden();
@@ -754,11 +739,14 @@ export default {
 
       for (let i = 0; i < links.length; i++) {
         let link = links[i];
-        let sIndex = nodes.findIndex((node) => node.id === link.source);
-        let tIndex = nodes.findIndex((node) => node.id === link.target);
-        let source = nodes[sIndex];
-        let target = nodes[tIndex];
-        let point = this.countControl(source, target, this.scales[index].mid);
+        let source = nodes[nodes.findIndex((node) => node.id === link.source)];
+        let target = nodes[nodes.findIndex((node) => node.id === link.target)];
+
+        let point = linksOperation.countControl(
+          source,
+          target,
+          this.countMid(nodes, source, target)
+        );
 
         link["points"] = [source, point, target];
       }
@@ -766,6 +754,18 @@ export default {
       this.sonGraphs[index].linksList = links;
 
       return paper;
+    },
+    countMid(nodesList, source, target) {
+      let nodes = nodesList.toSorted((a, b) => {
+        return a.x - b.x;
+      });
+      let leftX = source.x < target.x ? source.x : target.x;
+      let rightX = source.x < target.x ? target.x : source.x;
+      let leftIndex = nodes.findIndex((node) => node.x === leftX);
+      let rightIndex = nodes.findLastIndex((node) => node.x === rightX);
+      let sum = 0;
+      for (let j = leftIndex; j <= rightIndex; j++) sum = sum + nodes[j].x;
+      return sum / (rightIndex - leftIndex + 1);
     },
     getNormalLayout() {
       this.ifCurve = false;
@@ -870,7 +870,11 @@ export default {
         {
           ...LinksManagement.getNodeByName(this.paper, link),
           gap: this.scales[index].gap,
-          mid: this.scales[index].mid,
+          mid: this.countMid(
+            this.sonGraphs[index].nodesList,
+            link.source,
+            link.target
+          ),
         }
       );
     },
