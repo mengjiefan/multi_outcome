@@ -13,6 +13,7 @@
       >
         Extracted Subgraphs
       </div>
+      <!--
       <div
         :class="name === 'TightenedSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('TightenedSubGraph')"
@@ -38,18 +39,20 @@
       >
         Tree Subgraphs
       </div>
+      -->
       <div
         :class="name === 'RelativeSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('RelativeSubGraph')"
       >
         Relative Subgraphs
       </div>
+      <!--
       <div
         :class="name === 'OriginalSubGraph' ? 'active-tab' : 'normal-tab'"
         @click="routeTo('OriginalSubGraph')"
       >
         Original Subgraphs
-      </div>
+      </div>-->
     </div>
     <router-view></router-view>
   </div>

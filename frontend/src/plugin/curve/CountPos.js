@@ -60,7 +60,7 @@ export const countCurveSonPos = async (all, name) => {
 export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
   let minGap = 100000;
   let scales = [];
-  let midX = [];
+  let mid = [];
 
   let minH = 15000;
   let maxH = 0;
@@ -78,20 +78,171 @@ export const countCurveScale = (graphs, clientHeight, clientWidth, sonNum) => {
 
     if (!gap || isNaN(gap)) gap = 1;
     if (gap < minGap) minGap = gap;
-    midX.push(maxW + minW);
+    mid.push({
+      x: (maxW + minW) / 2,
+      maxH,
+      minH,
+    });
   });
   if ((clientHeight - 120) / (maxH - minH) < minGap)
     minGap = (clientHeight - 120) / (maxH - minH);
 
   let startY = (clientHeight + 40 - minGap * (maxH - minH)) / 2;
   for (let i = 0; i < sonNum; i++) {
-    let startX = (clientWidth - minGap * midX[i]) / 2;
+    let startX = clientWidth / 2 - minGap * mid[i].x;
 
     scales.push({
       startX,
       startY,
       gap: minGap,
+      mid: mid[i],
     });
   }
   return scales;
+};
+const getRegionIndex = (mid, node) => {
+  if (node.x <= mid.x && node.y < mid.y) return 1;
+  else if (node.x > mid.x && node.y < mid.y) return 2;
+  else if (node.x <= mid.x) return 4;
+  else return 3;
+};
+const getSinglePoint = (source, target, direction) => {
+  let point = {
+    x: (source.x + target.x) / 2,
+    y: (source.y + target.y) / 2,
+  };
+  if (direction === "left") {
+    if (source.x < target.x) {
+      point.x = source.x + 0.1;
+      if (target.y < source.y) point.y = target.y + 0.2;
+      else point.y = target.y - 0.2;
+    } else if (source.x > target.x) {
+      point.x = target.x + 0.1;
+      if (target.y < source.y) point.y = source.y - 0.2;
+      else point.y = source.y + 0.2;
+    } //相等时直线连接
+  } else {
+    if (source.x > target.x) {
+      point.x = source.x - 0.1;
+      if (target.y < source.y) point.y = target.y + 0.2;
+      else point.y = target.y - 0.2;
+    } else if (source.x < target.x) {
+      point.x = target.x - 0.1;
+      if (target.y < source.y) point.y = source.y - 0.2;
+      else point.y = source.y + 0.2;
+    } //相等时直线连接
+  }
+  return [point];
+};
+export const countControl = (source, target, mid) => {
+  let sIndex = getRegionIndex(mid, source);
+  let tIndex = getRegionIndex(mid, target);
+  let point = {
+    x: (source.x + target.x) / 2,
+    y: (source.y + target.y) / 2,
+  };
+  if (sIndex === tIndex || sIndex + tIndex === 5) {
+    if (sIndex === 1 || sIndex === 4)
+      return getSinglePoint(source, target, "left");
+    else return getSinglePoint(source, target, "right");
+  } else if (source.y === target.y) {
+    //
+  } else if (sIndex === 2 || tIndex === 2) {
+    let point1 = {
+      x: source.x,
+      y: source.y,
+    };
+    let point2 = {
+      x: target.x,
+      y: target.y,
+    };
+    let a = (target.y - source.y) / (target.x - source.x);
+    let b = target.y - a * target.x;
+    if (source.id.includes("Education") && target.id.includes("meat"))
+      console.log(
+        mid.x * a + b - mid.y,
+        Math.abs(target.x - source.x) + Math.abs(source.y - target.y)
+      );
+    if (mid.x * a + b <= mid.y)
+      if (Math.abs(target.x - source.x) + Math.abs(source.y - target.y) <= 3)
+        return getSinglePoint(source, target, "left");
+      else if (target.y > source.y) {
+        point1.y = point1.y + 0.2;
+        point2.y = point2.y - 0.2;
+        point2.x = point2.x + (point1.x - mid.x - (mid.x - point2.x)) * 0.2;
+        point1.x = point2.x;
+      } else {
+        point1.y = point1.y - 0.2;
+        point2.y = point2.y + 0.2;
+        point1.x = point1.x + (point2.x - mid.x - (mid.x - point1.x)) * 0.2;
+        point2.x = point1.x;
+      }
+    else if (Math.abs(target.x - source.x) + Math.abs(source.y - target.y) <= 3)
+      return getSinglePoint(source, target, "right");
+    else if (target.y > source.y) {
+      point1.y = point1.y + 0.2;
+      point2.y = point2.y - 0.2;
+      point1.x = point1.x + (point1.x - mid.x - (mid.x - point2.x)) * 0.2;
+      point2.x = point1.x;
+    } else {
+      point1.y = point1.y - 0.2;
+      point2.y = point2.y + 0.2;
+      point2.x = point2.x + (point2.x - mid.x - (mid.x - point1.x)) * 0.2;
+      point1.x = point2.x;
+    }
+
+    return [point1, point2];
+  } else if (sIndex === 1 || tIndex === 1) {
+    let point1 = {
+      x: source.x,
+      y: source.y,
+    };
+    let point2 = {
+      x: target.x,
+      y: target.y,
+    };
+    let a = (target.y - source.y) / (target.x - source.x);
+    let b = target.y - a * target.x;
+
+    if (mid.x * a + b <= mid.y)
+      if (Math.abs(target.x - source.x) + Math.abs(source.y - target.y) <= 3)
+        return getSinglePoint(source, target, "right");
+      else if (target.y > source.y) {
+        point1.y = point1.y + 0.2;
+        point2.y = point2.y - 0.2;
+        point2.x = point2.x + (point2.x - mid.x - (mid.x - point1.x)) * 0.2;
+        point1.x = point2.x;
+      } else {
+        point1.y = point1.y - 0.2;
+        point2.y = point2.y + 0.2;
+        point1.x = point1.x + (point1.x - mid.x - (mid.x - point2.x)) * 0.2;
+        point2.x = point1.x;
+      }
+    else if (Math.abs(target.x - source.x) + Math.abs(source.y - target.y) <= 3)
+      return getSinglePoint(source, target, "left");
+    else if (target.y > source.y) {
+      point1.y = point1.y + 0.2;
+      point2.y = point2.y - 0.2;
+      point1.x = point1.x + (point2.x - mid.x - (mid.x - point1.x)) * 0.2;
+      point2.x = point1.x;
+    } else {
+      point1.y = point1.y - 0.2;
+      point2.y = point2.y + 0.2;
+      point2.x = point2.x + (point1.x - mid.x - (mid.x - point2.x)) * 0.2;
+      point1.x = point2.x;
+    }
+
+    return [point1, point2];
+  } else {
+    if (source.y < target.y) {
+      point.y = target.y - 0.2;
+      if (source.x < target.x) point.x = source.x + 0.2;
+      else point.x = source.x - 0.2;
+    } else {
+      point.y = source.y - 0.2;
+      if (source.x < target.x) point.x = target.x - 0.2;
+      else point.x = target.x + 0.2;
+    }
+  }
+  return [point];
 };

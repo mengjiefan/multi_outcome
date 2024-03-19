@@ -62,6 +62,7 @@ export default new VueRouter({
               path: "/DirectedGraphView/multiple/extracted-sub-graph",
               component: () => import("../views/DirectedGraph/SonGraph.vue"),
             },
+            /*
             {
               name: "TightenedSubGraph",
               path: "/DirectedGraphView/multiple/tightened-sub-graph",
@@ -73,24 +74,24 @@ export default new VueRouter({
               component: () => import("../views/DirectedGraph/SonGraph.vue"),
             },
             {
-              name: "AggregateSubGraph",
-              path: "/DirectedGraphView/multiple/aggregate-sub-graph",
-              component: () => import("../views/DirectedGraph/SonGraph.vue"),
-            },
-            {
-              name: "RelativeSubGraph",
-              path: "/DirectedGraphView/multiple/relative-sub-graph",
-              component: () => import("../views/DirectedGraph/SonGraph.vue"),
-            },
-            {
               name: "TreeSubGraph",
               path: "/DirectedGraphView/multiple/tree-sub-graph",
               component: () => import("../views/DirectedGraph/SonGraph.vue"),
             },
-
+            
             {
               name: "OriginalSubGraph",
               path: "/DirectedGraphView/multiple/original-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },
+            {
+              name: "AggregateSubGraph",
+              path: "/DirectedGraphView/multiple/aggregate-sub-graph",
+              component: () => import("../views/DirectedGraph/SonGraph.vue"),
+            },*/
+            {
+              name: "RelativeSubGraph",
+              path: "/DirectedGraphView/multiple/relative-sub-graph",
               component: () => import("../views/DirectedGraph/SonGraph.vue"),
             },
           ],
@@ -98,9 +99,8 @@ export default new VueRouter({
         {
           name: "BenchmarkDirectedGraph",
           path: "/DirectedGraphView/benchmark",
-          component: () =>
-          import("../views/DirectedGraph/BenchmarkGraph.vue"),
-        }
+          component: () => import("../views/DirectedGraph/BenchmarkGraph.vue"),
+        },
       ],
     },
   ],

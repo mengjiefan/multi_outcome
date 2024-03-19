@@ -58,7 +58,11 @@ import {
   countExtractedScale,
 } from "@/plugin/extracted/CountPos";
 import { countOriginalSonPos } from "@/plugin/original/CountPos";
-import { countCurveSonPos, countCurveScale } from "@/plugin/curve/CountPos";
+import {
+  countCurveSonPos,
+  countCurveScale,
+  countControl,
+} from "@/plugin/curve/CountPos";
 import { drawExtractedGraph, drawOverViewGraph } from "@/plugin/superGraph";
 import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
@@ -458,8 +462,15 @@ export default {
       let outcome = this.multipleSearchValue.selections[index].outcome;
       let graph = paper.model.attributes.cells.graph;
       graph.on("change:source change:target", function (link) {
-        if (link.get("source").id && link.get("target").id) {
-          _this.deleteLinkView = link.findView(paper);
+        const linkView = link.findView(paper);
+        console.log(linkView);
+        if (
+          linkView.targetView?.model.attributes.attrs?.body?.fill ===
+          "rgba(151, 151, 151, 0.3)"
+        )
+          linkView.remove({ ui: true });
+        else if (link.get("source").id && link.get("target").id) {
+          _this.deleteLinkView = linkView;
           _this.deleteLinkView.model.remove({ ui: true });
           _this.paper = paper;
           if (link.get("source").id !== link.get("target").id) {
@@ -467,7 +478,6 @@ export default {
           }
         }
       });
-
       paper.on("link:mouseenter", function (linkView, d) {
         linkView.model.attr("line/stroke", "#1f77b4");
         if (linkView.model.attributes.attrs.line.targetMarker)
@@ -735,20 +745,26 @@ export default {
         let link = links[i];
         let source = nodes[nodes.findIndex((node) => node.id === link.source)];
         let target = nodes[nodes.findIndex((node) => node.id === link.target)];
-        
-        let point = linksOperation.countControl(
-          source,
-          target,
-          this.countMid(nodes, source, target)
+
+        link["points"] = [source].concat(
+          this.countPoint(index, source, target)
         );
-        //控制点：起点、自定义算法计算所得的点、终点
-        link["points"] = [source, point, target];
+        link.points.push(target);
       }
       //使用jointjs绘制，nodes: 点及点坐标{id, type, x, y}，links: 边及边控制点坐标{source, target, points}
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
       this.sonGraphs[index].linksList = links;
 
       return paper;
+    },
+
+    countPoint(i, source, target) {
+      let mid = {
+        x: this.scales[i].mid.x,
+        y: (this.scales[i].mid.maxH + this.scales[i].mid.minH) / 2,
+      };
+      console.log(i, mid)
+      return countControl(source, target, mid);
     },
     countMid(nodesList, source, target) {
       let nodes = nodesList.toSorted((a, b) => {
@@ -857,6 +873,12 @@ export default {
         curveType = "ExtractedCurve";
       else if (!this.ifCurve) curveType = "TightenedCurve";
       if (!this.ifCurve) this.searchForPos(index, link);
+      let sIndex = this.sonGraphs[index].nodesList.findIndex(
+        (node) => node.id === link.source
+      );
+      let tIndex = this.sonGraphs[index].nodesList.findIndex(
+        (node) => node.id == link.target
+      );
       linksOperation.addLink(
         this.sonGraphs[index],
         link,
@@ -865,10 +887,10 @@ export default {
         {
           ...LinksManagement.getNodeByName(this.paper, link),
           gap: this.scales[index].gap,
-          mid: this.countMid(
-            this.sonGraphs[index].nodesList,
-            link.source,
-            link.target
+          point: this.countPoint(
+            index,
+            this.sonGraphs[index].nodesList[sIndex],
+            this.sonGraphs[index].nodesList[tIndex]
           ),
         }
       );

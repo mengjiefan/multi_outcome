@@ -63,6 +63,7 @@ const addIndexOfGrid = (graph, maxX, maxY, minX, minY) => {
     indexLabel.position(countXPos(i), countYPos(minY) - 40);
     indexLabel.attr({
       body: {
+        magnet: true,
         strokeWidth: 0,
         stroke: "transparent",
         fill: "transparent",
@@ -76,7 +77,7 @@ const addIndexOfGrid = (graph, maxX, maxY, minX, minY) => {
     });
     indexLabel.addTo(graph);
   }
-  for (let j = minY; j <= maxY; j++) {
+  for (let j = Math.floor(minY); j <= Math.ceil(maxY); j++) {
     let indexLabel = new joint.shapes.standard.Rectangle();
     indexLabel.position(countXPos(minX - 1) - 40, countYPos(j));
     indexLabel.attr({
@@ -376,7 +377,7 @@ export const drawCurveGraph = (dom, nodes, scale, linksList) => {
     .line()
     .x((p) => p.x)
     .y((p) => p.y)
-    .curve(d3.curveNatural);
+    .curve(d3.curveBasis);
   joint.connectors.TreeCurve = function (
     sourcePoint,
     targetPoint,
@@ -430,16 +431,15 @@ export const drawCurveGraph = (dom, nodes, scale, linksList) => {
         },
       },
     });
-    if (link.value < 0) 
-      path.attr("line/strokeDasharray", "4 4");
+    if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
 
     let realLink = LinksManagement.getNodeByName(paper, link);
     let source = realLink.source;
     let target = realLink.target;
     if (nodesList[sindex].y < nodesList[tindex].y)
       path.attr("line/targetMarker", null);
-      path.source(source);
-      path.target(target);
+    path.source(source);
+    path.target(target);
     path.addTo(graph);
     //path.vertices(vertices);
 
@@ -473,7 +473,10 @@ export const drawCurveGraph = (dom, nodes, scale, linksList) => {
   paper.on("cell:pointerup", function (cellView, evt, x, y) {
     handleMouseUp(originalPos);
   });
-
+  paper.on("cell:highlight", function (cellView, evt, x, y) {
+    if (cellView.model.attributes.attrs?.body?.fill === "rgba(151, 151, 151, 0.3)")
+      joint.dia.HighlighterView.remove(cellView);
+  });
   return paper;
 };
 export const drawTightenedGraph = (dom, nodes, links, scale, linksPos) => {
