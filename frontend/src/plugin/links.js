@@ -169,10 +169,7 @@ export class linksOperation {
     if (curveType === "TreeCurve") {
       source = attrs.source;
       target = attrs.target;
-      let point = attrs.point;
-      points = [nodesList[sIndex], point, nodesList[tIndex]];
-      console.log(points)
-      path.connector("TreeCurve", { points: points, value: value });
+      path.connector("TreeCurve", { points: attrs.points, value: value });
     } else if (!points.length) {
       path.connector(curveType, {
         points: [nodesList[sIndex], nodesList[tIndex]],

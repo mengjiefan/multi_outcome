@@ -283,6 +283,7 @@ export const drawCurveGraph = (dom, nodes, scale, linksList) => {
     interactive: function (cellView, method) {
       return null;
     },
+    clickThreshold: 3
   });
   for (let nodeI = 0; nodeI < nodesList.length; nodeI++) {
     if (nodesList[nodeI].x > maxX) maxX = nodesList[nodeI].x;

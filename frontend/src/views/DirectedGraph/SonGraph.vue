@@ -499,6 +499,7 @@ export default {
         _this.tipHidden();
       });
       paper.on("link:pointerclick", function (linkView, d) {
+        console.log(linkView, "click");
         let router = linkView.model.attributes.attrs.id;
         let hintHtml =
           "<div class='operate-header'><div class='hint-list'>" +
@@ -560,15 +561,6 @@ export default {
         .html('<div class="chart-box">' + textContent + "</div>")
         .style("left", `${event.pageX + 5}px`)
         .style("top", `${event.pageY - 40}px`);
-
-      const _this = this;
-      setTimeout(() => {
-        try {
-          _this.plotChart(textContent);
-        } catch (err) {
-          console.log("too fast, the chart is not prepared");
-        }
-      }, 100);
     },
     tipHidden() {
       this.tooltip
@@ -746,10 +738,10 @@ export default {
         let source = nodes[nodes.findIndex((node) => node.id === link.source)];
         let target = nodes[nodes.findIndex((node) => node.id === link.target)];
 
-        link["points"] = [source].concat(
-          this.countPoint(index, source, target)
-        );
-        link.points.push(target);
+        link["points"] = this.countPoint(index, source, target);
+
+        if (source.id === "smoke" && target.id === "trueage")
+          console.log(link.points);
       }
       //使用jointjs绘制，nodes: 点及点坐标{id, type, x, y}，links: 边及边控制点坐标{source, target, points}
       let paper = drawCurveGraph(dom, nodes, this.scales[index], links);
@@ -763,8 +755,33 @@ export default {
         x: this.scales[i].mid.x,
         y: (this.scales[i].mid.maxH + this.scales[i].mid.minH) / 2,
       };
-      console.log(i, mid)
-      return countControl(source, target, mid);
+      let points = [
+        {
+          x: source.x,
+          y: source.y,
+        },
+      ];
+      let controlPoints = countControl(source, target, mid);
+      if (controlPoints.length === 2) {
+        if (
+          Math.abs(controlPoints[0].x - source.x) +
+            Math.abs(controlPoints[0].y - source.y) <=
+          0.21
+        )
+          controlPoints = [controlPoints[1]];
+        else if (
+          Math.abs(controlPoints[1].x - target.x) +
+            Math.abs(controlPoints[1].y - target.y) <=
+          0.21
+        )
+          controlPoints = [controlPoints[0]];
+      }
+      controlPoints.forEach((point) => points.push(point));
+      points.push({
+        x: target.x,
+        y: target.y,
+      });
+      return points;
     },
     countMid(nodesList, source, target) {
       let nodes = nodesList.toSorted((a, b) => {
@@ -887,7 +904,7 @@ export default {
         {
           ...LinksManagement.getNodeByName(this.paper, link),
           gap: this.scales[index].gap,
-          point: this.countPoint(
+          points: this.countPoint(
             index,
             this.sonGraphs[index].nodesList[sIndex],
             this.sonGraphs[index].nodesList[tIndex]
