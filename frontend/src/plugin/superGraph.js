@@ -31,7 +31,7 @@ const countYPos = (y) => {
 };
 
 const moveRight = (points) => {
-  let value = 5;
+  let value = 3
   let newPoints = [];
   if (points[points.length - 1].x === points[0].x)
     return points.map((point) => {
@@ -64,7 +64,7 @@ const moveRight = (points) => {
   return newPoints;
 };
 const moveLeft = (points) => {
-  let value = 5;
+  let value = 3;
   let newPoints = [];
   if (points[points.length - 1].x === points[0].x)
     return points.map((point) => {
@@ -93,7 +93,6 @@ const moveLeft = (points) => {
     let newY = point.y - shiftY;
     return { x: newX, y: newY };
   });
-
   return newPoints;
 };
 
