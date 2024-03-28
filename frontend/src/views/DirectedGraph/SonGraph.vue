@@ -63,6 +63,7 @@ import {
   countCurveScale,
   countControl,
 } from "@/plugin/curve/CountPos";
+import {countRelativeSonPos} from "@/plugin/relative/CountPos";
 import { drawExtractedGraph, drawOverViewGraph } from "@/plugin/superGraph";
 import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
@@ -825,28 +826,20 @@ export default {
         this.sonGraphs.push(ans);
       }
     },
-    async getCurveLayout(name) {
+    getCurveLayout() {
       this.ifCurve = true;
-      let graphs = await countCurveSonPos(this.finalPos, name);
       this.sonGraphs = [];
-      graphs.forEach(() => {
-        this.sonGraphs.push({ nodesList: [], linksList: [] });
-      });
-      graphs.forEach((graph) => {
-        let outIndex = graph.findIndex((node) => node.outcome);
-        this.sonGraphs[graph[outIndex].group[0]].nodesList = graph.map(
-          (node) => {
-            return {
-              id: node.node,
-              offset: node.new_order - node.order,
-              x: node.new_order,
-              y: node.rank,
-              indexes: node.group,
-              type: node.outcome ? 0 : 1,
-            };
-          }
+      for (let i = 0; i < this.sonNum; i++) {
+        let pos = countRelativeSonPos(
+          this.finalPos,
+          this.multipleSearchValue.selections[i],
+          this.sonNum
         );
-      });
+        this.sonGraphs.push({
+          linksList: [],
+          nodesList: pos,
+        });
+      }
     },
     saveData() {
       localStorage.setItem(
