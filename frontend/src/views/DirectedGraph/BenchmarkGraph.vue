@@ -29,7 +29,13 @@
                   ]"
                 ></div>
                 <div class="algorithm-name">PC</div>
-                <div class="hamming">SHD: 10</div>
+                <div class="evaluation-rate">
+                  SHD: {{ countHamming(pcLinks) }}
+                </div>
+                <div class="evaluation-rate">
+                  Accuracy: {{ countAccuracy(pcLinks) }}
+                </div>
+                <div class="evaluation-rate">FPR: {{ countFP(pcLinks) }}</div>
               </div>
               <div
                 class="algorithm-title"
@@ -47,7 +53,13 @@
                   ]"
                 ></div>
                 <div class="algorithm-name">DAG-GNN</div>
-                <div class="hamming">SHD: 11</div>
+                <div class="evaluation-rate">
+                  SHD: {{ countHamming(gnnLinks) }}
+                </div>
+                <div class="evaluation-rate">
+                  Accuracy: {{ countAccuracy(gnnLinks) }}
+                </div>
+                <div class="evaluation-rate">FPR: {{ countFP(gnnLinks) }}</div>
               </div>
               <div
                 class="algorithm-title"
@@ -65,10 +77,21 @@
                   ]"
                 ></div>
                 <div class="algorithm-name">HCM</div>
-                <div class="hamming">SHD: 10</div>
+                <div class="evaluation-rate">
+                  SHD: {{ countHamming(hcmLinks) }}
+                </div>
+                <div class="evaluation-rate">
+                  Accuracy: {{ countAccuracy(hcmLinks) }}
+                </div>
+                <div class="evaluation-rate">FPR: {{ countFP(hcmLinks) }}</div>
               </div>
             </div>
-            <div class="summary-hamming">Summary SHD: 10</div>
+            <div class="summary-hamming">
+              <div class="summary-title">Summary:</div>
+              <div>SHD: {{ countHamming(getBestLinks()) }}</div>
+              <div>Accuracy: {{ countAccuracy(getBestLinks()) }}</div>
+              <div>FPR: {{ countFP(getBestLinks()) }}</div>
+            </div>
           </div>
           <div class="son-graph">
             <div :id="'paper' + index" class="svg-content"></div>
@@ -270,6 +293,52 @@ export default {
         }
       }
     },
+    getBestLinks() {
+      let bestLinks = [];
+      let links = this.pcLinks.concat(this.gnnLinks).concat(this.hcmLinks);
+      links.forEach((link) => {
+        let index = findLink.sameNodeLink(link, bestLinks);
+        if (index < 0) bestLinks.push(link);
+        else if (findLink.showSameDireLink(link, this.trueLinks) > -1) {
+          bestLinks[index].source = link.source;
+          bestLinks[index].target = link.target;
+        }
+      });
+      return bestLinks;
+    },
+    countHamming(links) {
+      let miss = 0;
+      this.trueLinks.forEach((link) => {
+        if (findLink.sameNodeLink(link, links) < 0) miss++;
+      });
+      let dumn = 0;
+      links.forEach((link) => {
+        if (findLink.sameNodeLink(link, this.trueLinks) < 0) dumn++;
+      });
+      let reverse = 0;
+      links.forEach((link) => {
+        let index = findLink.sameNodeLink(link, this.trueLinks);
+        if (index > -1 && link.source !== this.trueLinks[index].source)
+          reverse++;
+      });
+      return miss + dumn;
+    },
+    countAccuracy(links) {
+      //不计方向
+      let accurate = 0;
+      links.forEach((link) => {
+        if (findLink.sameNodeLink(link, this.trueLinks) > -1) accurate++;
+      });
+      return (accurate / this.trueLinks.length).toFixed(2);
+    },
+    countFP(links) {
+      //不计方向
+      let fp = 0;
+      links.forEach((link) => {
+        if (findLink.sameNodeLink(link, this.trueLinks) < 0) fp++;
+      });
+      return (fp / (21 - this.trueLinks.length)).toFixed(2); //多出的边/所有不存在的边
+    },
     drawGnnLinks() {
       if (!this.dagEnabled) return;
       let _this = this;
@@ -427,14 +496,21 @@ export default {
   gap: 8px;
 }
 .algorithm-name {
-  width: 120px;
+  width: 100px;
 }
-.hamming {
+.evaluation-rate {
+  margin-left: 16px;
   color: #666666;
   font-size: 16px;
 }
 .summary-hamming {
+  display: flex;
+  flex-direction: column;
   font-size: 16px;
+}
+.summary-title {
+  font-size: 18px;
+  font-weight: bold;
 }
 .algorithm-title {
   font-size: 18px;
