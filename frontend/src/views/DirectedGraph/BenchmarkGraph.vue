@@ -11,58 +11,64 @@
           <div class="one-line-operator" v-if="index === 1">
             <div class="son-title">Ground Truth</div>
           </div>
-          <div class="algorithm-type" v-else>
-            <div
-              class="algorithm-title"
-              :class="`${pcEnabled ? 'enabled' : 'disabled'}-title`"
-              @mouseenter="hoverPCLinks"
-              @mouseleave="noHoverOn"
-              @click="enablePC"
-            >
+          <div class="one-line-operator" v-else>
+            <div class="algorithm-type">
               <div
-                class="color-hint"
-                :style="[
-                  pcEnabled
-                    ? { 'background-color': 'black' }
-                    : { 'background-color': 'rgba(0, 0, 0, 0.3)' },
-                ]"
-              ></div>
-              <div>PC</div>
-            </div>
-            <div
-              class="algorithm-title"
-              :class="`${dagEnabled ? 'enabled' : 'disabled'}-title`"
-              @mouseenter="hoverDagGnnLinks"
-              @mouseleave="noHoverOn"
-              @click="enableDagGnn"
-            >
+                class="algorithm-title"
+                :class="`${pcEnabled ? 'enabled' : 'disabled'}-title`"
+                @mouseenter="hoverPCLinks"
+                @mouseleave="noHoverOn"
+                @click="enablePC"
+              >
+                <div
+                  class="color-hint"
+                  :style="[
+                    pcEnabled
+                      ? { 'background-color': 'black' }
+                      : { 'background-color': 'rgba(0, 0, 0, 0.3)' },
+                  ]"
+                ></div>
+                <div class="algorithm-name">PC</div>
+                <div class="hamming">SHD: 10</div>
+              </div>
               <div
-                class="color-hint"
-                :style="[
-                  dagEnabled
-                    ? { 'background-color': 'rgb(66, 103, 172)' }
-                    : { 'background-color': 'rgba(66, 103, 172, 0.3)' },
-                ]"
-              ></div>
-              <div>DAG-GNN</div>
-            </div>
-            <div
-              class="algorithm-title"
-              :class="`${hcmEnabled ? 'enabled' : 'disabled'}-title`"
-              @mouseenter="hoverAAAILinks"
-              @mouseleave="noHoverOn"
-              @click="enableHCM"
-            >
+                class="algorithm-title"
+                :class="`${dagEnabled ? 'enabled' : 'disabled'}-title`"
+                @mouseenter="hoverDagGnnLinks"
+                @mouseleave="noHoverOn"
+                @click="enableDagGnn"
+              >
+                <div
+                  class="color-hint"
+                  :style="[
+                    dagEnabled
+                      ? { 'background-color': 'rgb(66, 103, 172)' }
+                      : { 'background-color': 'rgba(66, 103, 172, 0.3)' },
+                  ]"
+                ></div>
+                <div class="algorithm-name">DAG-GNN</div>
+                <div class="hamming">SHD: 11</div>
+              </div>
               <div
-                class="color-hint"
-                :style="[
-                  hcmEnabled
-                    ? { 'background-color': 'rgb(240,157,68)' }
-                    : { 'background-color': 'rgba(240,157,68, 0.3)' },
-                ]"
-              ></div>
-              <div>HCM</div>
+                class="algorithm-title"
+                :class="`${hcmEnabled ? 'enabled' : 'disabled'}-title`"
+                @mouseenter="hoverAAAILinks"
+                @mouseleave="noHoverOn"
+                @click="enableHCM"
+              >
+                <div
+                  class="color-hint"
+                  :style="[
+                    hcmEnabled
+                      ? { 'background-color': 'rgb(240,157,68)' }
+                      : { 'background-color': 'rgba(240,157,68, 0.3)' },
+                  ]"
+                ></div>
+                <div class="algorithm-name">HCM</div>
+                <div class="hamming">SHD: 10</div>
+              </div>
             </div>
+            <div class="summary-hamming">Summary SHD: 10</div>
           </div>
           <div class="son-graph">
             <div :id="'paper' + index" class="svg-content"></div>
@@ -94,9 +100,10 @@ export default {
       categories: ["Ground Truth", ""],
       nodes: [
         { id: "A", type: 1 },
-        { id: "H", type: 1 },
         { id: "C", type: 1 },
         { id: "D", type: 1 },
+
+        { id: "H", type: 1 },
         { id: "I", type: 1 },
         { id: "O", type: 1 },
         { id: "T", type: 1 },
@@ -117,8 +124,13 @@ export default {
         { source: "O", target: "T", value: 1 },
       ],
       pcLinks: [
-        { source: "T", target: "I", value: 1 },
+        { source: "C", target: "A", value: 1 },
+        { source: "A", target: "H", value: 1 },
+        { source: "O", target: "A", value: 1 },
+        { source: "C", target: "I", value: 1 },
         { source: "C", target: "T", value: 1 },
+        { source: "H", target: "D", value: 1 },
+        { source: "O", target: "D", value: 1 },
         { source: "H", target: "I", value: 1 },
         { source: "H", target: "T", value: 1 },
         { source: "O", target: "I", value: 1 },
@@ -126,11 +138,14 @@ export default {
       ],
       gnnLinks: [
         { source: "A", target: "D", value: 1 },
-        { source: "A", target: "H", value: 1 },
+        { source: "D", target: "C", value: 1 },
+        { source: "D", target: "H", value: 1 },
+        { source: "D", target: "I", value: 1 },
         { source: "O", target: "C", value: 1 },
-        { source: "O", target: "C", value: 1},
-        { source: "O", target: "T", value: 1 },
+        { source: "O", target: "D", value: 1 },
+        { source: "O", target: "I", value: 1 },
         { source: "T", target: "I", value: 1 },
+        { source: "T", target: "O", value: 1 },
       ],
       hcmLinks: [
         { source: "A", target: "O", value: 1 },
@@ -204,9 +219,9 @@ export default {
       let dom = document.getElementById("paper1");
       let gap = 500 / (maxW - minW);
       if (900 / (maxH - minH) < gap) gap = 900 / (maxH - minH);
-      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2+70;
+      let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 + 70;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
-      console.log(startX)
+      console.log(startX);
       let scale = {
         startX,
         startY,
@@ -221,7 +236,6 @@ export default {
             if (this.simplePos.linksList[index].source === link.source)
               links.push(this.simplePos.linksList[index]);
             else {
-
               let points = this.simplePos.linksList[index].points.concat([]);
               links.push({
                 ...link,
@@ -395,10 +409,9 @@ export default {
 }
 .one-line-operator {
   padding-bottom: 16px;
-  height: 30px;
+  height: max-content;
   width: 100%;
   display: flex;
-  align-items: center;
   justify-content: space-between;
 }
 .son-title {
@@ -409,8 +422,19 @@ export default {
 }
 .algorithm-type {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+}
+.algorithm-name {
+  width: 120px;
+}
+.hamming {
+  color: #666666;
+  font-size: 16px;
+}
+.summary-hamming {
+  font-size: 16px;
 }
 .algorithm-title {
   font-size: 18px;
