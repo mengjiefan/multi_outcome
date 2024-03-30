@@ -113,14 +113,82 @@ import { ref } from "vue";
 
 export default {
   data() {
-    return {
-      dagEnabled: ref(true),
-      pcEnabled: ref(true),
-      hcmEnabled: ref(true),
-      hoverType: ref(),
-      paper: ref(),
-      simplePos: ref(),
-      categories: ["Ground Truth", ""],
+    const nodesList = [
+      "dANB",
+      "dPPPM",
+      "dIMPA",
+      "dCoA",
+      "dGoPg",
+      "dCoGo",
+      "dT",
+      "Growth",
+      "Treatment",
+    ].map((node) => {
+      return {
+        id: node,
+        type: 1,
+      };
+    });
+    const links2 = {
+      nodes: nodesList,
+      trueLinks: [
+        { source: "Treatment", target: "dCoA", value: 1 },
+        { source: "Treatment", target: "dANB", value: 1 },
+        { source: "dT", target: "Growth", value: 1 },
+        { source: "dT", target: "dGoPg", value: 1 },
+        { source: "dT", target: "dCoGo", value: 1 },
+        { source: "Growth", target: "dANB", value: 1 },
+        { source: "Growth", target: "dCoGo", value: 1 },
+        { source: "dCoA", target: "dCoGo", value: 1 },
+        { source: "dCoA", target: "dGoPg", value: 1 },
+        { source: "dCoGo", target: "dPPPM", value: 1 },
+        { source: "dANB", target: "dIMPA", value: 1 },
+        { source: "dPPPM", target: "dIMPA", value: 1 },
+      ],
+      pcLinks: [
+        { source: "dANB", target: "dPPPM", value: 1 },
+        { source: "dANB", target: "dCoA", value: 1 },
+        { source: "dANB", target: "Treatment", value: 1 },
+        { source: "dIMPA", target: "dPPPM", value: 1 },
+        { source: "dPPPM", target: "dCoGo", value: 1 },
+        { source: "dGoPg", target: "dCoA", value: 1 },
+        { source: "dCoGo", target: "dCoA", value: 1 },
+        { source: "dCoA", target: "Treatment", value: 1 },
+        { source: "dT", target: "dCoGo", value: 1 },
+        { source: "Growth", target: "dCoGo", value: 1 },
+      ],
+      gnnLinks: [
+        { source: "dPPPM", target: "dCoGo", value: 1 },
+        { source: "dPPPM", target: "dT", value: 1 },
+        { source: "dPPPM", target: "Treatment", value: 1 },
+        { source: "dIMPA", target: "Treatment", value: 1 },
+        { source: "dCoA", target: "dANB", value: 1 },
+        { source: "dGoPg", target: "Treatment", value: 1 },
+        { source: "dGoPg", target: "Growth", value: 1 },
+        { source: "dGoPg", target: "dT", value: 1 },
+        { source: "dGoPg", target: "dANB", value: 1 },
+        { source: "dT", target: "dCoA", value: 1 },
+        { source: "dT", target: "dIMPA", value: 1 },
+        { source: "dT", target: "dANB", value: 1 },
+        { source: "Growth", target: "dT", value: 1 },
+        { source: "Growth", target: "Treatment", value: 1 },
+        { source: "Treatment", target: "dANB", value: 1 },
+      ],
+      hcmLinks: [
+        { source: "dANB", target: "Growth", value: 1 },
+        { source: "dPPPM", target: "dIMPA", value: 1 },
+        { source: "dCoA", target: "Treatment", value: 1 },
+        { source: "dCoA", target: "dCoGo", value: 1 },
+        { source: "dCoA", target: "dT", value: 1 },
+        { source: "dGoPg", target: "dCoA", value: 1 },
+        { source: "dGoPg", target: "dT", value: 1 },
+        { source: "dCoGo", target: "dPPPM", value: 1 },
+        { source: "dCoGo", target: "Growth", value: 1 },
+        { source: "dT", target: "Treatment", value: 1 },
+        { source: "Treatment", target: "dANB", value: 1 },
+      ],
+    };
+    const links = {
       nodes: [
         { id: "A", type: 1 },
         { id: "C", type: 1 },
@@ -139,10 +207,6 @@ export default {
         { source: "H", target: "D", value: 1 },
         { source: "C", target: "I", value: 1 },
         { source: "D", target: "I", value: 1 },
-        { source: "I", target: "T", value: 1 },
-        { source: "O", target: "T", value: 1 },
-      ],
-      tempLinks: [
         { source: "I", target: "T", value: 1 },
         { source: "O", target: "T", value: 1 },
       ],
@@ -180,6 +244,23 @@ export default {
         { source: "T", target: "I", value: 1 },
         { source: "T", target: "O", value: 1 },
       ],
+    };
+
+    return {
+      dagEnabled: ref(true),
+      pcEnabled: ref(true),
+      hcmEnabled: ref(true),
+      hoverType: ref(),
+      paper: ref(),
+      simplePos: ref(),
+      categories: ["Ground Truth", ""],
+      nodes: ref(links.nodes),
+      trueLinks: ref(links.trueLinks),
+      pcLinks: ref(links.pcLinks),
+      gnnLinks: ref(links.gnnLinks),
+      hcmLinks: ref(links.hcmLinks),
+      links,
+      links2,
     };
   },
   methods: {
@@ -240,8 +321,8 @@ export default {
         this.hcmLinks,
       ];
       let dom = document.getElementById("paper1");
-      let gap = 500 / (maxW - minW);
-      if (900 / (maxH - minH) < gap) gap = 900 / (maxH - minH);
+      let gap = 900 / (maxW - minW);
+      if (500 / (maxH - minH) < gap) gap = 500 / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2 + 70;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
       console.log(startX);
@@ -431,9 +512,26 @@ export default {
       this.hoverType = "pc";
       LinksManagement.highLightPCLinks(this.paper);
     },
+    changeLinks(benchMark) {
+      if (benchMark === "healthcare") {
+        this.pcLinks = this.links.pcLinks;
+        this.gnnLinks = this.links.gnnLinks;
+        this.trueLinks = this.links.trueLinks;
+        this.nodes = this.links.nodes;
+        this.hcmLinks = this.links.hcmLinks;
+      } else {
+        this.pcLinks = this.links2.pcLinks;
+        this.gnnLinks = this.links2.gnnLinks;
+        this.trueLinks = this.links2.trueLinks;
+        this.nodes = this.links2.nodes;
+        this.hcmLinks = this.links2.hcmLinks;
+      }
+    },
   },
   mounted() {
     localStorage.setItem("DATATYPE", "benchmark");
+    let benchMark = localStorage.getItem("benchMark");
+    this.changeLinks(benchMark);
     this.setGraphs();
   },
 };
@@ -493,7 +591,6 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
 }
 .algorithm-name {
   width: 100px;
