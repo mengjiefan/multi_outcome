@@ -418,7 +418,8 @@ export default {
       links.forEach((link) => {
         if (findLink.sameNodeLink(link, this.trueLinks) < 0) fp++;
       });
-      return (fp / (21 - this.trueLinks.length)).toFixed(2); //多出的边/所有不存在的边
+      let sum = (this.nodes.length * (this.nodes.length - 1)) / 2;
+      return (fp / (sum - this.trueLinks.length)).toFixed(2); //多出的边/所有不存在的边
     },
     drawGnnLinks() {
       if (!this.dagEnabled) return;

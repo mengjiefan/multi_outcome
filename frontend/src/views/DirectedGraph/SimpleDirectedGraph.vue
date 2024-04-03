@@ -12,7 +12,6 @@
           v-for="Variable in VariablesOptions"
           :label="Variable"
           :key="Variable"
-          @change="handleCheckedVariablesChange($event, Variable)"
           >{{ Variable }}</el-checkbox
         >
       </el-checkbox-group>
@@ -812,18 +811,30 @@ export default {
       );
     },
     getLinks() {
-      let newFac = [];
-      let newOut;
-      this.multipleSearchValue.nodesList.forEach((row) => {
-        if (row.type !== 0) newFac.push(row.id);
+      if (!this.checkedVariables?.length) {
+        this.$message({
+          showClose: true,
+          message: "Please select at least one node!",
+          type: "warning",
+        });
+        return;
+      }
+      let outcome = this.multipleSearchValue.nodesList.filter(
+        (node) => node.type === 0
+      )[0];
+      this.multipleSearchValue.nodesList = this.checkedVariables.map((node) => {
+        return {
+          id: node,
+          type: 1,
+        };
       });
-      this.multipleSearchValue.nodesList.map((row) => {
-        if (row.type === 0) newOut = row.id;
-      });
+      this.multipleSearchValue.nodesList.push(outcome);
+      console.log(outcome.id);
+      console.log(this.checkedVariables.join());
+
       this.countingGraph = true;
       this.stopLoop();
       this.showLoading();
-
       axios({
         //请求类型
         method: "GET",
@@ -832,8 +843,8 @@ export default {
         //参数
         params: {
           dataset: this.dataset,
-          outcome: newOut,
-          factors: newFac.join(),
+          outcome: outcome.id,
+          factors: this.checkedVariables.join(),
         },
       })
         .then((response) => {
@@ -844,6 +855,9 @@ export default {
             nodesList: response.data.nodes,
             history: this.multipleSearchValue.history,
           };
+
+          this.gnnLinks = [];
+          this.aaaiLinks = [];
           historyManage.reDoHistory(this.multipleSearchValue);
           this.loadingInstance.close();
           this.loadingInstance = null;
@@ -860,49 +874,10 @@ export default {
     },
     //add document click listener
     handleCheckAllChange(val) {
-      if (val === true) {
-        this.checkedVariables = this.VariablesOptions;
-        this.checkedVariables.forEach((factor) => {
-          let ifIndex = this.multipleSearchValue.nodesList.findIndex(function (
-            row
-          ) {
-            if (row.id === factor) return true;
-            else return false;
-          });
-          if (ifIndex < 0) {
-            this.multipleSearchValue.nodesList.push({
-              type: 1,
-              id: factor,
-            });
-          }
-        });
-      } else {
-        this.checkedVariables = [];
-        let newNodes = [];
-        this.multipleSearchValue.nodesList.forEach((row) => {
-          if (row.type === 0) {
-            newNodes.push(row);
-          }
-        });
-        this.multipleSearchValue.nodesList = newNodes;
-      }
+      if (val === true) this.checkedVariables = this.VariablesOptions;
+      else this.checkedVariables = [];
     },
-    handleCheckedVariablesChange(value, factor) {
-      let ifIndex = this.multipleSearchValue.nodesList.findIndex(function (
-        row
-      ) {
-        if (row.id === factor) return true;
-        else return false;
-      });
-      if (value && ifIndex < 0) {
-        this.multipleSearchValue.nodesList.push({
-          type: 1,
-          id: factor,
-        });
-      } else if (!value && ifIndex >= 0) {
-        this.multipleSearchValue.nodesList.splice(ifIndex, 1);
-      }
-    },
+
     //document click listener => to close line tooltip
     listener(e) {
       let _this = this;
@@ -1088,9 +1063,11 @@ export default {
     else this.multipleSearchValue = null;
     console.log("getItem", this.multipleSearchValue);
     if (this.multipleSearchValue) {
-      this.checkedVariables = this.multipleSearchValue.nodesList.map((node) => {
-        return node.id;
-      });
+      this.checkedVariables = this.multipleSearchValue.nodesList
+        .filter((node) => node.type === 1)
+        .map((node) => {
+          return node.id;
+        });
       this.setGraph();
 
       if (
