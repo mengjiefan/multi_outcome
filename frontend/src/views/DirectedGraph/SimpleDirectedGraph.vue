@@ -408,14 +408,18 @@ export default {
           this.drawEpochLossChart();
         }
         this.gnnLinks = [];
+        //console.log(this.multipleSearchValue.nodesList.length);
+        //console.log(graph.length);
         for (let i = 0; i < graph.length; i++) {
           for (let j = 0; j < graph[i].length; j++) {
-            if (graph[i][j] !== 0)
+            if (graph[i][j] !== 0) {
+              //console.log(this.multipleSearchValue.nodesList[i],this.multipleSearchValue.nodesList[j])
               this.gnnLinks.push({
                 source: this.multipleSearchValue.nodesList[i].id,
                 target: this.multipleSearchValue.nodesList[j].id,
                 value: graph[i][j],
               });
+            }
           }
         }
         this.multipleSearchValue.dagLinks = this.gnnLinks;
@@ -829,8 +833,6 @@ export default {
         };
       });
       this.multipleSearchValue.nodesList.push(outcome);
-      console.log(outcome.id);
-      console.log(this.checkedVariables.join());
 
       this.countingGraph = true;
       this.stopLoop();
