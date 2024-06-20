@@ -26,13 +26,13 @@
         type="primary"
         @click="getAllCorrelation()"
       >
-        Confirm
+        Calculate
       </el-button>
     </div>
     <div class="outcome-main-title">· Variables</div>
     <!--original h6-->
     <div class="outcome-subtitle">
-      Choose n Covariant most relevant to the outcome:
+      Choose n variables most relevant to the outcome:
     </div>
 
     <!-- 通过v-model双向绑定，完成input框值获取。 -->
@@ -51,9 +51,9 @@
         size="small"
         class="get-list-button"
         type="primary"
-        @click="getOutcomeCovariant()"
+        @click="getTopCovariant()"
       >
-        Calculate
+        Confirm
       </el-button>
     </div>
     <div v-if="corrValues" class="correlation-chart">
@@ -66,14 +66,20 @@
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
-
+    <div class="outcome-main-title">· Algorithms</div>
+    <!--original h6-->
+    <div class="outcome-subtitle">Select causal discovery methods :</div>
     <div class="drawing-command">
-      <el-select v-model="graphType" placeholder="请选择">
+      <el-select
+        v-model="algorithmSelected"
+        placeholder="Please select at least one algorithm."
+        multiple
+      >
         <el-option
-          v-for="item in graphOption"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
+          v-for="item in algorithmOptions"
+          :key="item"
+          :label="item"
+          :value="item"
         >
         </el-option>
       </el-select>
@@ -82,10 +88,11 @@
         size="small"
         type="primary"
         @click="saveSingleData"
-        :disabled="!Variables_result"
+        :disabled="!SelectedVariables"
         >Plot the graph</el-button
       >
     </div>
+    <div class="hint">* The first selection will be the skeleton.</div>
     <br />
   </div>
 </template>
@@ -96,7 +103,7 @@ import axios from "axios";
 import { Loading } from "element-ui";
 import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
 import { ref } from "vue";
-import { createCharts, creatAllChart } from "@/plugin/charts";
+import { creatAllChart } from "@/plugin/charts";
 
 export default {
   props: {
@@ -137,36 +144,23 @@ export default {
       clhlsResults,
       ukbResults,
       options: ref(options),
-      graphOption: [
-        {
-          value: "DirectedGraphView",
-          label: "DirectedGraph",
-        },
-        /*
-        {
-          label: "CausalGraphView",
-          value: "CausalGraphView",
-        },
-        { label: "MultiOutcomes Matrix", value: "MultiOutcomesView" },*/
-      ],
-      graphType: ref("DirectedGraphView"),
+      algorithmOptions: ["PC", "DAG-GNN", "HCM"],
+      algorithmSelected: ref(["PC"]),
     };
   },
   data() {
     return {
       loadingInstance: ref(null),
-      Variables_result: ref(),
       allChart: ref(),
     };
   },
   methods: {
     reselect() {
       console.log("reselect");
-      this.Variables_result = null;
       this.corrValues = null;
       this.SelectedVariables = [];
     },
-    getAllCorrelation() {
+    getAllCorrelation(ifList) {
       var outcome = this.value;
       this.corrValues = null;
       if (!outcome) {
@@ -176,11 +170,8 @@ export default {
       this.showLoading();
       const _this = this;
       axios({
-        //请求类型
         method: "GET",
-        //URL
         url: "http://localhost:8000/api/get_correlation",
-        //参数
         params: {
           dataset: this.nowType,
           outcome: outcome,
@@ -206,7 +197,7 @@ export default {
             axis: allValues.map((item) => item.axis),
             value: allValues.map((item) => item.value),
           };
-
+          if (ifList) this.getTopCovariant();
           setTimeout(() => {
             _this.createChart();
           }, 0);
@@ -215,85 +206,24 @@ export default {
           console.log("请求失败了", error.message);
         });
     },
-    getOutcomeCovariant() {
-      // var outcome = getElementById("outcomeSelector").value
-      // alert(value)
-      this.SelectedVariables = [];
-      this.Variables_result = null;
-      var outcome = this.value;
-      if (!outcome) {
-        this.showErrorMsg("Please choose outcome!");
-        return;
-      }
-      var CovariantNum = this.CovariantNum;
-      if (!CovariantNum) {
+    getTopCovariant() {
+      if (!this.CovariantNum) {
         this.showErrorMsg("Please enter the number of variables!");
         return;
       }
-
-      this.showLoading();
-      const _this = this;
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/covariant",
-        //参数
-        params: {
-          dataset: this.nowType,
-          outcome: outcome,
-          CovariantNum: CovariantNum,
-        },
-      })
-        .then((response) => {
-          console.log("variable list", response.data);
-          //hide loading anime
-          this.loadingInstance.close();
-          this.loadingInstance = null;
-          //include node & links & list
-          this.Variables_result = {
-            nodes: response.data.nodes,
-            links: response.data.links,
-            CovariantNum: response.data.CovariantNum,
-            outcome: response.data.CovariantNum,
-          };
-          if (!this.corrValues) {
-            this.corrValues = response.data.allValue;
-            let allValues = [];
-            for (let i = 0; i < this.corrValues.variable.length; i++) {
-              allValues.push({
-                axis: this.corrValues.variable[i],
-                value: this.corrValues.outcome[i],
-              });
-            }
-            allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-            this.allChart = {
-              axis: allValues.map((item) => item.axis),
-              value: allValues.map((item) => item.value),
-            };
-            setTimeout(() => {
-              _this.createChart();
-            }, 0);
-          }
-          //only the list
-          let nodes = this.Variables_result.nodes.filter(
-            (node) => node.type === 1
-          );
-
-          this.SelectedVariables = nodes.map((node) => node.id);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
+      if (!this.value) {
+        this.showErrorMsg("Please choose outcome!");
+        return;
+      }
+      if (!this.corrValues) this.getAllCorrelation(true);
+      this.SelectedVariables = [];
+      for (let i = 0; i < this.CovariantNum; i++) {
+        this.SelectedVariables.push(this.allChart.axis[i]);
+      }
     },
+    //全变量相关性排序
     createChart() {
       let charts = document.getElementsByClassName("variable-chart");
-      /*
-      for (let i = 0; i < this.SelectedVariables.length; i++) {
-        let dom = charts[i];
-        let id = this.SelectedVariables[i];
-        createCharts(id, dom, this.Variables_result.nodes[i].range);
-      }*/
       creatAllChart(charts[0], this.allChart);
     },
     showErrorMsg(msg) {
@@ -312,17 +242,24 @@ export default {
       this.loadingInstance = Loading.service(options);
     },
     saveSingleData() {
-      if (!this.Variables_result.nodes) {
-        this.showErrorMsg("Please calculate the graph first!");
+      if (!this.SelectedVariables) {
+        this.showErrorMsg("Please confirm the variables first!");
         return;
       }
-      let linksList = this.Variables_result.links;
-
+      let variables = this.SelectedVariables.map((node) => ({
+        type: 1,
+        id: node,
+      }));
+      let nodes = [
+        {
+          type: 0,
+          id: this.value,
+        },
+      ];
       localStorage.setItem(
         "GET_JSON_RESULT",
         JSON.stringify({
-          nodesList: this.Variables_result.nodes,
-          linksList: linksList,
+          nodesList: nodes.concat(variables),
           history: [],
         })
       );
@@ -331,7 +268,7 @@ export default {
     routeToGraph() {
       this.$router.push({
         path: "/redirect",
-        query: { next: this.graphType },
+        query: { next: "DirectedGraphView" },
       });
     },
     getTag(dataset) {
@@ -390,17 +327,17 @@ export default {
   font-size: 0.1;
   color: red;
 }
-.el-input {
+.OutcomeSelector .el-input {
   font-size: 18px !important;
 }
-.el-select-dropdown__item {
+.OutcomeSelector .el-select-dropdown__item {
   font-size: 16px !important;
 }
 .outcome-input .el-select {
   width: 280px;
   font-size: 18px;
 }
-.el-button {
+.OutcomeSelector .el-button {
   font-size: 18px !important;
 }
 .loading-anime {
@@ -419,9 +356,13 @@ export default {
   line-height: 36px;
 }
 .outcome-subtitle {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 32px;
+  font-size: 14px;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+.hint {
+  font-size: 12px;
+  line-height: 20px;
 }
 
 .outcome-input {
@@ -465,5 +406,17 @@ export default {
 .drawing-command {
   display: flex;
   gap: 16px;
+}
+</style>
+<style>
+.el-tag:first-of-type.el-tag--info {
+  background-color: #fa95a6;
+  color: white;
+}
+.el-tag:first-of-type.el-tag--info .el-tag__close {
+  color: #fa95a6;
+}
+.el-select .el-tag__close:first-of-type.el-icon-close {
+  background-color: white;
 }
 </style>

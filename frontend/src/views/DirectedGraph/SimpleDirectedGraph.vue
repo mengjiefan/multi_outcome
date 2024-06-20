@@ -28,12 +28,22 @@
     <div class="drawing-canvas">
       <div class="button-line">
         <div class="drawing-buttons">
-          <el-button @click="saveToTable" type="success" size="small" round
+          <el-button @click="saveToTable" type="success" size="medium" round
             >Save to Table</el-button
           >
-          <el-button @click="trulyDelete()" type="success" round size="small">
+          <el-button @click="trulyDelete()" type="success" round size="medium">
             Relayout
           </el-button>
+        </div>
+        <div class="line-types">
+          <div class="line-type">
+            <div class="line-illustration"></div>
+            <div class="line-name">Positive value</div>
+          </div>
+          <div class="line-type">
+            <div class="line-illustration"></div>
+            <div class="line-name">Negative value</div>
+          </div>
         </div>
         <div class="algorithm-type">
           <div
@@ -75,7 +85,7 @@
               v-if="gnnType === 'continue'"
               @click="continueLoop()"
               round
-              size="small"
+              size="medium"
             >
               <i class="ri-arrow-right-wide-fill"></i>
             </el-button>
@@ -83,14 +93,14 @@
               v-else
               @click="pauseLoop()"
               round
-              size="small"
+              size="medium"
               :disabled="gnnType === 'stopped'"
             >
               <i class="ri-pause-line"></i>
             </el-button>
             <el-button
               round
-              size="small"
+              size="medium"
               @click="stopLoop"
               :disabled="gnnType === 'stopped'"
             >
@@ -1160,6 +1170,27 @@ export default {
   display: flex;
   align-items: center;
   gap: 20px;
+}
+.line-types {
+  display: flex;
+  gap: 20px;
+}
+.line-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.line-illustration {
+  height: 0;
+  width: 40px;
+  border: 1.2px dashed #333333;
+}
+.line-type:first-of-type .line-illustration{
+  border-style: solid;
+}
+.line-name {
+  font-size: 16px;
 }
 .algorithm-type {
   display: flex;

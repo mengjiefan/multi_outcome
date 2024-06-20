@@ -7,6 +7,7 @@
           :key="index"
           :class="'paper' + index"
           class="paper-svg"
+          :style="getSonGraphSize()"
         >
           <div class="one-line-operator">
             <div class="son-title">
@@ -63,7 +64,7 @@ import {
   countCurveScale,
   countControl,
 } from "@/plugin/curve/CountPos";
-import {countRelativeSonPos} from "@/plugin/relative/CountPos";
+import { countRelativeSonPos } from "@/plugin/relative/CountPos";
 import { drawExtractedGraph, drawOverViewGraph } from "@/plugin/superGraph";
 import { drawTightenedGraph } from "@/plugin/sonGraph";
 import { drawCurveGraph } from "@/plugin/sonGraph";
@@ -693,6 +694,11 @@ export default {
         this.changeEdge(i, { source, target, value: response.data.value });
       });
     },
+    getSonGraphSize() {
+      if (this.sonNum === 1) return { width: "97%", maxWidth: "97%" };
+      else if (this.sonNum < 4) return { width: "47%", maxWidth: "47%" };
+      else return { width: "30.33%", maxWidth: "30.33%" };
+    },
     changeEdge(i, link) {
       let selection = this.multipleSearchValue.selections[i];
       let index = findLink.showSameDireLink(link, selection.linksList);
@@ -976,7 +982,7 @@ export default {
   padding: 1%;
   margin: 0.5%;
   border: 1px solid rgba(151, 151, 151, 0.49);
-  flex: 1 1/3;
+  flex: 1;
   min-width: 30%;
 }
 .son-graph {
@@ -1001,10 +1007,11 @@ export default {
   background: white;
 }
 .one-line-operator {
-  padding-bottom: 16px;
-  height: 54px;
-  width: 100%;
+  margin: 0 2%;
+  height: auto;
+  width: 96%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
 }
@@ -1013,6 +1020,8 @@ export default {
   font-weight: bold;
   display: flex;
   align-items: center;
+  height: 24px;
+  line-height: 24px;
 }
 .color-hint {
   height: 20px;
@@ -1021,6 +1030,7 @@ export default {
   border-radius: 16px;
 }
 .one-line-operator .drawing-buttons {
+  flex: 1;
   display: flex;
   justify-content: flex-end;
 }
@@ -1036,6 +1046,7 @@ export default {
   line-height: 32px;
 }
 .stress-score {
+  padding: 0 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1048,8 +1059,11 @@ export default {
   font-size: 16px;
 }
 </style>
-  <style>
+<style>
 .joint-link path {
   transition-duration: 0.2s;
+}
+.sub-graph .el-button--small.is-round {
+  padding: 5px 9px;
 }
 </style>

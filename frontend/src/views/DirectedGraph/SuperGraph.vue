@@ -2,12 +2,26 @@
   <div class="super-graph">
     <div class="guide-line">
       <div class="drawing-buttons">
-        <el-button @click="saveToTable" type="success" size="small" round
-          >Save to Table</el-button
-        >
-        <el-button @click="trulyDelete()" type="success" round size="small">
-          Relayout
-        </el-button>
+        <div>
+          <el-button @click="saveToTable" type="success" size="medium" round
+            >Save to Table</el-button
+          >
+        </div>
+        <div>
+          <el-button @click="trulyDelete()" type="success" round size="medium">
+            Relayout
+          </el-button>
+        </div>
+      </div>
+      <div class="line-types">
+        <div class="line-type">
+          <div class="line-illustration"></div>
+          <div class="line-name">Positive value</div>
+        </div>
+        <div class="line-type">
+          <div class="line-illustration"></div>
+          <div class="line-name">Negative value</div>
+        </div>
       </div>
       <div class="graph-directors">
         <div
@@ -743,7 +757,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .super-graph {
   display: flex;
@@ -753,10 +766,14 @@ export default {
 .guide-line {
   display: flex;
   justify-content: space-between;
+  gap: 20px;
   padding: 16px;
 }
 .graph-directors {
+  flex: 1;
   display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 .single-hint {
@@ -773,7 +790,38 @@ export default {
   font-size: 16px;
 }
 .drawing-buttons {
-  height: 10;
+  display: flex;
+  height: auto;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.line-types {
+  height: auto;
+  flex: 1;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.line-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.line-illustration {
+  height: 0;
+  width: 40px;
+  border: 1.2px dashed #333333;
+}
+.line-type:first-of-type .line-illustration {
+  border-style: solid;
+}
+.line-name {
+  font-size: 16px;
 }
 .sum-svg {
   display: flex;
