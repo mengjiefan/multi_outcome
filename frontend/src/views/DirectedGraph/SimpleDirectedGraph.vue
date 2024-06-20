@@ -19,7 +19,7 @@
       <el-button
         @click="getLinks"
         class="draw-directed-button"
-        :disabled="countingGraph"
+        :disabled="loadingInstance"
       >
         Plot the nodes selected
       </el-button>
@@ -48,83 +48,55 @@
         <div class="algorithm-type">
           <div
             class="algorithm-title"
-            :class="`${pcEnabled ? 'enabled' : 'disabled'}-title`"
-            @mouseenter="hoverPCLinks"
+            v-for="(method, index) in linkConfigs"
+            :key="index"
+            :class="`${method.enabled ? 'enabled' : 'disabled'}-title`"
+            @mouseenter="hoverLinks(index)"
             @mouseleave="noHoverOn"
-            @click="enablePC"
+            @click="enableLinks(index)"
           >
             <div
               class="color-hint"
               :style="[
-                pcEnabled
-                  ? { 'background-color': 'black' }
-                  : { 'background-color': 'rgba(0, 0, 0, 0.3)' },
+                method.enabled
+                  ? { 'background-color': colors[index].active }
+                  : { 'background-color': colors[index].disabled },
               ]"
             ></div>
-            <div>PC</div>
-          </div>
-          <div
-            class="algorithm-title"
-            :class="`${dagEnabled ? 'enabled' : 'disabled'}-title`"
-            @mouseenter="hoverDagGnnLinks"
-            @mouseleave="noHoverOn"
-            @click="enableDagGnn"
-          >
+            <div>{{ linkConfigs[index].name }}</div>
+
             <div
-              class="color-hint"
-              :style="[
-                dagEnabled
-                  ? { 'background-color': 'rgb(66, 103, 172)' }
-                  : { 'background-color': 'rgba(66, 103, 172, 0.3)' },
-              ]"
-            ></div>
-            <div>DAG-GNN</div>
-          </div>
-          <div v-if="gnnType" class="loop-button-line">
-            <el-button
-              v-if="gnnType === 'continue'"
-              @click="continueLoop()"
-              round
-              size="medium"
+              v-if="method.name === 'DAG-GNN' && gnnType"
+              class="loop-button-line"
             >
-              <i class="ri-arrow-right-wide-fill"></i>
-            </el-button>
-            <el-button
-              v-else
-              @click="pauseLoop()"
-              round
-              size="medium"
-              :disabled="gnnType === 'stopped'"
-            >
-              <i class="ri-pause-line"></i>
-            </el-button>
-            <el-button
-              round
-              size="medium"
-              @click="stopLoop"
-              :disabled="gnnType === 'stopped'"
-            >
-              <i class="ri-square-line"></i>
-            </el-button>
-          </div>
-          <div
-            class="algorithm-title"
-            :class="`${hcmEnabled ? 'enabled' : 'disabled'}-title`"
-            @mouseenter="hoverAAAILinks"
-            @mouseleave="noHoverOn"
-            @click="enableHCM"
-          >
-            <div
-              class="color-hint"
-              :style="[
-                hcmEnabled
-                  ? { 'background-color': 'rgb(240,157,68)' }
-                  : { 'background-color': 'rgba(240,157,68, 0.3)' },
-              ]"
-            ></div>
-            <div>HCM</div>
-            <div class="loading-img">
-              <img v-if="aaaiWait" :src="loadingUrl.url" />
+              <el-button
+                v-if="gnnType === 'continue'"
+                @click="continueLoop()"
+                round
+                size="medium"
+              >
+                <i class="ri-arrow-right-wide-fill"></i>
+              </el-button>
+              <el-button
+                v-else
+                @click="pauseLoop()"
+                round
+                size="medium"
+                :disabled="gnnType === 'stopped'"
+              >
+                <i class="ri-pause-line"></i>
+              </el-button>
+              <el-button
+                round
+                size="medium"
+                @click="stopLoop"
+                :disabled="gnnType === 'stopped'"
+              >
+                <i class="ri-square-line"></i>
+              </el-button>
+            </div>
+            <div class="loading-img" v-else-if="method.name !== 'DAG-GNN'">
+              <img v-if="linkConfigs[index].ifWait" :src="loadingUrl.url" />
             </div>
           </div>
         </div>
@@ -183,20 +155,38 @@ export default {
         NLL_loss: [],
         MSE_loss: [],
       }),
-      dagEnabled: ref(true),
-      pcEnabled: ref(true),
-      hcmEnabled: ref(true),
+      linkConfigs: [],
+      colors: [
+        {
+          name: "black",
+          active: "black",
+          disabled: "rgba(0, 0, 0, 0.3)",
+        },
+        {
+          name: "blue",
+          active: "rgb(66, 103, 172)",
+          disabled: "rgba(66, 103, 172, 0.3)",
+        },
+        {
+          name: "orange",
+          active: "rgb(240,157,68)",
+          disabled: "rgba(240,157,68, 0.3)",
+        },
+      ],
+      //dagEnabled: ref(true),
+      //pcEnabled: ref(true),
+      //hcmEnabled: ref(true),
       hoverType: ref(),
       deleteLinkView: ref(),
       gnnType: ref(),
-      aaaiWait: ref(false),
-      gnnLinks: ref(),
-      aaaiLinks: ref(),
+      //aaaiWait: ref(false),
+      //pcLinks: ref(),
+      //dagLinks: ref(),
+      //aaaiLinks: ref(),
       paper: ref(),
       dataset: ref(),
       chartVisible: ref(false),
       loadingInstance: ref(null),
-      countingGraph: ref(false),
       tooltip: null,
       tooltip2: null,
       menuShow: ref(false),
@@ -208,7 +198,6 @@ export default {
       simplePos: ref(),
       multipleSearchValue: ref({
         nodesList: [],
-        linksList: [],
       }),
     };
   },
@@ -224,57 +213,6 @@ export default {
         query: {
           mode: "save",
         },
-      });
-    },
-    getAAAI() {
-      this.aaaiWait = true;
-      let skel = [];
-      let nodes = this.multipleSearchValue.nodesList.map((node) => {
-        return node.id;
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = 0; j < nodes.length; j++) {
-          if (
-            findLink.showSameDireLink(
-              { source: nodes[i], target: nodes[j] },
-              this.multipleSearchValue.linksList
-            ) > -1
-          )
-            skel.push(1);
-          else skel.push(0);
-        }
-      }
-      axios({
-        method: "post",
-        url: "http://localhost:8000/api/get_aaai_result",
-        //参数
-        data: {
-          nodesList: this.multipleSearchValue.nodesList.map((node) => {
-            return node.id;
-          }),
-          dataset: this.dataset,
-          skel: skel,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((response) => {
-        this.aaaiWait = false;
-        let graph = eval(JSON.parse(response.data.graph));
-        this.aaaiLinks = [];
-        for (let i = 0; i < graph.length; i++) {
-          for (let j = 0; j < graph[i].length; j++) {
-            if (graph[i][j] !== 0)
-              this.aaaiLinks.push({
-                source: this.multipleSearchValue.nodesList[i].id,
-                target: this.multipleSearchValue.nodesList[j].id,
-                value: 0.7,
-              });
-          }
-        }
-        this.multipleSearchValue.aaaiLinks = this.aaaiLinks;
-        this.saveData();
-        this.drawAAAILinks();
       });
     },
     startLoop() {
@@ -301,6 +239,174 @@ export default {
         }, 3000);
       });
     },
+    //getDagGnnLinks
+    async getTempResult() {
+      let index = this.linkConfigs.findIndex(
+        (config) => config.name === "DAG-GNN"
+      );
+      let nodes = this.multipleSearchValue.nodesList.map((node) => node.id);
+
+      try {
+        const response = await axios({
+          method: "get",
+          url: "http://localhost:8000/api/checkpoint_result",
+          params: {
+            nodes: nodes.join(),
+            dataset: this.dataset,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (
+          (this.lossData.epoch.length === 0 && response.data.epoch) ||
+          this.lossData.epoch[this.lossData.epoch.length - 1] <
+            response.data.epoch
+        ) {
+          this.lossData.epoch.push(parseInt(response.data.epoch));
+          this.lossData.ELBO_loss.push(response.data.ELBO_loss.toFixed(3));
+          this.lossData.NLL_loss.push(response.data.NLL_loss.toFixed(3));
+          this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
+          this.drawEpochLossChart();
+        }
+        this.linkConfigs[index].linksList = response.data.linksList;
+        this.multipleSearchValue.dagLinks = this.linkConfigs[index].linksList;
+        this.saveData();
+        if (index === 0) this.setGraph();
+        else this.drawLinks(index);
+      } catch (error) {
+        console.log("请求失败了", error);
+      }
+      return true;
+    },
+    async getAAAI() {
+      let index = this.linkConfigs.findIndex((config) => config.name === "HCM");
+      this.linkConfigs[index].ifWait = true;
+
+      let nodes = this.multipleSearchValue.nodesList.map((node) => node.id);
+
+      try {
+        const response = await axios({
+          method: "post",
+          url: "http://localhost:8000/api/get_aaai_result",
+          //参数
+          data: {
+            nodesList: nodes,
+            dataset: this.dataset,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        console.log(response);
+        this.linkConfigs[index].ifWait = false;
+        this.linkConfigs[index].linksList = response.data.linksList;
+        this.multipleSearchValue.aaaiLinks = response.data.linksList;
+        this.saveData();
+        if (index === 0) this.setGraph();
+        else this.drawLinks(index);
+      } catch (error) {
+        console.log("请求失败了", error);
+      }
+      return true;
+    },
+    async getPCLinks() {
+      let index = this.linkConfigs.findIndex((config) => config.name === "PC");
+      this.linkConfigs[index].ifWait = true;
+
+      let outcome = this.multipleSearchValue.nodesList.filter(
+        (node) => node.type === 0
+      )[0];
+      let factors = this.multipleSearchValue.nodesList
+        .filter((node) => node.type === 1)
+        .map((node) => {
+          return node.id;
+        });
+
+      try {
+        const response = await axios({
+          method: "GET",
+          url: "http://localhost:8000/api/getLink",
+          params: {
+            dataset: this.dataset,
+            outcome: outcome.id,
+            factors: factors.join(),
+          },
+        });
+        console.log(response);
+        this.multipleSearchValue.pcLinks = response.data.links;
+        this.linkConfigs[index].linksList = response.data.links;
+        this.linkConfigs[index].ifWait = false;
+        this.saveData();
+        if (index === 0) this.setGraph();
+        else this.drawLinks(index);
+      } catch (error) {
+        console.log("请求失败了", error);
+      }
+      return true;
+    },
+    async getLinks() {
+      if (!this.checkedVariables?.length) {
+        this.$message({
+          showClose: true,
+          message: "Please select at least one node!",
+          type: "warning",
+        });
+        return;
+      }
+      let outcome = this.multipleSearchValue.nodesList.filter(
+        (node) => node.type === 0
+      )[0];
+      this.multipleSearchValue.nodesList = this.checkedVariables.map((node) => {
+        return {
+          id: node,
+          type: 1,
+        };
+      });
+      this.multipleSearchValue.nodesList.push(outcome);
+      let requestOK = await this.stopLoop();
+      if (requestOK) {
+        this.multipleSearchValue.pcLinks = null;
+        this.multipleSearchValue.dagLinks = null;
+        this.multipleSearchValue.aaaiLinks = null;
+      }
+
+      requestOK = false;
+      switch (this.linkConfigs[0].name) {
+        case "PC":
+          this.showLoading();
+          requestOK = await this.getPCLinks();
+          break;
+        case "HCM":
+          this.showLoading();
+          requestOK = await this.getAAAI();
+          break;
+        case "DAG-GNN":
+          this.startLoop();
+          requestOK = true;
+          break;
+        default:
+          break;
+      }
+      if (requestOK) {
+        this.simplePos = null;
+        historyManage.reDoHistory(this.multipleSearchValue);
+        if (this.loadingInstance) {
+          this.loadingInstance.close();
+          this.loadingInstance = null;
+        }
+        for (let i = 1; i < this.linkConfigs.length; i++) {
+          let name = this.linkConfigs[i].name;
+          if (name === "PC" && !this.multipleSearchValue.pcLinks)
+            this.getPCLinks();
+          else if (name === "DAG-GNN" && !this.multipleSearchValue.dagLinks)
+            this.startLoop();
+          else if (name === "HCM" && !this.multipleSearchValue.aaaiLinks)
+            this.getAAAI();
+        }
+      }
+    },
+
     drawEpochLossChart() {
       var chartDom = document.getElementById("loss-chart");
       if (!this.lossChart) this.lossChart = echarts.init(chartDom);
@@ -351,7 +457,7 @@ export default {
 
       this.lossChart.setOption(option);
     },
-    stopLoop() {
+    async stopLoop() {
       this.lossChart = null;
       this.lossData = {
         epoch: [],
@@ -360,7 +466,7 @@ export default {
         MSE_loss: [],
       };
       this.gnnType = "stopped";
-      axios({
+      let response = await axios({
         method: "post",
         url: "http://localhost:8000/api/stop_loop",
         //参数
@@ -369,6 +475,10 @@ export default {
           "Content-Type": "application/json",
         },
       });
+      if (response) {
+        return true;
+        //加一个getTempResult的cancel token
+      }
       if (this.timer) window.clearInterval(this.timer);
     },
     pauseLoop() {
@@ -395,62 +505,23 @@ export default {
         },
       });
     },
-    getTempResult() {
-      axios({
-        method: "get",
-        url: "http://localhost:8000/api/checkpoint_result",
-        //参数
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((response) => {
-        let graph = eval(JSON.parse(response.data.graph));
 
-        if (
-          (this.lossData.epoch.length === 0 && response.data.epoch) ||
-          this.lossData.epoch[this.lossData.epoch.length - 1] <
-            response.data.epoch
-        ) {
-          this.lossData.epoch.push(parseInt(response.data.epoch));
-          this.lossData.ELBO_loss.push(response.data.ELBO_loss.toFixed(3));
-          this.lossData.NLL_loss.push(response.data.NLL_loss.toFixed(3));
-          this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
-          this.drawEpochLossChart();
-        }
-        this.gnnLinks = [];
-        //console.log(this.multipleSearchValue.nodesList.length);
-        //console.log(graph.length);
-        for (let i = 0; i < graph.length; i++) {
-          for (let j = 0; j < graph[i].length; j++) {
-            if (graph[i][j] !== 0) {
-              //console.log(this.multipleSearchValue.nodesList[i],this.multipleSearchValue.nodesList[j])
-              this.gnnLinks.push({
-                source: this.multipleSearchValue.nodesList[i].id,
-                target: this.multipleSearchValue.nodesList[j].id,
-                value: graph[i][j],
-              });
-            }
-          }
-        }
-        this.multipleSearchValue.dagLinks = this.gnnLinks;
-        this.saveData();
-        this.drawGnnLinks();
-      });
-    },
     trulyDelete() {
       console.log("delete edge");
       this.simplePos = null;
 
       let linksList = LinksManagement.getFinalLinks(
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
+      this.linkConfigs[0].linksList = linksList;
+      let allLinks = [];
+      for (let i = 0; i < this.linkConfigs.length; i++) {
+        if (this.linkConfigs[i].linksList?.length)
+          allLinks = allLinks.concat(this.linkConfigs[i].linksList);
+      }
       //去除孤点
       //remove unrelated nodes
-      let allLinks = linksList;
-      if (this.multipleSearchValue.gnnLinks)
-        allLinks = allLinks.concat(this.multipleSearchValue.gnnLinks);
-      if (this.multipleSearchValue.aaaiLinks)
-        allLinks = allLinks.concat(this.multipleSearchValue.aaaiLinks);
+
       let nodesList = this.multipleSearchValue.nodesList.filter((node) => {
         let index = allLinks.findIndex((link) => {
           if (link.source === node.id || link.target === node.id) return true;
@@ -458,13 +529,21 @@ export default {
         });
         return index > -1 || node.type === 0;
       });
-      this.multipleSearchValue.linksList = linksList;
+
       this.multipleSearchValue.nodesList = nodesList;
+      this.checkedVariables = this.multipleSearchValue.nodesList
+        .filter((node) => node.type === 1)
+        .map((node) => {
+          return node.id;
+        });
       this.saveData();
       this.setGraph();
     },
     setGraph() {
-      var data = this.multipleSearchValue;
+      let data = {
+        nodesList: this.multipleSearchValue.nodesList,
+        linksList: this.linkConfigs[0].linksList,
+      };
       let g = new dagreD3.graphlib.Graph({ compound: true }).setGraph({
         ranker: "tight-tree",
       });
@@ -474,11 +553,7 @@ export default {
       const simpleG = g;
       let that = this;
 
-      this.simplePos = countSimplePos(
-        simpleG,
-        this.multipleSearchValue.nodesList,
-        this.multipleSearchValue.linksList
-      );
+      this.simplePos = countSimplePos(simpleG, data.nodesList, data.linksList);
 
       console.log("simplePos", this.simplePos);
       setTimeout(() => {
@@ -493,104 +568,65 @@ export default {
           source: nodes[0].slice(1, nodes[0].length),
           target: nodes[1].slice(0, nodes[1].length - 1),
         },
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
-      let value = this.multipleSearchValue.linksList[index].value;
+      let value = this.linkConfigs[0].linksList[index].value;
       return value.toFixed(3);
     },
-    drawGnnLinks() {
-      if (!this.dagEnabled) return;
+    drawLinks(index) {
+      if (!this.linkConfigs[index].enabled) return;
       let _this = this;
-      LinksManagement.removeLinks(this.paper, "daggnn");
-      this.gnnLinks.forEach((link) => {
-        linksOperation.addLink(
-          _this.simplePos,
-          link,
-          _this.paper,
-          "DagGnnCurve",
-          {
-            highlight: _this.hoverType !== "aaai" && _this.hoverType !== "pc",
-          }
-        );
-      });
-      //linksOperation.addNode(nodes, _this.paper, "DagGnn");
-    },
-    drawPCLinks() {
-      if (!this.pcEnabled) return;
-      let _this = this;
-      this.multipleSearchValue.linksList.forEach((link) => {
-        linksOperation.addLink(
-          _this.simplePos,
-          link,
-          _this.paper,
-          "SuperCurve",
-          {
-            highlight:
-              _this.hoverType !== "daggnn" && _this.hoverType !== "aaai",
-          }
-        );
+      let config = this.linkConfigs[index];
+      let curve = "SuperCurve";
+      switch (config.name) {
+        case "PC":
+          break;
+        case "DAG-GNN":
+          curve = "DagGnnCurve";
+          break;
+        case "HCM":
+          curve = "AAAICurve";
+          break;
+        default:
+          break;
+      }
+      LinksManagement.removeLinks(this.paper, this.colors[index].name);
+      config.linksList.forEach((link) => {
+        linksOperation.addLink(_this.simplePos, link, _this.paper, curve, {
+          highlight: !_this.hoverType || _this.hoverType === config.name,
+        });
       });
     },
-    drawAAAILinks() {
-      if (!this.hcmEnabled) return;
-      let _this = this;
-      this.aaaiLinks.forEach((link) => {
-        linksOperation.addLink(
-          _this.simplePos,
-          link,
-          _this.paper,
-          "AAAICurve",
-          {
-            highlight: _this.hoverType !== "daggnn" && _this.hoverType !== "pc",
-          }
-        );
-      });
-      //linksOperation.addNode(nodes, _this.paper, "AAAI");
-    },
-    enableDagGnn() {
-      this.dagEnabled = !this.dagEnabled;
-      if (this.dagEnabled) this.drawGnnLinks();
-      else {
-        LinksManagement.removeLinks(this.paper, "daggnn");
-        this.noHoverOn();
-      }
-    },
-    enablePC() {
-      this.pcEnabled = !this.pcEnabled;
-      if (this.pcEnabled) this.drawPCLinks();
-      else {
-        LinksManagement.removeLinks(this.paper, "pc");
-        this.noHoverOn();
-      }
-    },
-    enableHCM() {
-      this.hcmEnabled = !this.hcmEnabled;
-      if (this.hcmEnabled) this.drawAAAILinks();
-      else {
-        LinksManagement.removeLinks(this.paper, "aaai");
-        this.noHoverOn();
-      }
-    },
+
     noHoverOn() {
       this.hoverType = null;
       LinksManagement.removeLightLinks(this.paper);
     },
-    hoverDagGnnLinks() {
-      if (!this.dagEnabled) return;
-      this.hoverType = "daggnn";
-      LinksManagement.highLightGnnLinks(this.paper);
+    enableLinks(index) {
+      this.linkConfigs[index].enabled = !this.linkConfigs[index].enabled;
+      if (this.linkConfigs[index].enabled) this.drawLinks(index);
+      else {
+        LinksManagement.removeLinks(this.paper, this.colors[index].name);
+        this.noHoverOn();
+      }
     },
-    hoverAAAILinks() {
-      if (!this.hcmEnabled) return;
-      this.hoverType = "aaai";
-      LinksManagement.highLightAAAILinks(this.paper);
+    hoverLinks(index) {
+      if (!this.linkConfigs[index].enabled) return;
+      this.hoverType = this.linkConfigs[index].name;
+      switch (index) {
+        case 0:
+          LinksManagement.highLightBlackLinks(this.paper);
+          break;
+        case 1:
+          LinksManagement.highLightBlueLinks(this.paper);
+          break;
+        case 2:
+          LinksManagement.highLightOrangeLinks(this.paper);
+          break;
+        default:
+          break;
+      }
     },
-    hoverPCLinks() {
-      if (!this.pcEnabled) return;
-      this.hoverType = "pc";
-      LinksManagement.highLightPCLinks(this.paper);
-    },
-
     checkPCLink(linkView) {
       let color = linkView.model.attributes.attrs.line.stroke;
       if (
@@ -649,13 +685,15 @@ export default {
       );
       this.setPaper(paper);
       this.drawAddEdges();
-      if (this.gnnLinks) this.drawGnnLinks();
-      if (!this.aaaiWait) this.drawAAAILinks();
+      for (let i = 1; i < this.linkConfigs.length; i++) {
+        let config = this.linkConfigs[i];
+        if (config[i]?.linksList && !config[i]?.ifWait) this.drawLinks(i);
+      }
     },
+
     drawAddEdges() {
-      let addEdges = this.multipleSearchValue.linksList.filter(
-        (link) => link.add
-      );
+      let linksList = this.linkConfigs[0].linksList;
+      let addEdges = linksList.filter((link) => link.add);
       let that = this;
       addEdges.forEach((edge) => {
         if (edge.reverse)
@@ -676,10 +714,10 @@ export default {
       //改变data-link方向再show-link
       let index = findLink.showReverseLink(
         { source, target },
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
 
-      let link = this.multipleSearchValue.linksList[index];
+      let link = this.linkConfigs[0].linksList[index];
       link.reverse = !link.reverse;
       link.value = value;
       this.addNewEdge({ source, target, value });
@@ -690,11 +728,11 @@ export default {
     addTempLink(source, target) {
       let oIndex = findLink.sameNodeLink(
         { source, target },
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
       this.deleteLinkView.model.remove({ ui: true });
       if (oIndex > -1) {
-        let originalLink = this.multipleSearchValue.linksList[oIndex];
+        let originalLink = this.linkConfigs[0].linksList[oIndex];
         if (originalLink.hidden) originalLink.hidden = false;
         if (originalLink.source !== source) {
           linkRequest.getLinkValue(source, target).then((response) => {
@@ -704,7 +742,7 @@ export default {
           this.addNewEdge({
             source,
             target,
-            value: this.multipleSearchValue.linksList[oIndex].value,
+            value: this.linkConfigs[0].linksList[oIndex].value,
           });
       } else this.getNewEdge(source, target);
     },
@@ -812,7 +850,7 @@ export default {
       else return false;
     },
     isVisible(path) {
-      let link = this.multipleSearchValue.linksList.filter(
+      let link = this.linkConfigs[0].linksList.filter(
         (item) => item.source === path.v && item.target === path.w
       );
       if (link[0].hidden) return false;
@@ -824,66 +862,7 @@ export default {
         JSON.stringify(this.multipleSearchValue)
       );
     },
-    getLinks() {
-      if (!this.checkedVariables?.length) {
-        this.$message({
-          showClose: true,
-          message: "Please select at least one node!",
-          type: "warning",
-        });
-        return;
-      }
-      let outcome = this.multipleSearchValue.nodesList.filter(
-        (node) => node.type === 0
-      )[0];
-      this.multipleSearchValue.nodesList = this.checkedVariables.map((node) => {
-        return {
-          id: node,
-          type: 1,
-        };
-      });
-      this.multipleSearchValue.nodesList.push(outcome);
 
-      this.countingGraph = true;
-      this.stopLoop();
-      this.showLoading();
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/getLink",
-        //参数
-        params: {
-          dataset: this.dataset,
-          outcome: outcome.id,
-          factors: this.checkedVariables.join(),
-        },
-      })
-        .then((response) => {
-          this.simplePos = null;
-          console.log("new links", response.data);
-          this.multipleSearchValue = {
-            linksList: response.data.links,
-            nodesList: response.data.nodes,
-            history: this.multipleSearchValue.history,
-          };
-
-          this.gnnLinks = [];
-          this.aaaiLinks = [];
-          historyManage.reDoHistory(this.multipleSearchValue);
-          this.loadingInstance.close();
-          this.loadingInstance = null;
-
-          this.saveData();
-          this.setGraph();
-          this.countingGraph = false;
-          this.getAAAI();
-          this.startLoop();
-        })
-        .catch((error) => {
-          console.log("请求失败了", error);
-        });
-    },
     //add document click listener
     handleCheckAllChange(val) {
       if (val === true) this.checkedVariables = this.VariablesOptions;
@@ -918,13 +897,13 @@ export default {
       this.getLinks();
     },
     isReverse(edge) {
-      let index = this.multipleSearchValue.linksList.findIndex(function (row) {
+      let index = this.linkConfigs[0].linksList.findIndex(function (row) {
         if (row.source === edge.v && row.target === edge.w && !row.hidden) {
           return true;
         } else return false;
       });
       if (index < 0) return false;
-      return this.multipleSearchValue.linksList[index].reverse === true;
+      return this.linkConfigs[0].linksList[index].reverse === true;
     },
     async getEdgeValue(source, target) {
       let response = await linkRequest.getLinkValue(target, source);
@@ -932,7 +911,7 @@ export default {
     },
     async getNewEdge(source, target) {
       let newLink = await this.getEdgeValue(source, target);
-      this.multipleSearchValue.linksList.push({
+      this.linkConfigs[0].linksList.push({
         ...newLink,
         add: true,
       });
@@ -950,16 +929,16 @@ export default {
       let link = await this.getEdgeValue(source, target);
       let index = findLink.showSameDireLink(
         link,
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
 
-      if (index > -1 && !this.multipleSearchValue.linksList[index].hidden) {
+      if (index > -1 && !this.linkConfigs[0].linksList[index].hidden) {
         this.deleteLinkView.model.remove({ ui: true });
         let history = link;
-        this.multipleSearchValue.linksList[index].value = link.value;
+        this.linkConfigs[0].linksList[index].value = link.value;
         historyManage.reverseEdge(this.multipleSearchValue.history, history);
-        this.multipleSearchValue.linksList[index].reverse =
-          !this.multipleSearchValue.linksList[index].reverse;
+        this.linkConfigs[0].linksList[index].reverse =
+          !this.linkConfigs[0].linksList[index].reverse;
         this.addLinkToPaper({
           source: link.target,
           target: link.source,
@@ -979,11 +958,11 @@ export default {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");
       let index = findLink.sameNodeLink(
         { source: nodes[0], target: nodes[1] },
-        this.multipleSearchValue.linksList
+        this.linkConfigs[0].linksList
       );
       if (index > -1) {
-        let link = this.multipleSearchValue.linksList[index];
-        if (link.add) this.multipleSearchValue.linksList.splice(index, 1);
+        let link = this.linkConfigs[0].linksList[index];
+        if (link.add) this.linkConfigs[0].linksList.splice(index, 1);
         else link.hidden = true;
         this.multipleSearchValue.history = historyManage.deleteEdge(
           this.multipleSearchValue.history,
@@ -1071,25 +1050,42 @@ export default {
     else if (datasetType === "ukb") this.VariablesOptions = ukbFactors;
     else this.VariablesOptions = clhlsFactors;
     this.dataset = datasetType;
+
     if (result) this.multipleSearchValue = JSON.parse(result);
     else this.multipleSearchValue = null;
     console.log("getItem", this.multipleSearchValue);
+
     if (this.multipleSearchValue) {
       this.checkedVariables = this.multipleSearchValue.nodesList
         .filter((node) => node.type === 1)
         .map((node) => {
           return node.id;
         });
-      this.setGraph();
-
-      if (
-        !this.multipleSearchValue.dagLinks &&
-        this.multipleSearchValue.linksList
-      )
-        this.startLoop();
-      else this.gnnLinks = this.multipleSearchValue.dagLinks;
-      if (!this.multipleSearchValue.aaaiLinks) this.getAAAI();
-      else this.aaaiLinks = this.multipleSearchValue.aaaiLinks;
+      let algorithm = this.multipleSearchValue.algorithm;
+      if (!algorithm || !algorithm.length) {
+        algorithm = ["PC"];
+        this.multipleSearchValue.pcLinks = this.multipleSearchValue.linksList;
+      }
+      this.linkConfigs = [];
+      for (let i = 0; i < algorithm.length; i++) {
+        this.linkConfigs.push({
+          name: algorithm[i],
+          enabled: true,
+        });
+        if (algorithm[i] === "PC")
+          if (this.multipleSearchValue.pcLinks)
+            this.linkConfigs[i].linksList = this.multipleSearchValue.pcLinks;
+          else this.getPCLinks();
+        else if (algorithm[i] === "DAG-GNN")
+          if (this.multipleSearchValue.dagLinks)
+            this.linkConfigs[i].linksList = this.multipleSearchValue.dagLinks;
+          else this.startLoop();
+        else if (algorithm[i] === "HCM")
+          if (this.multipleSearchValue.aaaiLinks)
+            this.linkConfigs[i].linksList = this.multipleSearchValue.aaaiLinks;
+          else this.getAAAI();
+      }
+      if (this.linkConfigs[0].linksList?.length) this.setGraph();
     }
   },
   beforeRouteLeave(to, from, next) {
@@ -1186,7 +1182,7 @@ export default {
   width: 40px;
   border: 1.2px dashed #333333;
 }
-.line-type:first-of-type .line-illustration{
+.line-type:first-of-type .line-illustration {
   border-style: solid;
 }
 .line-name {

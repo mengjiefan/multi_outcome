@@ -4,28 +4,28 @@ const getNode = (nodeView) => {
   return nodeView.model.attributes.attrs.title;
 };
 export class LinksManagement {
-  static highLightGnnLink(linkView) {
+  static highLightBlueLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(66,103,172")) {
       linkView.model.attr("line/targetMarker/stroke", "rgba(66,103,172,1)");
       linkView.model.attr("line/stroke", "rgba(66,103,172,1)");
     }
   }
-  static highLightAAAILink(linkView) {
+  static highLightOrangeLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(240,157,68")) {
       linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,1)");
       linkView.model.attr("line/stroke", "rgba(240,157,68,1)");
     }
   }
-  static removeLightAAAILink(linkView) {
+  static removeLightOrangeLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(240,157,68")) {
       linkView.model.attr("line/targetMarker/stroke", "rgba(240,157,68,0.1)");
       linkView.model.attr("line/stroke", "rgba(240,157,68,0.1)");
     }
   }
-  static removeLightGnnLink(linkView) {
+  static removeLightBlueLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (color.includes("rgba(66,103,172")) {
       //daggnn
@@ -33,7 +33,7 @@ export class LinksManagement {
       linkView.model.attr("line/stroke", "rgba(66,103,172,0.1)");
     }
   }
-  static highLightPCLink(linkView) {
+  static highLightBlackLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (
       !color.includes("rgba(66,103,172") &&
@@ -44,7 +44,7 @@ export class LinksManagement {
       linkView.model.attr("line/stroke", "black");
     }
   }
-  static removeLightPCLink(linkView) {
+  static removeLightBlackLink(linkView) {
     let color = linkView.model.attributes.attrs.line.stroke;
     if (
       !color.includes("rgba(66,103,172") &&
@@ -55,40 +55,40 @@ export class LinksManagement {
       linkView.model.attr("line/stroke", "rgba(0,0,0,0.1)");
     }
   }
-  static highLightGnnLinks(paper) {
+  static highLightBlueLinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      this.highLightGnnLink(linkView);
-      this.removeLightAAAILink(linkView);
-      this.removeLightPCLink(linkView);
+      this.highLightBlueLink(linkView);
+      this.removeLightOrangeLink(linkView);
+      this.removeLightBlackLink(linkView);
     });
   }
-  static highLightAAAILinks(paper) {
+  static highLightOrangeLinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      this.removeLightGnnLink(linkView);
-      this.highLightAAAILink(linkView);
-      this.removeLightPCLink(linkView);
+      this.removeLightBlueLink(linkView);
+      this.highLightOrangeLink(linkView);
+      this.removeLightBlackLink(linkView);
     });
   }
-  static highLightPCLinks(paper) {
+  static highLightBlackLinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      this.removeLightGnnLink(linkView);
-      this.removeLightAAAILink(linkView);
-      this.highLightPCLink(linkView);
+      this.removeLightBlueLink(linkView);
+      this.removeLightOrangeLink(linkView);
+      this.highLightBlackLink(linkView);
     });
   }
   static removeLightLinks(paper) {
     let graph = paper.model.attributes.cells.graph;
     graph.getLinks().forEach((link) => {
       let linkView = link.findView(paper);
-      this.highLightGnnLink(linkView);
-      this.highLightAAAILink(linkView);
-      this.highLightPCLink(linkView);
+      this.highLightBlueLink(linkView);
+      this.highLightOrangeLink(linkView);
+      this.highLightBlackLink(linkView);
     });
   }
   static removeLinks(paper, type) {
@@ -96,12 +96,12 @@ export class LinksManagement {
     graph.getLinks().forEach((item) => {
       let linkView = item.findView(paper);
       let color = linkView.model.attributes.attrs.line.stroke;
-      if (type === "daggnn" && color.includes("rgba(66,103,172"))
+      if (type === "blue" && color.includes("rgba(66,103,172"))
         linkView.model.remove({ ui: true });
-      else if (type === "aaai" && color.includes("rgba(240,157,68"))
+      else if (type === "orange" && color.includes("rgba(240,157,68"))
         linkView.model.remove({ ui: true });
       else if (
-        type === "pc" &&
+        type === "black" &&
         !color.includes("rgba(66,103,172") &&
         !color.includes("rgba(240,157,68")
       )

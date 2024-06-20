@@ -248,7 +248,6 @@ export const setSuperGraph = (g, data) => {
   // Set some general styles
   g.nodes().forEach(function (v) {
     var node = g.node(v);
-    console.log(v,node)
     node.style = "fill:" + cmap[0];
   });
   dagre.layout(g);

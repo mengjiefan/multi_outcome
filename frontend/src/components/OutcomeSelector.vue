@@ -40,9 +40,9 @@
       <div>The top</div>
       <div class="outcome-number-input">
         <el-input
-          :onkeyup="(CovariantNum = CovariantNum.replace(/[^\d]/g, ''))"
+          :onkeyup="(covariantNum = covariantNum.replace(/[^\d]/g, ''))"
           type="text"
-          v-model="CovariantNum"
+          v-model="covariantNum"
         />
       </div>
       <div>variables</div>
@@ -62,7 +62,7 @@
     </div>
     <div class="loading-box"></div>
     <ul class="variables">
-      <li v-for="(item, index) in SelectedVariables" :key="index">
+      <li v-for="(item, index) in selectedVariables" :key="index">
         {{ index + 1 }}-{{ item }}
       </li>
     </ul>
@@ -88,7 +88,7 @@
         size="small"
         type="primary"
         @click="saveSingleData"
-        :disabled="!SelectedVariables"
+        :disabled="!selectedVariables"
         >Plot the graph</el-button
       >
     </div>
@@ -137,9 +137,9 @@ export default {
     return {
       corrValues: ref(),
       nowType: ref(datasetType),
-      CovariantNum: ref(""),
+      covariantNum: ref(""),
       value: ref(""),
-      SelectedVariables: ref([]),
+      selectedVariables: ref([]),
       defaultResults,
       clhlsResults,
       ukbResults,
@@ -158,7 +158,8 @@ export default {
     reselect() {
       console.log("reselect");
       this.corrValues = null;
-      this.SelectedVariables = [];
+      this.selectedVariables = [];
+      this.covariantNum = "";
     },
     getAllCorrelation(ifList) {
       var outcome = this.value;
@@ -207,7 +208,7 @@ export default {
         });
     },
     getTopCovariant() {
-      if (!this.CovariantNum) {
+      if (!this.covariantNum) {
         this.showErrorMsg("Please enter the number of variables!");
         return;
       }
@@ -216,9 +217,9 @@ export default {
         return;
       }
       if (!this.corrValues) this.getAllCorrelation(true);
-      this.SelectedVariables = [];
-      for (let i = 0; i < this.CovariantNum; i++) {
-        this.SelectedVariables.push(this.allChart.axis[i]);
+      this.selectedVariables = [];
+      for (let i = 0; i < this.covariantNum; i++) {
+        this.selectedVariables.push(this.allChart.axis[i]);
       }
     },
     //全变量相关性排序
@@ -242,11 +243,14 @@ export default {
       this.loadingInstance = Loading.service(options);
     },
     saveSingleData() {
-      if (!this.SelectedVariables) {
+      if (!this.selectedVariables?.length) {
         this.showErrorMsg("Please confirm the variables first!");
         return;
+      } else if (!this.algorithmSelected?.length) {
+        this.showErrorMsg("Please select the methods first!");
+        return;
       }
-      let variables = this.SelectedVariables.map((node) => ({
+      let variables = this.selectedVariables.map((node) => ({
         type: 1,
         id: node,
       }));
@@ -260,6 +264,7 @@ export default {
         "GET_JSON_RESULT",
         JSON.stringify({
           nodesList: nodes.concat(variables),
+          algorithm: this.algorithmSelected,
           history: [],
         })
       );
@@ -273,6 +278,7 @@ export default {
     },
     getTag(dataset) {
       this.value = null;
+      this.reselect();
       let options = [];
       switch (dataset) {
         case "default":

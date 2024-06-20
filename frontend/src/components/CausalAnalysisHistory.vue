@@ -191,35 +191,7 @@ export default {
     handleSelectionChange(val) {
       this.multipleSelection = val;
     },
-    getLinks(outcomes, factors) {
-      this.loading = true;
-      axios({
-        //请求类型
-        method: "GET",
-        //URL
-        url: "http://localhost:8000/api/getLink",
-        //参数
-        params: {
-          outcomes: outcomes.join(),
-          factors: factors.join(),
-        },
-      })
-        .then((response) => {
-          console.log("new links", response.data);
-          localStorage.setItem(
-            "GET_JSON_RESULT",
-            JSON.stringify({
-              nodesList: response.data.nodes,
-              linksList: response.data.links,
-            })
-          );
-          this.loading = false;
-          this.routeToGraph();
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
-        });
-    },
+
     removeDuplicate(selections) {
       let finalSelections = [];
       let outs = [];
@@ -342,13 +314,15 @@ export default {
             };
           })
         );
-        let data = {
-          nodesList: nodes,
-          linksList: selections[0].links,
-          history: selections[0].history,
-        };
-        if (selections[0].aaaiLinks) data.aaaiLinks = selections[0].aaaiLinks;
-        if (selections[0].dagLinks) data.dagLinks = selections[0].dagLinks;
+        let data = { nodesList: nodes, history: selections[0].history };
+        let nowRow = selections[0];
+        if (nowRow.algorithm?.length) {
+          if (nowRow.pcLinks) data.pcLinks = nowRow.pcLinks;
+          if (nowRow.aaaiLinks) data.aaaiLinks = nowRow.aaaiLinks;
+          if (nowRow.dagLinks) data.dagLinks = nowRow.dagLinks;
+          data.algorithm = nowRow.algorithm;
+        } else data.linksList = nowRow.links;
+
         localStorage.setItem("GET_JSON_RESULT", JSON.stringify(data));
         this.routeToGraph();
       }
@@ -380,14 +354,14 @@ export default {
         path: this.$route.path,
       });
     },
-    saveRow(outcome, linksList, history, aaaiLinks, dagLinks) {
+    saveRow(rowData) {
       let nextNodes = [];
-      nextNodes.push(outcome);
+      nextNodes.push(rowData.outcome);
 
       let flag = false;
       while (!flag) {
         flag = true;
-        linksList.forEach((link) => {
+        rowData.linksList.forEach((link) => {
           if (nextNodes.includes(link.source)) {
             if (!nextNodes.includes(link.target)) {
               nextNodes.push(link.target);
@@ -406,13 +380,15 @@ export default {
       if (!this.tableData) this.tableData = [];
       let newRowData = {
         CovariantNum: nextNodes.length,
-        outcome: outcome,
+        outcome: rowData.outcome,
         Variables: nextNodes,
-        history: history,
-        links: linksList,
+        history: rowData.history,
+        links: rowData.linksList,
       };
-      if (aaaiLinks) newRowData.aaaiLinks = aaaiLinks;
-      if (dagLinks) newRowData.dagLinks = dagLinks;
+      if (rowData.algorithm) newRowData.algorithm = rowData.algorithm;
+      if (rowData.pcLinks) newRowData.pcLinks = rowData.pcLinks;
+      if (rowData.aaaiLinks) newRowData.aaaiLinks = rowData.aaaiLinks;
+      if (rowData.dagLinks) newRowData.dagLinks = rowData.dagLinks;
       this.tableData.push(newRowData);
     },
     getDifferentRows(newRow) {
@@ -425,7 +401,8 @@ export default {
       if (sonNum > 1) {
         for (let index = 0; index < newRow.selections.length; index++) {
           let row = newRow.selections[index];
-          _this.saveRow(row.outcome, row.linksList, row.history);
+          //row.outcome, row.linksList, row.history
+          _this.saveRow(row);
         }
       } else {
         let index = nodesList.findIndex((node) => {
@@ -433,13 +410,25 @@ export default {
           else return false;
         });
         let outcome = nodesList[index].id;
-        _this.saveRow(
-          outcome,
-          newRow.linksList,
-          newRow.history,
-          newRow.aaaiLinks,
-          newRow.dagLinks
-        );
+        let data = { outcome, ...newRow };
+        let linksList = [];
+        if (newRow.algorithm?.length) {
+          switch (newRow.algorithm[0]) {
+            case "PC":
+              linksList = newRow.pcLinks;
+              break;
+            case "HCM":
+              linksList = newRow.aaaiLinks;
+              break;
+            case "DAG-GNN":
+              linksList = newRow.dagLinks;
+              break;
+            default:
+              break;
+          }
+        }
+        data.linksList = linksList;
+        _this.saveRow(data);
       }
       localStorage.setItem(this.dataString, JSON.stringify(this.tableData));
     },
@@ -483,5 +472,10 @@ export default {
   width: 100%;
   display: flex;
   justify-content: space-between;
+}
+</style>
+<style>
+.history-panel .el-button {
+  font-size: 18px !important;
 }
 </style>

@@ -501,17 +501,17 @@ export default {
     hoverDagGnnLinks() {
       if (!this.dagEnabled) return;
       this.hoverType = "daggnn";
-      LinksManagement.highLightGnnLinks(this.paper);
+      LinksManagement.highLightBlueLinks(this.paper);
     },
     hoverAAAILinks() {
       if (!this.hcmEnabled) return;
       this.hoverType = "aaai";
-      LinksManagement.highLightAAAILinks(this.paper);
+      LinksManagement.highLightOrangeLinks(this.paper);
     },
     hoverPCLinks() {
       if (!this.pcEnabled) return;
       this.hoverType = "pc";
-      LinksManagement.highLightPCLinks(this.paper);
+      LinksManagement.highLightBlackLinks(this.paper);
     },
     changeLinks(benchMark) {
       if (benchMark === "healthcare") {
