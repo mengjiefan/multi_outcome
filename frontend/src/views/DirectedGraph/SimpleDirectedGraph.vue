@@ -352,6 +352,14 @@ export default {
         else this.drawLinks(index);
       } catch (error) {
         console.log("请求失败了", error);
+        this.$message({
+          showClose: true,
+          message: "The request failed. Try different parameters.",
+          type: "warning",
+        });
+        this.$router.push({
+          path: "/DirectedGraphView",
+        });
       }
       return true;
     },
@@ -396,6 +404,7 @@ export default {
       }
       this.simplePos = null;
       historyManage.reDoHistory(this.multipleSearchValue);
+      this.setGraph();
 
       for (let i = 1; i < this.linkConfigs.length; i++) {
         let name = this.linkConfigs[i].name;
