@@ -161,7 +161,7 @@ export default {
       this.selectedVariables = [];
       this.covariantNum = "";
     },
-    getAllCorrelation(ifList) {
+    async getAllCorrelation() {
       var outcome = this.value;
       this.corrValues = null;
       if (!outcome) {
@@ -170,44 +170,45 @@ export default {
       }
       this.showLoading();
       const _this = this;
-      axios({
-        method: "GET",
-        url: "http://localhost:8000/api/get_correlation",
-        params: {
-          dataset: this.nowType,
-          outcome: outcome,
-        },
-      })
-        .then((response) => {
-          console.log("variable list", response.data);
-          //hide loading anime
-          this.loadingInstance.close();
-          this.loadingInstance = null;
-          //include node & links & list
-          this.corrValues = response.data;
-
-          let allValues = [];
-          for (let i = 0; i < this.corrValues.variable.length; i++) {
-            allValues.push({
-              axis: this.corrValues.variable[i],
-              value: this.corrValues.outcome[i],
-            });
-          }
-          allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-          this.allChart = {
-            axis: allValues.map((item) => item.axis),
-            value: allValues.map((item) => item.value),
-          };
-          if (ifList) this.getTopCovariant();
-          setTimeout(() => {
-            _this.createChart();
-          }, 0);
-        })
-        .catch((error) => {
-          console.log("请求失败了", error.message);
+      try {
+        let response = await axios({
+          method: "GET",
+          url: "http://localhost:8000/api/get_correlation",
+          params: {
+            dataset: this.nowType,
+            outcome: outcome,
+          },
         });
+        console.log("variable list", response.data);
+
+        //hide loading anime
+        this.loadingInstance.close();
+        this.loadingInstance = null;
+        //include node & links & list
+        this.corrValues = response.data;
+
+        let allValues = [];
+        for (let i = 0; i < this.corrValues.variable.length; i++) {
+          allValues.push({
+            axis: this.corrValues.variable[i],
+            value: this.corrValues.outcome[i],
+          });
+        }
+        allValues.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+        this.allChart = {
+          axis: allValues.map((item) => item.axis),
+          value: allValues.map((item) => item.value),
+        };
+        setTimeout(() => {
+          _this.createChart();
+        }, 0);
+
+        return;
+      } catch (error) {
+        console.log("请求失败了", error);
+      }
     },
-    getTopCovariant() {
+    async getTopCovariant() {
       if (!this.covariantNum) {
         this.showErrorMsg("Please enter the number of variables!");
         return;
@@ -216,7 +217,8 @@ export default {
         this.showErrorMsg("Please choose outcome!");
         return;
       }
-      if (!this.corrValues) this.getAllCorrelation(true);
+      if (!this.corrValues) await this.getAllCorrelation();
+
       this.selectedVariables = [];
       for (let i = 0; i < this.covariantNum; i++) {
         this.selectedVariables.push(this.allChart.axis[i]);

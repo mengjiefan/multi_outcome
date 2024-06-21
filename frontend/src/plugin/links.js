@@ -152,15 +152,9 @@ export class linksOperation {
 
     let source = realLink.source;
     let target = realLink.target;
-    if (curveType === "DagGnnCurve") {
-      let color = "rgba(66,103,172,0.3)";
-      if (attrs.highlight) color = "rgba(66,103,172,1)";
-      path.attr("line/stroke", color);
-      path.attr("line/targetMarker/stroke", color);
-      path.set("z", -1);
-    } else if (curveType === "AAAICurve") {
-      let color = "rgba(240,157,68,0.3)";
-      if (attrs.highlight) color = "rgba(240,157,68,1)";
+    if (attrs?.color) {
+      let color = attrs.color.disabled;
+      if (attrs.highlight) color = attrs.color.active;
       path.attr("line/stroke", color);
       path.attr("line/targetMarker/stroke", color);
       path.set("z", -1);

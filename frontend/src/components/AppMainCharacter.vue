@@ -11,16 +11,9 @@
         ></div>
       </div>
     </div>
-    <!-- <button>
-			<router-link class="list-group-item" active-class="active" to="/CausalGraphView">Get CausalGraph</router-link>
-		</button>
-    <hr>
-		<button>
-			<router-link class="list-group-item" active-class="active" to="/MultiOutcomesView">Get MultiOutcomes matrix</router-link>
-		</button> -->
   </div>
 </template>
- 
+
 <script>
 import * as d3 from "d3";
 import { ukb_index, default_index, clhls_index } from "@/plugin/variable";
@@ -341,18 +334,20 @@ export default {
               .attr("transform", `translate(0, ${height})`)
               .call(d3.axisBottom(x).ticks(xTick));
             svg.append("g").call(d3.axisLeft(y).ticks(yTick));
+            //condition 1: all continuous variables
             if (
               !discreateIndexes.includes(source) &&
               !discreateIndexes.includes(target)
             )
               _this.drawContinuousChart(item, source, target, svg, x, y);
-            //_this.drawDensityChart(item,source, target, svg, x, y, height, width);
+            //condition 2: all discrete variables
             else if (
               discreateIndexes.includes(source) &&
               discreateIndexes.includes(target)
             ) {
               _this.drawDiscreteChart(item, source, target, svg, x, y);
-            } else if (discreateIndexes.includes(source)) {
+            } //condition 3: X axis represents discrete variables while Y axis does not
+            else if (discreateIndexes.includes(source)) {
               let histogram = d3
                 .histogram()
                 .domain(y.domain())
@@ -377,7 +372,8 @@ export default {
                 disAxis,
                 y
               );
-            } else {
+            } //condition 4: Y axis represents discrete variables while X axis does not
+            else {
               let histogram = d3
                 .histogram()
                 .domain(x.domain())
@@ -419,7 +415,7 @@ export default {
   },
 };
 </script>
- 
+
 <style scoped>
 .mainCharacter {
   padding: 16px;

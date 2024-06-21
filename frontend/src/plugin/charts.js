@@ -192,7 +192,7 @@ export const createCharts = (id, dom, data) => {
       "bpm"
     );
   else if (id === "age_group_decade")
-    createChartOfInter(myChart, data, ["", "65-79", "80-89", "≥90"]);
+    createChartOfInter(myChart, data, ["<65", "65-79", "80-89", "≥90"]);
   /*else if (id === 'follow_dura') {
         let max = 0;
         data.forEach(one => {
@@ -460,11 +460,13 @@ const createChartOfInter = (myChart, data, labels) => {
       });
     }
   }
+  console.log(values);
   data.forEach((one) => {
     let index = values.findIndex((value) => {
       if (value.number === one) return true;
       else return false;
     });
+    if (index < 0) console.log(one);
     values[index].count++;
   });
   const option = {

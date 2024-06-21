@@ -222,11 +222,19 @@ export default {
               selectionNow.variable.push(node);
           });
         }
+        selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
+        historyManage.reDoHistory(selectionNow); //redo
         selectionNow.linksList = LinksManagement.getFinalLinks(
           selectionNow.linksList
         ); //relayout(remove 'reverse','add','hidden')
-        selectionNow.history = historyManage.combineHistory(records); //合并子图操作历史
-        historyManage.reDoHistory(selectionNow); //redo
+        let nextNodes = [];
+        selectionNow.linksList.forEach((link) => {
+          nextNodes.push(link.source);
+          nextNodes.push(link.target);
+        });
+        selectionNow.variable = selectionNow.variable.filter((variable) =>
+          nextNodes.includes(variable)
+        );
         //Redo后的结果是relayout后的结果
         finalSelections.push(selectionNow);
       }
@@ -357,11 +365,18 @@ export default {
     saveRow(rowData) {
       let nextNodes = [];
       nextNodes.push(rowData.outcome);
-
+      let allLinks = [];
+      if (rowData.pcLinks?.length) allLinks = allLinks.concat(rowData.pcLinks);
+      if (rowData.aaaiLinks?.length)
+        allLinks = allLinks.concat(rowData.aaaiLinks);
+      if (rowData.dagLinks?.length)
+        allLinks = allLinks.concat(rowData.dagLinks);
+      if (rowData.linksList?.length)
+        allLinks = allLinks.concat(rowData.linksList);
       let flag = false;
       while (!flag) {
         flag = true;
-        rowData.linksList.forEach((link) => {
+        allLinks.forEach((link) => {
           if (nextNodes.includes(link.source)) {
             if (!nextNodes.includes(link.target)) {
               nextNodes.push(link.target);
@@ -426,7 +441,7 @@ export default {
             default:
               break;
           }
-        }
+        } else data.linksList = newRow.linksList;
         data.linksList = linksList;
         _this.saveRow(data);
       }
