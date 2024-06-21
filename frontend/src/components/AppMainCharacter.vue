@@ -41,6 +41,44 @@ export default {
       }
       return shuffled.slice(min);
     },
+    getLabelsForType(id) {
+      if (id === "Sex" || id === "a1_sex") return ["", "male", "female"];
+      else if (id === "Insomnia") {
+        return ["Rarely", "Sometimes", "Usually"];
+      } else if (id === "BMI_cate")
+        return ["18.5-23.9", "<18.5", "24-27.9", "≥28"];
+      else if (id === "frailty_base_tri")
+        return ["no frailty", "pre-frailty", "frailty"];
+      else if (id === "residenc_byte") return ["", "city", "rural"];
+      else if (id === "f64_sum")
+        return ["no", "public or urban", "new rural", "social or commercial"];
+      else if (id === "a51_byte") ["family or institutes", "live alone"];
+      else if (id === "f31_sum")
+        return [
+          "",
+          "pension",
+          "spouse or child",
+          "relatives",
+          "work by self",
+          "government",
+        ];
+      else if (id === "f5_whocaresick")
+        return [
+          "",
+          "spouse",
+          "son",
+          "daughter in law",
+          "daughter",
+          "son in law",
+          "son and daughter",
+          "grandchild",
+          "relatives",
+          "friends and neighbors",
+          "social service",
+          "live-in caregiver",
+          "nobody",
+        ];
+    },
     drawDiscreteChart(item, source, target, svg, x, y) {
       // Add a scale for bubble size
       let sum = [];
@@ -57,14 +95,17 @@ export default {
           max = sum[row[source]][row[target]];
       });
       let realData = [];
+      let xRange = [];
       for (let i = 0; i < 5; i++) {
         for (let j = 0; j < 5; j++) {
-          if (sum[i][j] > 0)
+          if (sum[i][j] > 0) {
             realData.push({
               x: i,
               y: j,
               value: sum[i][j],
             });
+            if (!xRange.includes(i)) xRange.push(i);
+          }
         }
       }
 
@@ -81,6 +122,19 @@ export default {
         .attr("r", (d) => z(d.value))
         .style("fill", "rgb(92,111,196)")
         .style("opacity", "1");
+      let labels = this.getLabelsForType(source);
+      if (!labels && xRange.length === 2 && xRange[0] + xRange[1] === 1)
+        labels = ["no", "yes"];
+
+      if (labels) {
+        const xAxis = d3
+          .axisBottom(x)
+          .tickValues(realData.map((d) => d.x))
+          .tickFormat((d, i) => labels[d]); // 使用数据中的 label 作为刻度标签
+        svg.append("g").attr("transform", `translate(0, 110)`).call(xAxis);
+        return true;
+      }
+      return false;
     },
     drawContinuousChart(item, source, target, svg, x, y) {
       // Add dots
@@ -329,12 +383,9 @@ export default {
             // Add Y axis
             const y = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
 
-            svg
-              .append("g")
-              .attr("transform", `translate(0, ${height})`)
-              .call(d3.axisBottom(x).ticks(xTick));
             svg.append("g").call(d3.axisLeft(y).ticks(yTick));
             //condition 1: all continuous variables
+            let flag = false;
             if (
               !discreateIndexes.includes(source) &&
               !discreateIndexes.includes(target)
@@ -345,7 +396,7 @@ export default {
               discreateIndexes.includes(source) &&
               discreateIndexes.includes(target)
             ) {
-              _this.drawDiscreteChart(item, source, target, svg, x, y);
+              flag = _this.drawDiscreteChart(item, source, target, svg, x, y);
             } //condition 3: X axis represents discrete variables while Y axis does not
             else if (discreateIndexes.includes(source)) {
               let histogram = d3
@@ -399,6 +450,13 @@ export default {
                 x
               );
             }
+            if (flag) {
+              svg.append("g").attr("transform", `translate(0, ${height})`);
+            } else
+              svg
+                .append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(x).ticks(xTick));
           }
         }
       });
@@ -418,9 +476,13 @@ export default {
 
 <style scoped>
 .mainCharacter {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 16px;
   font-size: 20px;
   width: fit-content;
+  height: max-content;
 }
 .node-charts {
   height: fit-content;

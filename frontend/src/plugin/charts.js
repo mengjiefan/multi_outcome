@@ -477,6 +477,9 @@ const createChartOfInter = (myChart, data, labels) => {
       data: values.map((value) => {
         return value.label;
       }),
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+      }
     },
     yAxis: {
       type: "value",

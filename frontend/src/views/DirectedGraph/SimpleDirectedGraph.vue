@@ -1331,5 +1331,6 @@ export default {
 }
 .right-side {
   width: max-content !important;
+  max-width: 80%;
 }
 </style>
