@@ -279,8 +279,8 @@ export default {
         localStorage.setItem("GET_JSON_RESULT", ""); //the data of graph
         localStorage.setItem("GET_SAVE_DATA", ""); //the data to be saved
         localStorage.setItem("DATATYPE", dataset);
-        if (this.$route.name !== "home")
-        this.$router.push({
+        if (this.$route.path !== "/")
+          this.$router.push({
             path: "/",
           });
       }

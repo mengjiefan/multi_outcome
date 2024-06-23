@@ -321,7 +321,6 @@ export default {
       let _this = this;
       d3.csv("/" + dataset + ".csv").then(function (item) {
         const random = d3.randomUniform(1, 10);
-        console.log(random());
         item = _this.getRandomSubarray(item, 1000);
         item = item.map((row) => {
           let newRow = {};
