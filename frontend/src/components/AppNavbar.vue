@@ -143,7 +143,7 @@ export default {
   },
   data() {
     return {
-      dialogVisible: ref(true),
+      dialogVisible: ref(false),
       fileList: ref(),
       variables: ref(),
       datasetName: ref(),
