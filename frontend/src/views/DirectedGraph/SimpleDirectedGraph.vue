@@ -675,6 +675,16 @@ export default {
       LinksManagement.removeLightLinks(this.paper);
     },
     enableLinks(index) {
+      if (this.linkConfigs.length < 2) return;
+      //ongoing DAG-GNN graph cannot be disabled
+      if (
+        index === 0 &&
+        this.linkConfigs[0].name === "DAG-GNN" &&
+        this.gnnType &&
+        this.gnnType !== "stopped"
+      )
+        return;
+      console.log(this.linkConfigs[0].name, this.gnnType);
       this.linkConfigs[index].enabled = !this.linkConfigs[index].enabled;
       let color = this.getColor(this.linkConfigs[index].name);
       if (this.linkConfigs[index].enabled) this.drawLinks(index);
@@ -752,7 +762,6 @@ export default {
           startY,
           gap,
         };
-        console.log(this.scale, "first set");
         this.inLoop = true;
       } else {
         const scale = this.paper.scale();
@@ -762,7 +771,6 @@ export default {
           startX: translate.tx,
           startY: translate.ty,
         };
-        console.log(this.scale, "second");
       }
       let color = this.getColor(this.linkConfigs[0].name).active;
 
