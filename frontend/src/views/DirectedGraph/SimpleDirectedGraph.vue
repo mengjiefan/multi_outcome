@@ -37,12 +37,28 @@
         </div>
         <div class="line-types">
           <div class="line-type">
-            <div class="line-illustration"></div>
-            <div class="line-name">Positive value</div>
+            <div
+              class="line-illustration"
+              :style="[{ borderColor: getColor(linkConfigs[0]?.name)?.active }]"
+            ></div>
+            <div
+              class="line-name"
+              :style="[{ color: getColor(linkConfigs[0]?.name)?.active }]"
+            >
+              Positive value
+            </div>
           </div>
           <div class="line-type">
-            <div class="line-illustration"></div>
-            <div class="line-name">Negative value</div>
+            <div
+              class="line-illustration"
+              :style="[{ borderColor: getColor(linkConfigs[0]?.name)?.active }]"
+            ></div>
+            <div
+              class="line-name"
+              :style="[{ color: getColor(linkConfigs[0]?.name)?.active }]"
+            >
+              Negative value
+            </div>
           </div>
         </div>
         <div class="algorithm-type">
@@ -59,8 +75,8 @@
               @click="enableLinks(index)"
               :style="[
                 method.enabled
-                  ? { 'background-color': colors[index].active }
-                  : { 'background-color': colors[index].disabled },
+                  ? { 'background-color': getColor(method.name).active }
+                  : { 'background-color': getColor(method.name).disabled },
               ]"
             ></div>
             <div @click="enableLinks(index)">{{ linkConfigs[index].name }}</div>
@@ -158,19 +174,22 @@ export default {
       linkConfigs: [],
       colors: [
         {
+          method: "PC",
           name: "black",
           active: "black",
           disabled: "rgba(0,0,0,0.3)",
         },
         {
+          method: "DAG-GNN",
           name: "blue",
           active: "rgba(66,103,172,1)",
           disabled: "rgba(66,103,172,0.3)",
         },
         {
+          method: "HCM",
           name: "orange",
-          active: "rgba(240,157,68, 1)",
-          disabled: "rgba(240,157,68, 0.3)",
+          active: "rgba(240,157,68,1)",
+          disabled: "rgba(240,157,68,0.3)",
         },
       ],
       hoverType: ref(),
@@ -194,9 +213,14 @@ export default {
       repeatedToken: ref(),
       pcToken: ref(),
       hcmToken: ref(),
+      inLoop: ref(false),
     };
   },
   methods: {
+    getColor(method) {
+      let index = this.colors.findIndex((color) => color.method === method);
+      return this.colors[index];
+    },
     saveToTable() {
       console.log(this.multipleSearchValue.history);
       localStorage.setItem(
@@ -227,6 +251,7 @@ export default {
         },
       }).then(() => {
         //本次循环开始
+        this.inLoop = false;
         this.timer = window.setInterval(() => {
           setTimeout(() => {
             this.getTempResult();
@@ -265,11 +290,20 @@ export default {
           this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
           this.drawEpochLossChart();
         }
-        this.linkConfigs[index].linksList = response.data.linksList;
+        const linksList = response.data.linksList;
+        let data = {
+          history: this.multipleSearchValue.history,
+          linksList,
+          nodesList: this.multipleSearchValue.nodesList,
+        };
+        historyManage.reDoHistory(data);
+        this.linkConfigs[index].linksList = LinksManagement.getFinalLinks(
+          data.linksList
+        );
         this.multipleSearchValue.dagLinks = this.linkConfigs[index].linksList;
         this.saveData();
         if (index === 0) this.setGraph();
-        else this.drawLinks(index);
+        else if (this.paper) this.drawLinks(index);
       } catch (error) {
         console.log("请求失败了", error);
       }
@@ -307,7 +341,7 @@ export default {
         this.multipleSearchValue.aaaiLinks = response.data.linksList;
         this.saveData();
         if (index === 0) this.setGraph();
-        else this.drawLinks(index);
+        else if (this.paper) this.drawLinks(index);
       } catch (error) {
         console.log("请求失败了", error);
       }
@@ -349,7 +383,7 @@ export default {
         this.linkConfigs[index].ifWait = false;
         this.saveData();
         if (index === 0) this.setGraph();
-        else this.drawLinks(index);
+        else if (this.paper) this.drawLinks(index);
       } catch (error) {
         console.log("请求失败了", error);
         this.$message({
@@ -372,6 +406,7 @@ export default {
         });
         return;
       }
+      await this.stopAllRequest();
       let outcome = this.multipleSearchValue.nodesList.filter(
         (node) => node.type === 0
       )[0];
@@ -382,8 +417,6 @@ export default {
         };
       });
       this.multipleSearchValue.nodesList.push(outcome);
-
-      await this.stopAllRequest();
 
       this.multipleSearchValue.pcLinks = null;
       this.multipleSearchValue.dagLinks = null;
@@ -476,7 +509,7 @@ export default {
         this.hcmToken.cancel("reselect nodes");
         this.hcmToken = null;
       }
-      await this.stopLoop();
+      if (this.repeatedToken || this.timer) await this.stopLoop();
       return;
     },
     async stopLoop() {
@@ -627,11 +660,12 @@ export default {
         default:
           break;
       }
-      LinksManagement.removeLinks(this.paper, this.colors[index].name);
+      let color = this.getColor(config.name);
+      LinksManagement.removeLinks(this.paper, color.name);
       config.linksList.forEach((link) => {
         linksOperation.addLink(_this.simplePos, link, _this.paper, curve, {
           highlight: !_this.hoverType || _this.hoverType === config.name,
-          color: _this.colors[index],
+          color,
         });
       });
     },
@@ -642,16 +676,20 @@ export default {
     },
     enableLinks(index) {
       this.linkConfigs[index].enabled = !this.linkConfigs[index].enabled;
+      let color = this.getColor(this.linkConfigs[index].name);
       if (this.linkConfigs[index].enabled) this.drawLinks(index);
       else {
-        LinksManagement.removeLinks(this.paper, this.colors[index].name);
+        LinksManagement.removeLinks(this.paper, color.name);
         this.noHoverOn();
       }
     },
     hoverLinks(index) {
       if (!this.linkConfigs[index].enabled) return;
       this.hoverType = this.linkConfigs[index].name;
-      switch (index) {
+      let colorIndex = this.colors.findIndex(
+        (color) => color.method === this.linkConfigs[index].name
+      );
+      switch (colorIndex) {
         case 0:
           LinksManagement.highLightBlackLinks(this.paper);
           break;
@@ -666,13 +704,11 @@ export default {
       }
     },
     checkSkeletonLink(linkView) {
+      let mainColor = this.getColor(this.linkConfigs[0].name).disabled;
+      mainColor = mainColor.replace(",0.3)", "");
       let color = linkView.model.attributes.attrs.line.stroke;
-      if (
-        color.includes("rgba(240,157,68") ||
-        color.includes("rgba(66,103,172")
-      )
-        return false;
-      else return true;
+      if (color.includes(mainColor)) return true;
+      else return false;
     },
     drawGraph() {
       this.simplePos.nodesList.forEach((node) => {
@@ -710,16 +746,32 @@ export default {
       if (600 / (maxH - minH) < gap) gap = 600 / (maxH - minH);
       let startX = (dom.clientWidth - gap * (maxW - minW)) / 2;
       let startY = (dom.clientHeight - gap * (maxH - minH)) / 3;
-      this.scale = {
-        startX,
-        startY,
-        gap,
-      };
+      if (!this.inLoop && this.simplePos.linksList?.length) {
+        this.scale = {
+          startX,
+          startY,
+          gap,
+        };
+        console.log(this.scale, "first set");
+        this.inLoop = true;
+      } else {
+        const scale = this.paper.scale();
+        const translate = this.paper.translate();
+        this.scale = {
+          gap: scale.sx,
+          startX: translate.tx,
+          startY: translate.ty,
+        };
+        console.log(this.scale, "second");
+      }
+      let color = this.getColor(this.linkConfigs[0].name).active;
+
       let paper = drawSuperGraph(
         dom,
         this.simplePos.nodesList,
         this.simplePos.linksList,
-        this.scale
+        this.scale,
+        color
       );
       this.setPaper(paper);
       this.drawAddEdges();
@@ -986,7 +1038,11 @@ export default {
       }
     },
     addLinkToPaper(link) {
-      linksOperation.addLink(this.simplePos, link, this.paper, "SuperCurve");
+      linksOperation.addLink(this.simplePos, link, this.paper, "SuperCurve", {
+        highlight:
+          !this.hoverType || this.hoverType === this.linkConfigs[0].name,
+        color: this.getColor(this.linkConfigs[0].name),
+      });
     },
     reverseDirection(edge) {
       let nodes = edge.split("(")[1].split(")")[0].split(", ");

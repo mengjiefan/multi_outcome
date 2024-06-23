@@ -79,10 +79,11 @@ export default {
   },
   reDoHistory(data) {
     let record = data.history;
+    if (!record) return;
     record.forEach((history) => {
-      let index = findLink.showSameDireLink(history, data.linksList);
+      let index = findLink.showReverseLink(history, data.linksList);
       let allIndex = findLink.sameNodeLink(history, data.linksList);
-
+      console.log(index);
       if (history.hidden && allIndex > -1)
         data.linksList.splice(allIndex, 1); //delete
       else if (history.reverse && index > -1)

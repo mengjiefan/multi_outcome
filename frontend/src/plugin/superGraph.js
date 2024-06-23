@@ -18,7 +18,7 @@ const cmap = [
   "#bcbd22", //yellow green
   "#17becf", //light blue
   "#ff6c4b", // single outcome
-  "#aec7e8" //single factor
+  "#aec7e8", //single factor
 ];
 let gap = 1;
 let startX;
@@ -31,7 +31,7 @@ const countYPos = (y) => {
 };
 
 const moveRight = (points) => {
-  let value = 3
+  let value = 3;
   let newPoints = [];
   if (points[points.length - 1].x === points[0].x)
     return points.map((point) => {
@@ -244,7 +244,7 @@ export const setSuperGraph = (g, data) => {
       });
     }
   });
-  
+
   // Set some general styles
   g.nodes().forEach(function (v) {
     var node = g.node(v);
@@ -254,7 +254,7 @@ export const setSuperGraph = (g, data) => {
   //getAnchoredGraph(g, data);
 };
 
-export const drawSuperGraph = (dom, nodesList, links, scale) => {
+export const drawSuperGraph = (dom, nodesList, links, scale, color) => {
   startX = scale.startX;
   startY = scale.startY;
   let paperScale = scale.gap / gap;
@@ -451,15 +451,14 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
         },
       },
     });
-    if (link.value < 0) 
-      path.attr("line/strokeDasharray", "4 4");
+    if (link.value < 0) path.attr("line/strokeDasharray", "4 4");
 
     let realLink = LinksManagement.getNodeByName(paper, link);
     let source = realLink.source;
     let target = realLink.target;
     if (nodesList[sindex].y < nodesList[tindex].y)
       path.attr("line/targetMarker", null);
-
+    if (color) path.attr("line/stroke", color);
     path.source(source);
     path.target(target);
     path.addTo(graph);
@@ -469,7 +468,6 @@ export const drawSuperGraph = (dom, nodesList, links, scale) => {
       value,
     });
   });
-
   paper.scale(paperScale);
   paper.translate(startX, startY);
 

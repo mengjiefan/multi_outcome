@@ -73,7 +73,7 @@
                   :style="[
                     hcmEnabled
                       ? { 'background-color': 'rgb(240,157,68)' }
-                      : { 'background-color': 'rgba(240,157,68, 0.3)' },
+                      : { 'background-color': 'rgba(240,157,68,0.3)' },
                   ]"
                 ></div>
                 <div class="algorithm-name">HCM</div>
@@ -274,7 +274,7 @@ export default {
         },
         {
           name: "orange",
-          active: "rgba(240,157,68, 1)",
+          active: "rgba(240,157,68,1)",
           disabled: "rgba(240,157,68, 0.3)",
         },
       ],

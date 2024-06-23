@@ -312,7 +312,7 @@ export default {
     },
     drawMatrix() {
       let dataset = localStorage.getItem("DATATYPE");
-      let discreateIndexes = getIndexOfDataset(dataset)
+      let discreateIndexes = getIndexOfDataset(dataset);
       // set the dimensions and margins of the graph
       const margin = { top: 10, right: 10, bottom: 30, left: 25 },
         width = 150 - margin.left - margin.right,
@@ -320,7 +320,6 @@ export default {
 
       let _this = this;
       d3.csv("/" + dataset + ".csv").then(function (item) {
-        const random = d3.randomUniform(1, 10);
         item = _this.getRandomSubarray(item, 1000);
         item = item.map((row) => {
           let newRow = {};
