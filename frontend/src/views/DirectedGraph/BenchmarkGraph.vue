@@ -261,6 +261,23 @@ export default {
       hcmLinks: ref(links.hcmLinks),
       links,
       links2,
+      colors: [
+        {
+          name: "black",
+          active: "black",
+          disabled: "rgba(0,0,0,0.3)",
+        },
+        {
+          name: "blue",
+          active: "rgba(66,103,172,1)",
+          disabled: "rgba(66,103,172,0.3)",
+        },
+        {
+          name: "orange",
+          active: "rgba(240,157,68, 1)",
+          disabled: "rgba(240,157,68, 0.3)",
+        },
+      ],
     };
   },
   methods: {
@@ -433,6 +450,7 @@ export default {
           "DagGnnCurve",
           {
             highlight: _this.hoverType !== "aaai" && _this.hoverType !== "pc",
+            color: _this.colors[1],
           }
         );
       });
@@ -450,6 +468,7 @@ export default {
           {
             highlight:
               _this.hoverType !== "daggnn" && _this.hoverType !== "aaai",
+            color: _this.colors[0],
           }
         );
       });
@@ -465,6 +484,7 @@ export default {
           "AAAICurve",
           {
             highlight: _this.hoverType !== "daggnn" && _this.hoverType !== "pc",
+            color: _this.colors[2],
           }
         );
       });
@@ -474,7 +494,7 @@ export default {
       this.dagEnabled = !this.dagEnabled;
       if (this.dagEnabled) this.drawGnnLinks();
       else {
-        LinksManagement.removeLinks(this.paper, "daggnn");
+        LinksManagement.removeLinks(this.paper, "blue");
         this.noHoverOn();
       }
     },
@@ -482,7 +502,7 @@ export default {
       this.pcEnabled = !this.pcEnabled;
       if (this.pcEnabled) this.drawPCLinks();
       else {
-        LinksManagement.removeLinks(this.paper, "pc");
+        LinksManagement.removeLinks(this.paper, "black");
         this.noHoverOn();
       }
     },
@@ -490,7 +510,7 @@ export default {
       this.hcmEnabled = !this.hcmEnabled;
       if (this.hcmEnabled) this.drawAAAILinks();
       else {
-        LinksManagement.removeLinks(this.paper, "aaai");
+        LinksManagement.removeLinks(this.paper, "orange");
         this.noHoverOn();
       }
     },
