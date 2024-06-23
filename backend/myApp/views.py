@@ -74,7 +74,10 @@ best_MSE_graph = []
 with open(data_file, 'r') as file:
     allData = json.load(file)['data']
 
-
+def get_outcomes(request):
+    dataset = request.GET.get('dataset')
+    return JsonResponse({'outcomes':allData[dataset]['outcomes']
+                         })
 def thread_task(data):
     global stop_Thread
     global best_MSE_graph

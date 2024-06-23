@@ -26,7 +26,7 @@ sys.path.append("")
 import unittest
 
 # 数据文件的路径，需要为excel表格
-filename = ".\\MissingValue_fill_data_all.xlsx"
+filename = "MissingValue_fill_data_all.xlsx"
 
 # 指定的选出因素变量的数目
 # num_top = 6   #CovariantNum

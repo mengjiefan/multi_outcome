@@ -23,7 +23,7 @@ from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 
 # 数据文件的路径
-filename = "data/ukb.csv"
+filename = "../myApp/data/ukb.csv"
 # filename = "./ukb_8_outcomes_data_nolab.csv"
 # filename = "./ukb_8_outcomes_data.csv"   # 前几位太多都是检验结果，而实际上检验结果一般是疾病的结果，故不适用含lab的数据
 
