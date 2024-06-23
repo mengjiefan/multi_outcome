@@ -16,7 +16,7 @@
 
 <script>
 import * as d3 from "d3";
-import { ukb_index, default_index, clhls_index } from "@/plugin/variable";
+import { getIndexOfDataset } from "@/plugin/variable";
 import { ref } from "vue";
 import { createCharts } from "@/plugin/charts";
 export default {
@@ -312,9 +312,7 @@ export default {
     },
     drawMatrix() {
       let dataset = localStorage.getItem("DATATYPE");
-      let discreateIndexes = clhls_index;
-      if (dataset === "ukb") discreateIndexes = ukb_index;
-      else if (dataset === "default") discreateIndexes = default_index;
+      let discreateIndexes = getIndexOfDataset(dataset)
       // set the dimensions and margins of the graph
       const margin = { top: 10, right: 10, bottom: 30, left: 25 },
         width = 150 - margin.left - margin.right,

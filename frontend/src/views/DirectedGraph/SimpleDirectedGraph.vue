@@ -127,7 +127,7 @@ import * as dagreD3 from "dagre-d3";
 import axios from "axios";
 import { ref } from "vue";
 import { Loading } from "element-ui";
-import { defaultFactors, ukbFactors, clhlsFactors } from "@/plugin/variable";
+import { getFactorsOfDataset } from "@/plugin/variable";
 //import { createChart } from "@/plugin/charts";
 import { drawSuperGraph, setSuperGraph } from "@/plugin/superGraph";
 import historyManage from "@/plugin/history";
@@ -183,7 +183,7 @@ export default {
       tooltip: null,
       tooltip2: null,
       checkAll: ref(false),
-      VariablesOptions: ref(defaultFactors),
+      VariablesOptions: ref(),
       checkedVariables: ref([]),
       tip2Show: ref(false),
       transform: ref(),
@@ -1084,9 +1084,7 @@ export default {
     this.gnnType = null;
     let result = localStorage.getItem("GET_JSON_RESULT");
     let datasetType = localStorage.getItem("DATATYPE");
-    if (datasetType === "default") this.VariablesOptions = defaultFactors;
-    else if (datasetType === "ukb") this.VariablesOptions = ukbFactors;
-    else this.VariablesOptions = clhlsFactors;
+    this.VariablesOptions = getFactorsOfDataset(datasetType);
     this.dataset = datasetType;
 
     if (result) this.multipleSearchValue = JSON.parse(result);

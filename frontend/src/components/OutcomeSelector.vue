@@ -101,7 +101,7 @@
 // 引入axios
 import axios from "axios";
 import { Loading } from "element-ui";
-import { defaultResults, clhlsResults, ukbResults } from "@/plugin/variable";
+import { getOutcomesOfDataset } from "@/plugin/variable";
 import { ref } from "vue";
 import { creatAllChart } from "@/plugin/charts";
 
@@ -112,22 +112,10 @@ export default {
   },
   name: "OutcomeSelector",
   setup() {
-    let options = [];
     let datasetType = localStorage.getItem("DATATYPE");
     if (!datasetType) datasetType = "default";
-    switch (datasetType) {
-      case "default":
-        options = defaultResults;
-        break;
-      case "clhls":
-        options = clhlsResults;
-        break;
-      case "ukb":
-        options = ukbResults;
-        break;
-      default:
-        break;
-    }
+    let options = getOutcomesOfDataset(datasetType);
+
     options = options.map((result) => {
       return {
         label: result,
@@ -140,9 +128,6 @@ export default {
       covariantNum: ref(""),
       value: ref(""),
       selectedVariables: ref([]),
-      defaultResults,
-      clhlsResults,
-      ukbResults,
       options: ref(options),
       algorithmOptions: ["PC", "DAG-GNN", "HCM"],
       algorithmSelected: ref(["PC"]),
@@ -281,20 +266,8 @@ export default {
     getTag(dataset) {
       this.value = null;
       this.reselect();
-      let options = [];
-      switch (dataset) {
-        case "default":
-          options = this.defaultResults;
-          break;
-        case "clhls":
-          options = this.clhlsResults;
-          break;
-        case "ukb":
-          options = this.ukbResults;
-          break;
-        default:
-          break;
-      }
+      let options = getOutcomesOfDataset(dataset);
+
       if (this.nowType !== dataset) {
         this.nowType = dataset;
         this.options = options.map((option) => {
@@ -306,10 +279,9 @@ export default {
         localStorage.setItem("GET_JSON_RESULT", ""); //the data of graph
         localStorage.setItem("GET_SAVE_DATA", ""); //the data to be saved
         localStorage.setItem("DATATYPE", dataset);
-        if (this.$route.name !== "DirectedGraphView")
-          this.$router.push({
-            path: "/redirect",
-            query: { next: "DirectedGraphView" },
+        if (this.$route.name !== "home")
+        this.$router.push({
+            path: "/",
           });
       }
     },

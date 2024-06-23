@@ -44,18 +44,7 @@
     </div>
     <div class="drawing-command">
       <div class="selections">
-        <el-select
-          v-model="graphType"
-          placeholder="Please select the graph type"
-        >
-          <el-option
-            v-for="item in graphOption"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          >
-          </el-option>
-        </el-select>
+
         <el-button
           type="primary"
           size="small"
@@ -486,7 +475,7 @@ export default {
 .selections {
   width: 100%;
   display: flex;
-  justify-content: space-between;
+  flex-direction: row-reverse;
 }
 </style>
 <style>

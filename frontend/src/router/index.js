@@ -6,8 +6,8 @@ export default new VueRouter({
   mode: "history", //加入该行代码之后，网址不再带有#
   routes: [
     {
-      path: "/AppMainCharacter",
-      name: "AppMainCharacter", // 路由名称
+      path: "/",
+      name: "home", // 路由名称
       component: AppMainCharacter, // 组件对象
     },
 
