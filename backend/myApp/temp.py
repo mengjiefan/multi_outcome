@@ -27,23 +27,23 @@ from causallearn.graph.GraphNode import GraphNode
 from daggnn.utils import load_data
 from daggnn.train import _h_A, args, train, init_model
 
+
 def get_causal_edges():
-
-    fileName = "./healthcare.csv"
-
+    # fileName = "./healthcare.csv"
+    fileName = "ortho.csv"
 
     # 读取CSV文件
     data = pd.read_csv(fileName)
 
-    outcome_vars = ['A', 'C', 'D', 'H', 'I', 'O', 'T']
-
+    # outcome_vars = ['A', 'C', 'D', 'H', 'I', 'O', 'T']
+    outcome_vars = ['dANB', 'dPPPM', 'dIMPA', 'dCoA', 'dGoPg', 'dCoGo', 'dT', 'Growth', 'Treatment']
     outcome_data_df = data[outcome_vars]
 
     # 将DataFrame转换为NumPy数组
     data_array = outcome_data_df.to_numpy()
 
     # 使用转换后的NumPy数组运行PC算法
-    cg = pc(data_array, 0.05, fisherz, True, 0, 3, outcome_vars)
+    cg = pc(data_array, 0.5, fisherz, True, 0, 3, outcome_vars)
     # Retrieving the graph nodes with labels
     nodes_pc = cg.G.get_nodes()
     node_labels = outcome_vars  # Use variable names as labels
@@ -87,8 +87,6 @@ def get_causal_edges():
     # 获取特定结局的PC因果算法所得的节点
     nodes_variables = []
 
-
-
     # 构建有向图
     G = nx.DiGraph()
 
@@ -116,33 +114,15 @@ def get_causal_edges():
     # Step 2: 循环计算因果效应
     effect_values = {}
 
+    print(links)
+    array = np.zeros((9, 9))
     for link in links:
         source = link['source']
         target = link['target']
-        # Step 3: 定义因果模型
-        # 不对以下model提供 graph=graph_gml 时，可以得到想要的effect，否则总是报错
-        model = CausalModel(
-            data=outcome_data_df,
-            treatment=source,
-            outcome=target,
-        )
-        # print("model为\n", model)
+        sIndex = outcome_vars.index(source)
+        tIndex = outcome_vars.index(target)
+        array[sIndex][tIndex] = 1
+    print(array)
 
-        # Step 4: 识别因果效应
-        identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
-        if identified_estimand is not None:
-            # Step 5: 估计因果效应
-            estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
-            if estimate is not None:
-                effect_values[(source, target)] = estimate.value
-                link["value"] = estimate.value
-            else:
-                print(f"Causal effect estimation failed for {source} to {target}")
-        else:
-            print(f"Causal identification failed for {source} to {target}")
-
-    # 输出所有因果效应值
-    print("All causal effect values:", effect_values)
-    print(links)
 
 get_causal_edges()

@@ -64,19 +64,15 @@ def test11(request):
 # 根据outcome和factor获取所有节点和边
 # 实际中，不需要再次计算此步，直接拿第一步中的经过交互完成之后的经专家确认的多个子图中的节点和边（去重后），交给dagre绘制即可
 
-ukb_outcomes = ['Hypertension', 'Diabetes', 'BreastMalignancy', 'ProstateMalignancy',
-                'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
-clhls_outcomes = ['g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD',
-                  'g15n1_RA', 'g15o1_dementia', 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base']
-
-ukb_file = "./myApp/ukb_8_outcomes_data_nolab_his.csv"
-clhls_file = "./myApp/clhls_10_outcomes_data.csv"
+data_file = "./myApp/data/data.json"
 
 stop_Thread = False
 suspend_lock = None
 thread = None
 epoch_loss = None
 best_MSE_graph = []
+with open(data_file, 'r') as file:
+    allData = json.load(file)['data']
 
 
 def thread_task(data):
@@ -170,11 +166,8 @@ def start_loop(request):
     json_result = json.loads(postBody)
     nodesList = np.array(json_result['nodesList'])
     dataset = json_result['dataset']
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
-    if dataset == 'ukb':
-        fileName = ukb_file
-    elif dataset == 'clhls':
-        fileName = clhls_file
+    fileName = "./myApp/data/"+dataset+".csv"
+
     data = pd.read_csv(fileName)
     if thread:
         thread.join()  # 防止之前的thread还未完全结束，而init中改变了全局变量导致出错
@@ -192,16 +185,17 @@ def get_aaai(request):
     json_result = json.loads(postBody)
     nodesList = np.array(json_result['nodesList'])
     dataset = json_result['dataset']
-    skel = json_result['skel']
-    skelMap = np.array([True if element == 1 else False for element in skel])
-    skelMap = skelMap.reshape(len(nodesList), len(nodesList))
-    if sum(skel) == 0:
-        skel = np.array(skel)
-        skel = skel.reshape(len(nodesList), len(nodesList))
-        return JsonResponse({'graph': json.dumps(skel, default=numpy_to_json)})
-    dag = runAAAI(dataset, nodesList, skelMap)
-    return JsonResponse({'graph': json.dumps(dag, default=numpy_to_json)})
-
+    dag = runAAAI(dataset, nodesList)
+    linksList = []
+    for i, row in enumerate(dag):
+        for j, element in enumerate(row):
+            source = nodesList[i]
+            target = nodesList[j]
+            if element != 0:
+                value = count_value(source, target, dataset)
+                linksList.append({'source':source, "target":target, 'value':value})
+    print(linksList)
+    return JsonResponse({'linksList': linksList})
 
 def numpy_to_json(obj):
     if isinstance(obj, np.ndarray):
@@ -238,29 +232,32 @@ def stop_loop(request):
 
 def get_temp_result(request):
     print("in loop!")
+    nodes = request.GET.get("nodes").split(",")
+    dataset = request.GET.get('dataset')
+    linksList = []
+    for i, row in enumerate(best_MSE_graph):
+        for j, element in enumerate(row):
+            source = nodes[i]
+            target = nodes[j]
+            if element != 0:
+                value = count_value(source, target, dataset)
+                linksList.append({'source': source, 'target': target, 'value': value})
     if epoch_loss:
         print(epoch_loss)
-        return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json),
+        return JsonResponse({'linksList': linksList,
                          'epoch': epoch_loss['epoch'],
                          'ELBO_loss': epoch_loss['ELBO_loss'],
                          'NLL_loss': epoch_loss['NLL_loss'],
                          'MSE_loss': epoch_loss['MSE_loss']
                          })
     else:
-        return JsonResponse({'graph': json.dumps(best_MSE_graph, default=numpy_to_json)})
+        return JsonResponse({'linksList': linksList})
 
 def get_correlation(request):
     outcome = request.GET.get("outcome")
     dataset = request.GET.get('dataset')
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
-    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
-    if dataset == 'ukb':
-        fileName = ukb_file
-        outcomes = ukb_outcomes
-    elif dataset == 'clhls':
-        fileName = clhls_file
-        outcomes = clhls_outcomes
+    outcomes = allData[dataset]['outcomes']
+    fileName = "./myApp/data/" + dataset + ".csv"
 
     data = pd.read_csv(fileName)
     factors = [col for col in data.columns if col not in outcomes]
@@ -268,20 +265,14 @@ def get_correlation(request):
     all_variables = outcome_corr.index.tolist()
     all_values = outcome_corr.tolist()
     return JsonResponse({'outcome': all_values, 'variable': all_variables})
+
 def get_list(request):
     num_top = request.GET.get("CovariantNum")  # CovariantNum
     num_top = int(num_top)
     outcome = request.GET.get("outcome")
     dataset = request.GET.get('dataset')
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
-    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
-    if dataset == 'ukb':
-        fileName = ukb_file
-        outcomes = ukb_outcomes
-    elif dataset == 'clhls':
-        fileName = clhls_file
-        outcomes = clhls_outcomes
+    outcomes = allData[dataset]['outcomes']
+    fileName = "./myApp/data/" + dataset + ".csv"
 
     # 读取CSV文件
     data = pd.read_csv(fileName)
@@ -450,18 +441,11 @@ def get_list(request):
 def get_causal_edges(request):
     outcome = request.GET.get("outcome")
     dataset = request.GET.get('dataset')
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
-    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
-    if dataset == 'ukb':
-        fileName = ukb_file
-        outcomes = ukb_outcomes
-    elif dataset == 'clhls':
-        fileName = clhls_file
-        outcomes = clhls_outcomes
+    fileName = "./myApp/data/" + dataset + ".csv"
 
     factors = request.GET.get("factors").split(",")
-
+    print(factors)
+    print(outcome)
     # 读取CSV文件
     data = pd.read_csv(fileName)
     # 计算因素变量的大小
@@ -588,21 +572,13 @@ def get_causal_edges(request):
     return JsonResponse({'outcome': outcome,
                          'nodes': nodes_variables, 'links': links})
 
-
-# modify graph and recaculate effect_value
+# 获取所有效应值（没有用到）
 def get_values_for_node(request):
     outcome = request.GET.get("id")
 
     dataset = request.GET.get('dataset')
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
-    outcomes = ['death', 'follow_dura', 'multimorbidity_incid_byte', 'hospital_freq',
-                'MMSE_MCI_incid', 'physi_limit_incid', 'dependence_incid', 'b11_incid', 'b121_incid']
-    if dataset == 'ukb':
-        fileName = ukb_file
-        outcomes = ukb_outcomes
-    elif dataset == 'clhls':
-        fileName = clhls_file
-        outcomes = clhls_outcomes
+    outcomes = allData[dataset]['outcomes']
+    fileName = "./myApp/data/" + dataset + ".csv"
 
     # 读取CSV文件
     data = pd.read_csv(fileName)
@@ -622,12 +598,8 @@ def get_values_for_node(request):
 
 def count_value(source, target, dataset):
     G = nx.DiGraph()
-    fileName = "./myApp/MissingValue_fill_data_all.csv"
 
-    if dataset == 'ukb':
-        fileName = ukb_file
-    elif dataset == 'clhls':
-        fileName = clhls_file
+    fileName = "./myApp/data/" + dataset + ".csv"
 
     # 读取CSV文件
     data = pd.read_csv(fileName)

@@ -10,7 +10,10 @@ from const import DEFAULT_MODEL_PARA, DEFAULT_LGBM_PARA, DEFAULT_GAM_PARA
 
 args = easydict.EasyDict({
     # 'data_file': 'causal_related_data.csv',  # location and name of data file
-    'data_file': 'ukb_8_outcomes_data_nolab_his.csv',  # location and name of data file
+    'data_file': 'ortho.csv',  # location and name of data file
+    'health_index': ["A", "C", "H"],
+    'ortho_index': ['Growth', 'Treatment'
+                    ],
     'ukb_index': [
         "Sex",
         "Insomnia",
@@ -84,13 +87,12 @@ def check_model_para(model_para, base_model, base_model_para):
     return model_para_out, base_model_para_out
 
 
-def runAAAI(target_variables):
+def runAAAI():
     # 列出需要进行编码处理的变量列表
-    args.cat_index = [col for col in args.ukb_index if col in target_variables]
+    args.cat_index = [col for col in args.ortho_index]
     # # 读取数据文件，获取列的名称
     df = pd.read_csv(args.data_file)
-    df = df.sample(n=3000, random_state=42)
-    df = df[target_variables]
+    #df = df.sample(n=3000, random_state=42)
 
     print(df.columns)
     print(df.columns.values)
@@ -106,19 +108,12 @@ def runAAAI(target_variables):
         feature_names=df.columns, source_nodes=args.source_nodes,
         direct_edges=args.direct_edges, not_direct_edges=args.not_direct_edges)
 
-    selMat = [0, 0, 1, 0, 0, 0,
-              1, 0, 0, 1, 1, 1,
-              1, 0, 0, 1, 0, 1,
-              0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0]
-    selMat = np.array([True if element == 1 else False for element in selMat])
-    selMat = selMat.reshape(len(df.columns), len(df.columns))
+
 
     selMat, dag2, dag, step1_time, step2_time, step3_time = mixed_causal(
         df, X_encode, model_para=model_para_out,
         prior_adj=prior_adj, prior_anc=prior_anc,
-        base_model_para=base_model_para_out, selMat=selMat)
+        base_model_para=base_model_para_out, selMat=None)
     print(dag)
     # np.savetxt(args.data_file[:-4]+'_skl.csv', selMat, delimiter=",")
     np.savetxt(args.data_file[:-4] + '_dag2.csv', dag2, delimiter=",")
@@ -134,5 +129,6 @@ def runAAAI(target_variables):
 
 
 if __name__ == '__main__':
-    target_variables = ["NutritionalAnaemias", "Age", "Alcohol", 'Sex', "Oily fish intake", "Health score"]
-    runAAAI(target_variables)
+    target_variables = ["Hypertension", "famHisHypertension", "Smoke", "Sex", "Income score", "BMI",
+                        "Index of Multiple Deprivation"]
+    runAAAI()

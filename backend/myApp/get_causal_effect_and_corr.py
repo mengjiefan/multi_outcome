@@ -23,11 +23,11 @@ from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 
 # 数据文件的路径
-filename = "./ukb_8_outcomes_data_nolab_his.csv"
+filename = "data/ukb.csv"
 # filename = "./ukb_8_outcomes_data_nolab.csv"
 # filename = "./ukb_8_outcomes_data.csv"   # 前几位太多都是检验结果，而实际上检验结果一般是疾病的结果，故不适用含lab的数据
 
-# filename = "./clhls_10_outcomes_data.csv"
+# filename = "./clhls.csv"
 
 
 # 以列表形式告诉程序哪些变量是结局变量，其他变量均视为因素变量
@@ -35,7 +35,7 @@ filename = "./ukb_8_outcomes_data_nolab_his.csv"
 outcomes = ['Hypertension', 'Diabetes', 'BreastMalignancy', 'ProstateMalignancy',
            'Hypothyroidism', 'NutritionalAnaemias', 'InfectiousGastroenteritis', 'Septicemia']
 
-#  clhls_10_outcomes_data.csv 中的结局变量
+#  clhls.csv 中的结局变量
 # outcomes = ['g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD',
 #            'g15n1_RA', 'g15o1_dementia', 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base']
 # 指定的选出因素变量的数目

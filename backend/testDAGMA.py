@@ -10,11 +10,11 @@ import networkx as nx
 from matplotlib import pyplot as plt
 import math
 
-# filename = "./clhls_10_outcomes_data.csv"
-filename = "./ukb_8_outcomes_data_nolab_his.csv"
+# filename = "./clhls.csv"
+filename = "./ukb.csv"
 
 # reading csv file
-# df = pd.read_csv("./clhls_10_outcomes_data.csv")
+# df = pd.read_csv("./clhls.csv")
 # df = df.replace({'yes': 1, 'no': 0})
 # # Remove column name 'Unnamed: 0'
 # df = df.drop(columns=df.columns[0],axis=1)

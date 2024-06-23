@@ -37,7 +37,7 @@ parser.add_argument('--data_type', type=str, default= 'own_file',
 # parser.add_argument('--data_filename', type=str, default= 'alarm',
 #                     help='data file name containing the discrete files.')
 # ukb_8_outcomes_data_nolab_his_sm
-parser.add_argument('--data_filename', type=str, default= './ukb_8_outcomes_data_nolab_his_sm.csv',
+parser.add_argument('--data_filename', type=str, default= './ortho.csv',
                     help='data file name containing the discrete files.')
 
 # parser.add_argument('--data_filename', type=str, default= './causal_related_data.csv',
@@ -312,7 +312,7 @@ def update_optimizer(optimizer, original_lr, c_A):
 # training:
 #===================================
 
-def train(epoch, best_val_loss, ground_truth_G, lambda_A, c_A, optimizer, hasGroundtruth=True):
+def train(epoch, best_val_loss, ground_truth_G, lambda_A, c_A, optimizer, hasGroundtruth=False):
     t = time.time()
     nll_train = []
     kl_train = []
@@ -567,7 +567,7 @@ except KeyboardInterrupt:
     fdr, tpr, fpr, shd, nnz = count_accuracy(ground_truth_G, nx.DiGraph(graph))
     print('threshold 0.3, Accuracy: fdr', fdr, ' tpr ', tpr, ' fpr ', fpr, 'shd', shd, 'nnz', nnz)
 
-
+'''
 f = open('trueG', 'w')
 matG = np.matrix(nx.to_numpy_array(ground_truth_G))
 for line in matG:
@@ -584,3 +584,4 @@ f1.closed
 if log is not None:
     print(save_folder)
     log.close()
+'''
