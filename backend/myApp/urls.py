@@ -21,11 +21,10 @@ urlpatterns = [
     path('calculate_center_layout', views.calculate_center_layout, name='calculate_center_layout'),
     path('calculate_aggregate_layout', views.calculate_aggregate_layout, name='calculate_aggregate_layout'),
     path('calculate_relative_layout', views.calculate_relative_layout, name='calculate_relative_layout'),
-    path("test11/",views.test11),
-    path("test22/",views.variable_show),
-    # path("find/<int:sid>",views.find),
-    # path("find/<int:sid>/<str:name>",views.find,name="find3"),
-    # re_path(r"^fun/(?P<yy>[0-9]{4}/(?P<mm>[0-9]{2}$",views.fun),
-    # path("edit/",views.update,name="update"),
-
+    path('get_outcomes', views.get_outcomes, name='get_outcomes'),
+    path('get_factors', views.get_factors, name='get_factors'),
+    path('get_index', views.get_index, name='get_index'),
+    path('get_all_dataset', views.get_all_dataset, name='get_all_dataset'),
+    path('get_csv_data', views.get_csv_data, name='get_csv_data'),
+    path('save_new_data', views.save_new_data, name='save_new_data')
 ]  #views.index为调用时的方法

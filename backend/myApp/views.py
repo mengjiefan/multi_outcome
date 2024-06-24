@@ -1,27 +1,11 @@
-"""
-这个程序可以根据结局和不同因素线性回归的p值大小，筛选出
-和结局相关性最大的N个因素变量，并输出为csv表格
-"""
-
-# from django.shortcuts import render
-# Create your views here.
-
 import json
 
 import torch
-from django.shortcuts import render
-from django.views import View
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, HttpResponseNotFound
-# from django.urls import reverse
-# from django.shortcuts import redirect
-import statsmodels.api as sm
+from django.http import HttpResponse, JsonResponse
 import re  # 使用正则表达式
-# from cdt import SETTINGS
-import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import *
 import numpy as np
-import linecache  # 用于读取指定行
 import sys
 import warnings
 
@@ -34,12 +18,11 @@ from causallearn.utils.cit import chisq, fisherz, gsq, kci, mv_fisherz
 from causallearn.graph.GraphNode import GraphNode
 from functools import reduce
 import copy
-
+import os
 from .daggnn.utils import load_data
 from .daggnn.train import _h_A, args, train, init_model
 from .aaai.run import runAAAI
 
-import time
 import threading
 
 sys.path.append("")
@@ -57,9 +40,6 @@ sys.path.append("")
 # def add(request):
 #     return HttpResponse("add...")
 
-def test11(request):
-    return HttpResponse("test...")  # 测试成功
-
 
 # 根据outcome和factor获取所有节点和边
 # 实际中，不需要再次计算此步，直接拿第一步中的经过交互完成之后的经专家确认的多个子图中的节点和边（去重后），交给dagre绘制即可
@@ -72,12 +52,84 @@ thread = None
 epoch_loss = None
 best_MSE_graph = []
 with open(data_file, 'r') as file:
-    allData = json.load(file)['data']
+    allData = json.load(file)
 
 def get_outcomes(request):
-    dataset = request.GET.get('dataset')
-    return JsonResponse({'outcomes':allData[dataset]['outcomes']
+    try:
+        dataset = request.GET.get('dataset')
+        return JsonResponse({'outcomes':allData[dataset]['outcomes']
                          })
+    except Exception as e:
+        return JsonResponse({'outcomes': []
+                             })
+
+def get_factors(request):
+    try:
+        dataset = request.GET.get('dataset')
+        return JsonResponse({'factors':allData[dataset]['factors']
+                             })
+    except Exception as e:
+        return JsonResponse({'factors': []
+                             })
+def get_index(request):
+    try:
+        dataset = request.GET.get('dataset')
+        return JsonResponse({'index': allData[dataset]['index']
+                             })
+    except Exception as e:
+        return JsonResponse({'index': []
+                             })
+def get_all_dataset(request):
+    csv_directory = './myApp/data'
+    # 检查目录是否存在
+    if not os.path.exists(csv_directory):
+        return JsonResponse({'error': 'Directory not found'}, status=404)
+
+    # 获取目录下的所有CSV文件
+    csv_files = [os.path.splitext(f)[0] for f in os.listdir(csv_directory) if f.endswith('.csv')]
+
+    return JsonResponse(csv_files, safe=False)
+def get_csv_data(request):
+    dataset = request.GET.get('dataset')
+    if not dataset:
+        return JsonResponse({'error': 'Dataset parameter is required'}, status=400)
+
+    # 构建CSV文件路径
+    csv_file_path = os.path.join('./myApp/data/', f'{dataset}.csv')
+
+    # 检查文件是否存在
+    if not os.path.exists(csv_file_path):
+        return JsonResponse({'error': 'CSV file not found'}, status=404)
+
+    # 读取CSV文件内容
+    with open(csv_file_path, 'r', encoding='utf-8') as file:
+        csv_content = file.readlines()
+        csv_content = [line.strip().split(',') for line in csv_content]
+    return JsonResponse(csv_content, safe=False)
+
+def save_new_data(request):
+    file = request.FILES.get('file')
+    name = request.POST.get('name')
+    outcomes = request.POST.get('outcomes')
+    discrete_index = request.POST.get('discreteIndex')
+    factors = request.POST.get('factors')
+    file_path = os.path.join('./myApp/data/', f'{name}.csv')
+    with open(file_path, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+
+    outcomes = json.loads(outcomes)
+    discrete_index = json.loads(discrete_index)
+    factors = json.loads(factors)
+
+    allData[name] = {
+        'factors': factors,
+        'outcomes': outcomes,
+        'index': discrete_index
+    }
+    with open(data_file, 'w', encoding='utf-8') as json_file:
+        json.dump(allData, json_file, ensure_ascii=False, indent=4)
+    return JsonResponse({'msg': 'new dataset saved successfully'})
 def thread_task(data):
     global stop_Thread
     global best_MSE_graph
@@ -671,17 +723,6 @@ def list_dict_duplicate_removal(request):
     # return JsonResponse({'nodesList': reduce(0), 'linksList': reduce(1)})
 
     # return JsonResponse((list_dict_duplicate_removal(selection.[0].nodes, selection.[1].nodes)))
-
-
-# 测试成功，所以留意读取文件
-def variable_show(request):
-    # 通过 num = request.GET.get("num")，来获取前端get请求中的参数"num"的值
-    # CovariantNum = request.GET.get("CovariantNum")  # CovariantNum
-    # outcome = request.GET.get("outcome")
-    CovariantNum = 6
-    outcome = "death"
-    print(CovariantNum)
-    return JsonResponse({'CovariantNum': CovariantNum, 'outcome': outcome, 'message': 'success'})
 
 
 def pre_process(nodesList):

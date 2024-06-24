@@ -9,7 +9,7 @@ import json
 from .const import DEFAULT_MODEL_PARA, DEFAULT_LGBM_PARA, DEFAULT_GAM_PARA
 
 with open("./myApp/data/data.json", 'r') as file:
-    allData = json.load(file)['data']
+    allData = json.load(file)
 
 args = easydict.EasyDict({
     # 'data_file': 'causal_related_data.csv',  # location and name of data file
