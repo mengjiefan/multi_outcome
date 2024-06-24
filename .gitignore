@@ -23,3 +23,6 @@ logs*
 *.sln
 *.sw?
 __pycache__
+
+# data files (can be personalized)
+myApp/data/
