@@ -718,6 +718,8 @@ export default {
       mainColor = mainColor.replace(",0.3)", "");
       let color = linkView.model.attributes.attrs.line.stroke;
       if (color.includes(mainColor)) return true;
+      else if (this.linkConfigs[0].name === "PC" && color === "black")
+        return true;
       else return false;
     },
     drawGraph() {
