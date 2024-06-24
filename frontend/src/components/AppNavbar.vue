@@ -1,11 +1,6 @@
 <template>
   <div class="navbar">
-    <el-dialog
-      title="Create Dataset"
-      :visible.sync="dialogVisible"
-      width="50%"
-      :before-close="handleClose"
-    >
+    <el-dialog title="Create Dataset" :visible.sync="dialogVisible" width="50%">
       <div class="data-form">
         <div class="data-item">
           <div class="data-title">Dataset Name:</div>
@@ -14,6 +9,8 @@
               v-model="datasetName"
               maxlength="10"
               show-word-limit
+              @input="checkName"
+              clearable
             ></el-input>
           </div>
         </div>
@@ -47,10 +44,7 @@
         <div class="data-selection" v-if="variables?.length">
           <div class="data-title">Outcomes:</div>
           <div class="data-checkbox">
-            <el-checkbox-group
-              v-model="outcomes"
-              @change="handleCheckedOutcomeChange"
-            >
+            <el-checkbox-group v-model="outcomes">
               <el-checkbox
                 v-for="variable in variables"
                 :label="variable"
@@ -67,14 +61,15 @@
             Variables:
           </div>
           <div class="data-checkbox">
-            <el-checkbox-group
-              v-model="discreteIndex"
-              @change="handleCheckedIndexChange"
+            <el-checkbox v-model="checkAll" @change="handleCheckAllChange"
+              ><i>Select All</i></el-checkbox
             >
+            <el-checkbox-group v-model="discreteIndex">
               <el-checkbox
                 v-for="variable in variables"
                 :label="variable"
                 :key="variable"
+                @change="checkIfAll"
                 >{{ variable }}</el-checkbox
               >
             </el-checkbox-group>
@@ -85,7 +80,7 @@
         <el-button
           type="primary"
           @click="createDataset"
-          :disabled="!variables?.length || !outcomes?.length"
+          :disabled="!variables?.length || !outcomes?.length || !datasetName"
           >Confirm</el-button
         >
       </span>
@@ -94,9 +89,13 @@
       <div class="box-card-header">
         <el-radio-group v-model="dataset" style="margin-bottom: 30px">
           <el-radio-button label="benchmark">benchmark</el-radio-button>
-          <el-radio-button label="default">default</el-radio-button>
-          <el-radio-button label="clhls">clhls</el-radio-button>
-          <el-radio-button label="ukb">ukb</el-radio-button>
+          <el-radio-button
+            v-for="dataType in allDataSets"
+            :key="dataType"
+            :label="dataType"
+          >
+            {{ dataType }}
+          </el-radio-button>
         </el-radio-group>
         <el-button
           type="primary"
@@ -128,7 +127,7 @@ import OutcomeSelector from "./OutcomeSelector";
 import CausalAnalysisHistory from "./CausalAnalysisHistory";
 import { ref } from "vue";
 import BenchmarkList from "./BenchmarkList.vue";
-import { Loading } from "element-ui";
+import axios from "axios";
 
 export default {
   name: "AppNavbar",
@@ -136,13 +135,16 @@ export default {
   setup() {
     let datasetType = localStorage.getItem("DATATYPE");
     if (!datasetType) datasetType = "default";
+
     return {
+      allDataSets: ref([]),
       dataset: ref(datasetType),
       activeName: ref("single"),
     };
   },
   data() {
     return {
+      checkAll: ref(false),
       dialogVisible: ref(false),
       fileList: ref(),
       variables: ref(),
@@ -152,9 +154,51 @@ export default {
     };
   },
   methods: {
+    checkName() {
+      console.log("key");
+      const pattern = /^[a-zA-Z]*$/;
+      if (!pattern.test(this.datasetName)) {
+        this.$message({
+          showClose: true,
+          message: "Only letters are allowed.",
+          type: "error",
+        });
+      }
+      this.datasetName = this.datasetName.replace(/[^a-zA-Z]/g, "");
+    },
+    checkIfAll() {
+      if (this.discreteIndex.length === this.variables.length && !this.checkAll)
+        this.checkAll = true;
+      else if (
+        this.discreteIndex.length < this.variables.length &&
+        this.checkAll
+      )
+        this.checkAll = false;
+    },
+    handleCheckAllChange(val) {
+      if (val === true) this.discreteIndex = this.variables;
+      else this.discreteIndex = [];
+    },
+    getDatasets() {
+      axios({
+        method: "get",
+        url: "http://localhost:8000/api/get_all_dataset",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          this.allDataSets = response.data;
+        })
+        .catch((error) => {
+          console.error("Error fetching the CSV file names:", error);
+        });
+    },
     handleChange(file, fileList) {
       let name = file.name;
-      this.datasetName = name.substring(0, name.length - 4);
+      this.datasetName = name
+        .substring(0, name.length - 4)
+        .replace(/[^a-zA-Z]/g, "");
       if (fileList.length > 1) fileList.splice(0, 1);
       const reader = new FileReader();
       this.variables = [];
@@ -166,21 +210,63 @@ export default {
         this.discreteIndex = [];
       };
       reader.readAsText(file.raw);
-      console.log(file);
+      this.fileList = [file.raw];
     },
     createDataset() {
-      let _this = this;
-      let wrong = this.discreteIndex.filter((variable) =>
-        _this.outcomes.includes(variable)
-      );
-      if (wrong.length) {
+      if (!this.datasetName) {
         this.$message({
           showClose: true,
-          message: "There is an error in the selected variables.",
+          message: "Please enter the name.",
+          type: "error",
+        });
+        return;
+      } else if (
+        this.datasetName === "default" ||
+        this.datasetName === "ukb" ||
+        this.datasetName === "clhls"
+      ) {
+        this.$message({
+          showClose: true,
+          message: "Please enter a different name.",
           type: "error",
         });
         return;
       }
+
+      const formData = new FormData();
+      let factors = this.variables.filter(
+        (variable) => !this.outcomes.includes(variable)
+      );
+      formData.append("file", this.fileList[0]);
+      formData.append("name", this.datasetName);
+      formData.append("factors", JSON.stringify(factors));
+      formData.append("outcomes", JSON.stringify(this.outcomes));
+      formData.append("discreteIndex", JSON.stringify(this.discreteIndex));
+      axios
+        .post("http://localhost:8000/api/save_new_data", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then((response) => {
+          console.log("File uploaded successfully:", response.data);
+          if (!this.allDataSets.includes(this.datasetName))
+            this.allDataSets.push(this.datasetName);
+          this.dialogVisible = false;
+          this.$message({
+            showClose: true,
+            message: "A new dataset is created.",
+            type: "success",
+          });
+        })
+        .catch((error) => {
+          console.error("Error uploading file:", error);
+          this.$message({
+            showClose: true,
+            message: "Failed to create dataset.",
+            type: "error",
+          });
+        });
     },
   },
   watch: {
@@ -192,6 +278,10 @@ export default {
       },
       immediate: true,
     },
+  },
+  mounted() {
+    console.log("getDataset");
+    this.getDatasets();
   },
 };
 </script>

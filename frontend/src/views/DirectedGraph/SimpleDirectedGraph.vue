@@ -1143,6 +1143,9 @@ export default {
         .style("opacity", 0)
         .style("display", "none");
     },
+    async getFactors() {
+      this.VariablesOptions = await getFactorsOfDataset(this.dataset);
+    },
   },
 
   mounted() {
@@ -1150,8 +1153,8 @@ export default {
     this.gnnType = null;
     let result = localStorage.getItem("GET_JSON_RESULT");
     let datasetType = localStorage.getItem("DATATYPE");
-    this.VariablesOptions = getFactorsOfDataset(datasetType);
     this.dataset = datasetType;
+    this.getFactors();
 
     if (result) this.multipleSearchValue = JSON.parse(result);
     else this.multipleSearchValue = null;

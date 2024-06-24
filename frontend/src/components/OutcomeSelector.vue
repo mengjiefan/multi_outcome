@@ -114,21 +114,13 @@ export default {
   setup() {
     let datasetType = localStorage.getItem("DATATYPE");
     if (!datasetType) datasetType = "default";
-    let options = getOutcomesOfDataset(datasetType);
-
-    options = options.map((result) => {
-      return {
-        label: result,
-        value: result,
-      };
-    });
     return {
       corrValues: ref(),
       nowType: ref(datasetType),
       covariantNum: ref(""),
       value: ref(""),
       selectedVariables: ref([]),
-      options: ref(options),
+      options: ref([]),
       algorithmOptions: ["PC", "DAG-GNN", "HCM"],
       algorithmSelected: ref(["PC"]),
     };
@@ -140,6 +132,16 @@ export default {
     };
   },
   methods: {
+    async getOutcomes() {
+      let options = await getOutcomesOfDataset(this.nowType);
+
+      this.options = options.map((result) => {
+        return {
+          label: result,
+          value: result,
+        };
+      });
+    },
     reselect() {
       console.log("reselect");
       this.corrValues = null;
@@ -263,19 +265,13 @@ export default {
         query: { next: "DirectedGraphView" },
       });
     },
-    getTag(dataset) {
+    async getTag(dataset) {
       this.value = null;
       this.reselect();
-      let options = getOutcomesOfDataset(dataset);
 
       if (this.nowType !== dataset) {
         this.nowType = dataset;
-        this.options = options.map((option) => {
-          return {
-            value: option,
-            label: option,
-          };
-        });
+        await this.getOutcomes();
         localStorage.setItem("GET_JSON_RESULT", ""); //the data of graph
         localStorage.setItem("GET_SAVE_DATA", ""); //the data to be saved
         localStorage.setItem("DATATYPE", dataset);
@@ -289,13 +285,15 @@ export default {
   watch: {
     dataset: {
       handler: function (dataset) {
-        console.log("dataset changes");
+        console.log(dataset)
         this.getTag(dataset);
       },
       immediate: true,
     },
   },
-  mounted() {},
+  mounted() {
+    this.getOutcomes();
+  },
 };
 </script>
 

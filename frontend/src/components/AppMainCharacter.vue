@@ -19,6 +19,7 @@ import * as d3 from "d3";
 import { getIndexOfDataset } from "@/plugin/variable";
 import { ref } from "vue";
 import { createCharts } from "@/plugin/charts";
+import axios from "axios";
 export default {
   name: "AppMainCharacter",
   data() {
@@ -310,21 +311,33 @@ export default {
         })
         .style("fill", "rgb(92,111,196)");
     },
-    drawMatrix() {
+    async drawMatrix() {
       let dataset = localStorage.getItem("DATATYPE");
-      let discreateIndexes = getIndexOfDataset(dataset);
+      let discreateIndexes = await getIndexOfDataset(dataset);
+
       // set the dimensions and margins of the graph
       const margin = { top: 10, right: 10, bottom: 30, left: 25 },
         width = 150 - margin.left - margin.right,
         height = 150 - margin.top - margin.bottom;
 
       let _this = this;
-      d3.csv("/" + dataset + ".csv").then(function (item) {
+      try {
+        const response = await axios({
+          method: "get",
+          url: "http://localhost:8000/api/get_csv_data",
+          params: {
+            dataset: dataset,
+          },
+        });
+        let item = response.data;
+        let variables = item[0];
         item = _this.getRandomSubarray(item, 1000);
+
         item = item.map((row) => {
           let newRow = {};
           _this.nodes.forEach((node) => {
-            newRow[node] = parseFloat(row[node]);
+            let index = variables.indexOf(node);
+            newRow[node] = parseFloat(row[index]);
           });
           return newRow;
         });
@@ -360,7 +373,7 @@ export default {
             let xMax = d3.max(xAxis);
             let yMin = d3.min(yAxis);
             let yMax = d3.max(yAxis);
-            if (source === "Income score") console.log(xMax, xMin);
+            //if (source === "Income score") console.log(xMax, xMin);
             if (discreateIndexes.includes(source)) {
               xMin = xMin - 0.5;
               xMax = xMax + 0.5;
@@ -455,7 +468,9 @@ export default {
                 .call(d3.axisBottom(x).ticks(xTick));
           }
         }
-      });
+      } catch (error) {
+        console.log("请求失败了", error);
+      }
     },
   },
   mounted() {

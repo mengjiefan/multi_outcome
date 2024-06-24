@@ -1,11 +1,44 @@
-import data from "@/assets/data/data.json";
-const allData = data.data;
-export const getFactorsOfDataset = (dataset) => {
-  return allData[dataset].factors;
+import axios from "axios";
+
+export const getFactorsOfDataset = async (dataset) => {
+  try {
+    let response = await axios({
+      method: "GET",
+      url: "http://localhost:8000/api/get_factors",
+      params: {
+        dataset,
+      },
+    });
+    return response.data.factors;
+  } catch (error) {
+    console.log("请求失败了", error);
+  }
 };
-export const getOutcomesOfDataset = (dataset) => {
-  return allData[dataset].outcomes;
+export const getOutcomesOfDataset = async (dataset) => {
+  try {
+    let response = await axios({
+      method: "GET",
+      url: "http://localhost:8000/api/get_outcomes",
+      params: {
+        dataset,
+      },
+    });
+    return response.data.outcomes;
+  } catch (error) {
+    console.log("请求失败了", error);
+  }
 };
-export const getIndexOfDataset = (dataset) => {
-  return allData[dataset].index;
+export const getIndexOfDataset = async (dataset) => {
+  try {
+    let response = await axios({
+      method: "GET",
+      url: "http://localhost:8000/api/get_index",
+      params: {
+        dataset,
+      },
+    });
+    return response.data.index;
+  } catch (error) {
+    console.log("请求失败了", error);
+  }
 };
