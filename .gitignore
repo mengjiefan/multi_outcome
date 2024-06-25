@@ -1,7 +1,6 @@
 .DS_Store
 node_modules
 /dist
-data.json
 
 # local env files
 .env.local
@@ -26,3 +25,4 @@ logs*
 __pycache__
 
 # data files (can be personalized)
+backend/myApp/data/data.json
