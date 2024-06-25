@@ -61,7 +61,7 @@
             </div>
           </div>
         </div>
-        <div class="algorithm-type">
+        <div class="algorithm-type" v-if="!noMethod">
           <div
             class="algorithm-title"
             v-for="(method, index) in linkConfigs"
@@ -162,6 +162,7 @@ export default {
   },
   data() {
     return {
+      noMethod: ref(false),
       drawer: ref(false),
       loadingUrl: { url: require("../../assets/Spinner-1s-200px.gif") },
       lossChart: ref(),
@@ -1167,8 +1168,10 @@ export default {
           return node.id;
         });
       let algorithm = this.multipleSearchValue.algorithm;
+      this.noMethod = false;
       //超图拆分出的子图，统一视为PC
       if (!algorithm || !algorithm.length) {
+        this.noMethod = true;
         this.multipleSearchValue.algorithm = algorithm = ["PC"];
         this.multipleSearchValue.pcLinks = this.multipleSearchValue.linksList;
       }

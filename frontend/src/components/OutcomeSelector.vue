@@ -69,21 +69,17 @@
     <div class="outcome-main-title">· Algorithms</div>
     <!--original h6-->
     <div class="outcome-subtitle">Select causal discovery methods :</div>
-    <div class="drawing-command">
-      <el-select
-        v-model="algorithmSelected"
-        placeholder="Please select at least one algorithm."
-        multiple
-      >
-        <el-option
-          v-for="item in algorithmOptions"
-          :key="item"
-          :label="item"
-          :value="item"
-        >
-        </el-option>
-      </el-select>
 
+    <div class="drawing-command">
+      <el-checkbox-group v-model="algorithmSelected">
+        <el-checkbox
+          v-for="method in algorithmOptions"
+          :label="method"
+          :key="method"
+          :disabled="method === 'PC'"
+          >{{ method }}</el-checkbox
+        >
+      </el-checkbox-group>
       <el-button
         size="small"
         type="primary"
@@ -285,7 +281,7 @@ export default {
   watch: {
     dataset: {
       handler: function (dataset) {
-        console.log(dataset)
+        console.log(dataset);
         this.getTag(dataset);
       },
       immediate: true,
@@ -393,6 +389,18 @@ export default {
 }
 .el-tag:first-of-type.el-tag--info .el-tag__close {
   color: #fa95a6;
+}
+
+.el-checkbox__input.is-disabled.is-checked .el-checkbox__inner{
+  border-color:  #fa95a6!important;
+  background-color: #ffebee!important;
+}
+.el-checkbox__input.is-disabled+span.el-checkbox__label {
+  color:  #fa95a6!important;
+}
+.el-checkbox__input.is-disabled.is-checked .el-checkbox__inner::after{
+  color: #fa95a6!important;
+  border-color:  #fa95a6!important;
 }
 .el-select .el-tag__close:first-of-type.el-icon-close {
   background-color: white;
