@@ -25,6 +25,7 @@ export const createChart = (dom, values) => {
       type: "category",
       boundaryGap: false,
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -110,6 +111,7 @@ export const creatAllChart = (dom, data) => {
     xAxis: {
       type: "category",
       data: data.axis,
+
       axisLabel: {
         show: false,
       },
@@ -169,9 +171,7 @@ const createDot = (myChart, source, target, item) => {
     grid,
     xAxis: {
       type: "value",
-      splitLine: {
-        show: false,
-      },
+      boundaryGap: true,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -186,9 +186,6 @@ const createDot = (myChart, source, target, item) => {
     },
     yAxis: {
       type: "value",
-      splitLine: {
-        show: false,
-      },
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -217,10 +214,11 @@ const createDot = (myChart, source, target, item) => {
 const createBubble = (myChart, source, target, item) => {
   let xlabels = getLabelsForType(source);
   let ylabels = getLabelsForType(target);
+
   let sum = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     sum.push([]);
-    for (let j = 0; j < 5; j++) {
+    for (let j = 0; j < 7; j++) {
       sum[i].push(0);
     }
   }
@@ -230,8 +228,8 @@ const createBubble = (myChart, source, target, item) => {
   let realData = [];
   let xRange = [];
   let yRange = [];
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
+  for (let i = 0; i < 7; i++) {
+    for (let j = 0; j < 7; j++) {
       if (sum[i][j] > 0) {
         realData.push([i, j, sum[i][j]]);
         if (!xRange.includes(i)) xRange.push(i);
@@ -248,11 +246,13 @@ const createBubble = (myChart, source, target, item) => {
     realData = realData.map((row) => [xlabels[row[0]], row[1], row[2]]);
   if (ylabels)
     realData = realData.map((row) => [row[0], ylabels[row[1]], row[2]]);
+  if (!xlabels[0]) xlabels.splice(0, 1);
+  if (!ylabels[0]) ylabels.splice(0, 1);
   let option = {
     grid,
     xAxis: {
       type: "category",
-      data: xRange,
+      data: xlabels,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -267,7 +267,7 @@ const createBubble = (myChart, source, target, item) => {
     },
     yAxis: {
       type: "category",
-      data: yRange,
+      data: ylabels,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -306,6 +306,7 @@ const createBubble = (myChart, source, target, item) => {
     option.xAxis = {
       type: "category",
       data: xlabels,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -446,6 +447,7 @@ const createBMIChart = (myChart, data) => {
     xAxis: {
       type: "category",
       data: ["<18.5", "18.5-23.9", "24-27.9", ">=28"],
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -509,6 +511,7 @@ const createAgeRangeChart = (myChart, data) => {
     xAxis: {
       type: "category",
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -598,6 +601,7 @@ const createChart1 = (myChart, data) => {
     xAxis: {
       type: "category",
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -693,6 +697,7 @@ const createChartOfGap = (myChart, data, gap, min, max) => {
     xAxis: {
       type: "category",
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -747,6 +752,7 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
     xAxis: {
       type: "category",
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -809,6 +815,7 @@ const createChartOfInter = (myChart, data, labels) => {
       data: values.map((value) => {
         return value.label;
       }),
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -884,6 +891,7 @@ const createChartWithIBound = (
     xAxis: {
       type: "category",
       data: axis,
+
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {

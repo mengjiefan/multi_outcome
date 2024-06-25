@@ -44,7 +44,6 @@
     </div>
     <div class="drawing-command">
       <div class="selections">
-
         <el-button
           type="primary"
           size="small"

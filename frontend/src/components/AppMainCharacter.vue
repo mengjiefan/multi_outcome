@@ -94,7 +94,7 @@ export default {
             });
             let ifXDis = discreateIndexes.includes(source);
             let ifYDis = discreateIndexes.includes(target);
-        
+
             if (ifXDis === ifYDis)
               createMultipleCharts(
                 source,
@@ -154,13 +154,14 @@ export default {
         if (!xlabels && xRange.length === 2 && xRange[0] + xRange[1] === 1)
           xlabels = ["no", "yes"];
         if (xlabels) {
-          x = d3.scaleBand().domain(xlabels).range([0, width]);
           item = item.map((row) => {
             let data = {};
             data[target] = row[target];
             data[source] = xlabels[row[source]];
             return data;
           });
+          if (!xlabels[0]) xlabels.splice(0, 1);
+          x = d3.scaleBand().domain(xlabels).range([0, width]);
         }
 
         xTick = Math.ceil(xMax - xMin);
@@ -188,17 +189,18 @@ export default {
         if (yTick > 5) yTick = 5;
 
         y = d3.scaleBand().domain([yMin, yMax]).range([height, 0]);
-        let ylabels = getLabelsForType(source);
+        let ylabels = getLabelsForType(target);
         if (!ylabels && yRange.length === 2 && yRange[0] + yRange[1] === 1)
           ylabels = ["no", "yes"];
         if (ylabels) {
-          y = d3.scaleBand().domain(ylabels).range([height, 0]);
           item = item.map((row) => {
             let data = {};
             data[source] = row[source];
             data[target] = ylabels[row[target]];
             return data;
           });
+          if (!ylabels[0]) ylabels.splice(0, 1);
+          y = d3.scaleBand().domain(ylabels).range([height, 0]);
         }
 
         svg.append("g").call(d3.axisLeft(y).ticks(yTick));

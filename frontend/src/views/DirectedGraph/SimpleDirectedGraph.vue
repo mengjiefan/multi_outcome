@@ -223,7 +223,6 @@ export default {
       return this.colors[index];
     },
     saveToTable() {
-      console.log(this.multipleSearchValue.history);
       localStorage.setItem(
         "GET_SAVE_DATA",
         JSON.stringify(this.multipleSearchValue)
