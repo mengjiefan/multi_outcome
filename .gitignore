@@ -25,3 +25,4 @@ logs*
 __pycache__
 
 # data files (can be personalized)
+myApp/data
