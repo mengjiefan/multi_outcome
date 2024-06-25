@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 /dist
-
+data.json
 
 # local env files
 .env.local
@@ -22,8 +22,7 @@ logs*
 *.njsproj
 *.sln
 *.sw?
+*.csv
 __pycache__
 
 # data files (can be personalized)
-*.csv
-data/data.json
