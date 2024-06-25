@@ -1,6 +1,7 @@
 <template>
   <div class="navbar">
-    <el-dialog title="Create Dataset" :visible.sync="dialogVisible" width="50%">
+    <el-dialog :visible.sync="dialogVisible" width="50%">
+      <template #title><b>· Create Dataset</b></template>
       <div class="data-form">
         <div class="data-item">
           <div class="data-title">Dataset Name:</div>
