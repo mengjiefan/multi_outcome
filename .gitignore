@@ -25,4 +25,4 @@ logs*
 __pycache__
 
 # data files (can be personalized)
-backend/myApp/data/data.json
+#backend/myApp/data/data.json
