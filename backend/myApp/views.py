@@ -283,9 +283,7 @@ def stop_loop(request):
 
 
 def get_temp_result(request):
-    print("in loop!")
     nodes = request.GET.get("nodes").split(",")
-    dataset = request.GET.get('dataset')
     linksList = []
     for i, row in enumerate(best_MSE_graph):
         for j, element in enumerate(row):
@@ -293,7 +291,6 @@ def get_temp_result(request):
             target = nodes[j]
             linksList.append({'source': source, 'target': target, 'value': 1})
     if epoch_loss:
-        print(epoch_loss)
         return JsonResponse({'linksList': linksList,
                          'epoch': epoch_loss['epoch'],
                          'ELBO_loss': epoch_loss['ELBO_loss'],
