@@ -246,10 +246,7 @@ def get_aaai(request):
         for j, element in enumerate(row):
             source = nodesList[i]
             target = nodesList[j]
-            if element != 0:
-                value = count_value(source, target, dataset)
-                linksList.append({'source':source, "target":target, 'value':value})
-    print(linksList)
+            linksList.append({'source':source, "target":target, 'value':1})
     return JsonResponse({'linksList': linksList})
 
 def numpy_to_json(obj):
@@ -294,9 +291,7 @@ def get_temp_result(request):
         for j, element in enumerate(row):
             source = nodes[i]
             target = nodes[j]
-            if element != 0:
-                value = count_value(source, target, dataset)
-                linksList.append({'source': source, 'target': target, 'value': value})
+            linksList.append({'source': source, 'target': target, 'value': 1})
     if epoch_loss:
         print(epoch_loss)
         return JsonResponse({'linksList': linksList,
