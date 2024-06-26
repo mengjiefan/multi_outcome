@@ -202,6 +202,7 @@ export const clhls_index = [
 "income",
 "f64_sum",
 "a51_byte",
+"f31_sum",
 "dependence_base",
 'g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD', 'g15n1_RA', 'g15o1_dementia',
 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base'
