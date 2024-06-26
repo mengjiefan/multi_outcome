@@ -462,25 +462,38 @@ export default {
 
 <style scoped>
 .mainCharacter {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 16px;
   font-size: 20px;
   width: fit-content;
 }
 .node-charts {
+  position: relative;
   height: fit-content;
   width: fit-content;
   display: flex;
+  z-index: 1;
 }
 .factor-title {
-  height: 20px;
+  width: 150px;
+  position: absolute;
+  margin-top: 60px;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  -webkit-text-stroke: 1px #000;
 }
 .node-chart {
+  position: relative;
   width: 150px;
   height: 150px;
-}
-.factor-title {
-  font-size: 14px;
+  z-index: 1;
 }
 .chart-canvas {
   width: 150px;
