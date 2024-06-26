@@ -235,15 +235,16 @@ export default {
       });
     },
     startLoop() {
+      let nodesList = this.multipleSearchValue.nodesList.map((node) => {
+        return node.id;
+      });
       this.gnnType = "pause"; //开始计算
       axios({
         method: "post",
         url: "http://localhost:8000/api/start_loop",
         //参数
         data: {
-          nodesList: this.multipleSearchValue.nodesList.map((node) => {
-            return node.id;
-          }),
+          nodesList,
           dataset: this.dataset,
         },
         headers: {
@@ -265,6 +266,7 @@ export default {
         (config) => config.name === "DAG-GNN"
       );
       let nodes = this.multipleSearchValue.nodesList.map((node) => node.id);
+      console.log(nodes, "nodes");
       if (!this.repeatedToken) this.repeatedToken = axios.CancelToken.source();
       try {
         const response = await axios({
@@ -272,7 +274,6 @@ export default {
           url: "http://localhost:8000/api/checkpoint_result",
           params: {
             nodes: nodes.join(),
-            dataset: this.dataset,
             cancelToken: this.repeatedToken.token,
           },
           headers: {
@@ -290,7 +291,10 @@ export default {
           this.lossData.MSE_loss.push(response.data.MSE_loss.toFixed(3));
           this.drawEpochLossChart();
         }
-        const linksList = response.data.linksList;
+        const linksList = response.data.linksList.filter(
+          (link) => link.source !== link.target
+        );
+
         let data = {
           history: this.multipleSearchValue.history,
           linksList,
@@ -330,7 +334,6 @@ export default {
           },
           cancelToken: this.hcmToken.token,
         });
-        console.log(response);
         if (this.loadingInstance && index === 0) {
           this.loadingInstance.close();
           this.loadingInstance = null;
@@ -421,7 +424,7 @@ export default {
       this.multipleSearchValue.pcLinks = null;
       this.multipleSearchValue.dagLinks = null;
       this.multipleSearchValue.aaaiLinks = null;
-
+      this.linkConfigs.forEach((config) => (config.linksList = []));
       switch (this.linkConfigs[0].name) {
         case "PC":
           await this.getPCLinks();
@@ -684,7 +687,6 @@ export default {
         this.gnnType !== "stopped"
       )
         return;
-      console.log(this.linkConfigs[0].name, this.gnnType);
       this.linkConfigs[index].enabled = !this.linkConfigs[index].enabled;
       let color = this.getColor(this.linkConfigs[index].name);
       if (this.linkConfigs[index].enabled) this.drawLinks(index);

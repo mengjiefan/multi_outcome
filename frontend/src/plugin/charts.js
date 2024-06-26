@@ -6,6 +6,7 @@ const tooltip = {
     type: "shadow",
   },
 };
+
 const grid = {
   left: "0%",
   right: "12%",
@@ -13,7 +14,7 @@ const grid = {
   top: "6%",
   containLabel: true,
 };
-export const createChart = (dom, values) => {
+export const createChart = (dom, values, id) => {
   echarts.dispose(dom);
   var myChart = echarts.init(dom);
 
@@ -21,11 +22,29 @@ export const createChart = (dom, values) => {
   let data = values.map((value) => value.value);
   let option = {
     grid,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       boundaryGap: false,
       data: axis,
-
+      tooltip,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -86,10 +105,28 @@ export const createChart = (dom, values) => {
   };
   myChart.setOption(option);
 };
-export const creatAllChart = (dom, data) => {
+export const creatAllChart = (dom, data, id) => {
   echarts.dispose(dom);
   var myChart = echarts.init(dom);
   let option = {
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -246,8 +283,8 @@ const createBubble = (myChart, source, target, item) => {
     realData = realData.map((row) => [xlabels[row[0]], row[1], row[2]]);
   if (ylabels)
     realData = realData.map((row) => [row[0], ylabels[row[1]], row[2]]);
-  if (!xlabels[0]) xlabels.splice(0, 1);
-  if (!ylabels[0]) ylabels.splice(0, 1);
+  if (xlabels && !xlabels[0]) xlabels.splice(0, 1);
+  if (ylabels && !ylabels[0]) ylabels.splice(0, 1);
   let option = {
     grid,
     xAxis: {
@@ -392,12 +429,12 @@ export const createCharts = (id, dom, data) => {
     "age_group_decade",
     "Insomnia",
   ];
-  if (interIds.includes(id)) createChartOfInter(myChart, data, labels);
+  if (interIds.includes(id)) createChartOfInter(myChart, data, labels, id);
   else if (id === "Age" || id === "trueage") {
-    createAgeRangeChart(myChart, data);
+    createAgeRangeChart(myChart, data, id);
   } else if (id === "Sleep duration") {
-    createChartWithIBound(myChart, data, [6, 9, 12], false, false, "hour");
-  } else if (id === "BMI") createBMIChart(myChart, data);
+    createChartWithIBound(myChart, data, [6, 9, 12], false, false, "hour", id);
+  } else if (id === "BMI") createBMIChart(myChart, data, id);
   else if (id === "g511_sbp")
     createChartWithIBound(
       myChart,
@@ -405,7 +442,8 @@ export const createCharts = (id, dom, data) => {
       [90, 120, 130, 140, 160, 180],
       true,
       true,
-      "mmHg"
+      "mmHg",
+      id
     );
   else if (id === "g521_dbp")
     createChartWithIBound(
@@ -414,7 +452,8 @@ export const createCharts = (id, dom, data) => {
       [60, 80, 85, 90, 100, 110],
       true,
       true,
-      "mmHg"
+      "mmHg",
+      id
     );
   else if (id === "g71_hr")
     createChartWithIBound(
@@ -423,7 +462,8 @@ export const createCharts = (id, dom, data) => {
       [55, 67, 74, 80, 88, 100],
       false,
       true,
-      "bpm"
+      "bpm",
+      id
     );
   /*else if (id === 'follow_dura') {
         let max = 0;
@@ -431,9 +471,9 @@ export const createCharts = (id, dom, data) => {
             if (one > max) max = one;
         })
         createChartOfIGap(myChart, data, 30, 0, Math.ceil(max / 30));
-    }*/ else creatAllRangeChart(myChart, data);
+    }*/ else creatAllRangeChart(myChart, data, id);
 };
-const createBMIChart = (myChart, data) => {
+const createBMIChart = (myChart, data, id) => {
   let boundary = [18.5, 23.9, 27.9];
   let number = [0, 0, 0, 0];
   data.forEach((one) => {
@@ -444,6 +484,25 @@ const createBMIChart = (myChart, data) => {
   });
   const option = {
     grid,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
+    tooltip,
     xAxis: {
       type: "category",
       data: ["<18.5", "18.5-23.9", "24-27.9", ">=28"],
@@ -483,7 +542,7 @@ const createBMIChart = (myChart, data) => {
   };
   myChart.setOption(option);
 };
-const createAgeRangeChart = (myChart, data) => {
+const createAgeRangeChart = (myChart, data, id) => {
   let min = 100;
   let max = 0;
 
@@ -508,10 +567,28 @@ const createAgeRangeChart = (myChart, data) => {
   axis[axis.length - 1] = max - 10 + "~" + max;
   const option = {
     grid,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: axis,
-
+      tooltip,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -547,7 +624,7 @@ const createAgeRangeChart = (myChart, data) => {
   };
   myChart.setOption(option);
 };
-const creatAllRangeChart = (myChart, data) => {
+const creatAllRangeChart = (myChart, data, id) => {
   let ifFloat = false;
   let max = -100;
   let min = 1000;
@@ -557,12 +634,12 @@ const creatAllRangeChart = (myChart, data) => {
     if (one < min) min = one;
   });
   if (!ifFloat && max === 1 && min === 0)
-    createChartOfInter(myChart, data, ["no", "yes"]);
-  else if (!ifFloat && max - min < 10) createChart1(myChart, data);
+    createChartOfInter(myChart, data, ["no", "yes"], id);
+  else if (!ifFloat && max - min < 10) createChart1(myChart, data, id);
   else if (!ifFloat) {
-    createChart2(myChart, data);
-  } else if (max - min < 0.15) createChart3(myChart, data);
-  else createChart4(myChart, data);
+    createChart2(myChart, data, id);
+  } else if (max - min < 0.15) createChart3(myChart, data, id);
+  else createChart4(myChart, data, id);
 };
 const traversal = (list, number, value) => {
   if (list.includes(value)) return;
@@ -585,7 +662,7 @@ const traversal = (list, number, value) => {
     number.push(1);
   }
 };
-const createChart1 = (myChart, data) => {
+const createChart1 = (myChart, data, id) => {
   let axis = [];
   let value = [];
   data.forEach((one) => {
@@ -598,6 +675,25 @@ const createChart1 = (myChart, data) => {
   });
   const option = {
     grid,
+    tooltip,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: axis,
@@ -638,7 +734,7 @@ const createChart1 = (myChart, data) => {
   };
   myChart.setOption(option);
 };
-const createChart2 = (myChart, data) => {
+const createChart2 = (myChart, data, id) => {
   let max = -100;
   let min = 1000;
   data.forEach((one) => {
@@ -650,9 +746,9 @@ const createChart2 = (myChart, data) => {
   min = min * 5;
   max = max * 5;
   let gap = (max - min) / 5;
-  createChartOfIGap(myChart, data, gap, min, max);
+  createChartOfIGap(myChart, data, gap, min, max, id);
 };
-const createChart3 = (myChart, data) => {
+const createChart3 = (myChart, data, id) => {
   let max = -100;
   let min = 1000;
   data.forEach((one) => {
@@ -665,9 +761,9 @@ const createChart3 = (myChart, data) => {
   min = parseFloat(min.toFixed(2));
   min = min * 0.02;
   max = max * 0.02;
-  createChartOfGap(myChart, data, 0.02, min, max);
+  createChartOfGap(myChart, data, 0.02, min, max, id);
 };
-const createChart4 = (myChart, data) => {
+const createChart4 = (myChart, data, id) => {
   let max = -100;
   let min = 1000;
   data.forEach((one) => {
@@ -675,9 +771,9 @@ const createChart4 = (myChart, data) => {
     if (one < min) min = one;
   });
   let gap = (max - min) / 10;
-  createChartOfGap(myChart, data, gap, min, max);
+  createChartOfGap(myChart, data, gap, min, max, id);
 };
-const createChartOfGap = (myChart, data, gap, min, max) => {
+const createChartOfGap = (myChart, data, gap, min, max, id) => {
   let axis = [];
   let number = [];
   while (min < max) {
@@ -694,6 +790,25 @@ const createChartOfGap = (myChart, data, gap, min, max) => {
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
     grid,
+    tooltip,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: axis,
@@ -734,7 +849,7 @@ const createChartOfGap = (myChart, data, gap, min, max) => {
   };
   myChart.setOption(option);
 };
-const createChartOfIGap = (myChart, data, gap, min, max) => {
+const createChartOfIGap = (myChart, data, gap, min, max, id) => {
   let axis = [];
   let number = [];
   while (min < max) {
@@ -749,6 +864,24 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
     grid,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: axis,
@@ -789,7 +922,7 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
   };
   myChart.setOption(option);
 };
-const createChartOfInter = (myChart, data, labels) => {
+const createChartOfInter = (myChart, data, labels, id) => {
   let values = [];
   for (let i = 0; i < labels.length; i++) {
     if (labels[i]) {
@@ -810,6 +943,25 @@ const createChartOfInter = (myChart, data, labels) => {
   });
   const option = {
     grid,
+    tooltip,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: values.map((value) => {
@@ -860,7 +1012,8 @@ const createChartWithIBound = (
   boundaries,
   ifEqul,
   nogap,
-  name
+  name,
+  id
 ) => {
   let number = [];
   let axis = [];
@@ -888,10 +1041,28 @@ const createChartWithIBound = (
   });
   let option = {
     grid,
+    title: {
+      show: true, //false
+      text: id, //主标题文本
+      textStyle: {
+        color: "#fff", //'red'，字体颜色
+        fontStyle: "bold", //'italic'(倾斜) | 'oblique'(倾斜体) ，字体风格
+        textBorderColor: "#000", // 文字本身的描边颜色。
+        textBorderWidth: 2, // 文字本身的描边宽度。
+        fontWeight: "normal", //'bold'(粗体) | 'bolder'(粗体) | 'lighter'(正常粗细) ，字体粗细
+        fontFamily: "sans-serif", //'sans-serif' | 'serif' | 'monospace' | 'Arial' | 'Courier New'
+        fontSize: 14, //字体大小
+        lineHeight: 18, //字体行高
+      },
+      textAlign: "center", //整体（包括 text 和 subtext）的水平对齐
+      textVerticalAlign: "center", //整体（包括 text 和 subtext）的垂直对齐
+      left: "50%", //'5' | '5%'，title 组件离容器左侧的距离
+      top: "40%", //title 组件离容器上侧的距离
+    },
     xAxis: {
       type: "category",
       data: axis,
-
+      tooltip,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {

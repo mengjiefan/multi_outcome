@@ -2,9 +2,9 @@
   <div class="mainCharacter">
     <div v-for="(source, sindex) in nodes" :key="sindex" class="node-charts">
       <div v-for="(target, tindex) in nodes" :key="tindex" class="node-chart">
-        <div class="factor-title">
+        <!--<div class="factor-title">
           <span v-if="sindex === tindex">{{ source }}</span>
-        </div>
+        </div>-->
         <div
           :id="'chart' + (sindex * nodes.length + tindex)"
           class="chart-canvas"
