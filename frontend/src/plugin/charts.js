@@ -25,9 +25,32 @@ export const createChart = (dom, values) => {
       type: "category",
       boundaryGap: false,
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     visualMap: {
       type: "piecewise",
@@ -88,12 +111,29 @@ export const creatAllChart = (dom, data) => {
     xAxis: {
       type: "category",
       data: data.axis,
+
       axisLabel: {
         show: false,
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
       },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -112,44 +152,216 @@ export const creatAllChart = (dom, data) => {
   };
   myChart.setOption(option);
 };
-export const createCharts = (id, dom, data) => {
+export const createMultipleCharts = (
+  source,
+  target,
+  ifXDis,
+  ifYDis,
+  dom,
+  data
+) => {
   echarts.dispose(dom);
   var myChart = echarts.init(dom);
-  if (id === "Sex" || id === "a1_sex")
-    createChartOfInter(myChart, data, ["", "male", "female"]);
-  else if (id === "Age" || id === "trueage") {
-    createAgeRangeChart(myChart, data);
-  } else if (id === "Insomnia") {
-    createChartOfInter(myChart, data, ["Rarely", "Sometimes", "Usually"]);
-  } else if (id === "Sleep duration") {
-    createChartWithIBound(myChart, data, [6, 9, 12], false, false, "hour");
-  } else if (id === "BMI") createBMIChart(myChart, data);
-  else if (id === "BMI_cate")
-    createChartOfInter(myChart, data, ["18.5-23.9", "<18.5", "24-27.9", "≥28"]);
+  if (ifXDis && ifYDis) createBubble(myChart, source, target, data);
+  else if (!ifXDis && !ifYDis) createDot(myChart, source, target, data);
+};
+const createDot = (myChart, source, target, item) => {
+  let data = item.map((row) => [row[source], row[target]]);
+  let option = {
+    grid,
+    xAxis: {
+      type: "value",
+      boundaryGap: true,
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    },
+    series: [
+      {
+        symbolSize: 10,
+        data,
+        itemStyle: {
+          color: "rgba(84,112,198,0.01)",
+        },
+        type: "scatter",
+      },
+    ],
+  };
+  myChart.setOption(option);
+};
+const createBubble = (myChart, source, target, item) => {
+  let xlabels = getLabelsForType(source);
+  let ylabels = getLabelsForType(target);
+
+  let sum = [];
+  for (let i = 0; i < 7; i++) {
+    sum.push([]);
+    for (let j = 0; j < 7; j++) {
+      sum[i].push(0);
+    }
+  }
+  item.forEach((row) => {
+    sum[row[source]][row[target]]++;
+  });
+  let realData = [];
+  let xRange = [];
+  let yRange = [];
+  for (let i = 0; i < 7; i++) {
+    for (let j = 0; j < 7; j++) {
+      if (sum[i][j] > 0) {
+        realData.push([i, j, sum[i][j]]);
+        if (!xRange.includes(i)) xRange.push(i);
+        if (!yRange.includes(j)) yRange.push(j);
+      }
+    }
+  }
+  xRange.sort();
+  if (!xlabels && xRange.length === 2 && xRange[0] + xRange[1] === 1)
+    xlabels = ["no", "yes"];
+  if (!ylabels && yRange.length === 2 && yRange[0] + yRange[1] === 1)
+    ylabels = ["no", "yes"];
+  if (xlabels)
+    realData = realData.map((row) => [xlabels[row[0]], row[1], row[2]]);
+  if (ylabels)
+    realData = realData.map((row) => [row[0], ylabels[row[1]], row[2]]);
+  if (!xlabels[0]) xlabels.splice(0, 1);
+  if (!ylabels[0]) ylabels.splice(0, 1);
+  let option = {
+    grid,
+    xAxis: {
+      type: "category",
+      data: xlabels,
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    },
+    yAxis: {
+      type: "category",
+      data: ylabels,
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    },
+    series: [
+      {
+        data: realData,
+        type: "scatter",
+        symbolSize: function (realData) {
+          return Math.sqrt(realData[2]);
+        },
+        itemStyle: {
+          color: new echarts.graphic.RadialGradient(0.4, 0.3, 1, [
+            {
+              offset: 0,
+              color: "rgb(84,112,198)",
+            },
+            {
+              offset: 1,
+              color: "rgb(25,25,112)",
+            },
+          ]),
+        },
+      },
+    ],
+  };
+  if (xlabels)
+    option.xAxis = {
+      type: "category",
+      data: xlabels,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    };
+  if (ylabels)
+    option.yAxis = {
+      type: "category",
+      data: ylabels,
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
+    };
+  myChart.setOption(option);
+};
+export const getLabelsForType = (id) => {
+  if (id === "Sex" || id === "a1_sex") return ["", "m", "f"];
+  else if (id === "Insomnia") {
+    return ["Rarely", "Sometimes", "Usually"];
+  } else if (id === "BMI_cate") return ["<18.5", "-23.9", "-27.9", "≥28"];
   else if (id === "frailty_base_tri")
-    createChartOfInter(myChart, data, ["no frailty", "pre-frailty", "frailty"]);
-  else if (id === "residenc_byte")
-    createChartOfInter(myChart, data, ["", "city", "rural"]);
+    return ["no frailty", "pre-frailty", "frailty"];
+  else if (id === "residenc_byte") return ["", "city", "rural"];
   else if (id === "f64_sum")
-    createChartOfInter(myChart, data, [
-      "no",
-      "public or urban",
-      "new rural",
-      "social or commercial",
-    ]);
-  else if (id === "a51_byte")
-    createChartOfInter(myChart, data, ["family or institutes", "live alone"]);
+    return ["no", "public or urban", "new rural", "social or commercial"];
+  else if (id === "a51_byte") ["family or institutes", "live alone"];
   else if (id === "f31_sum")
-    createChartOfInter(myChart, data, [
+    return [
       "",
       "pension",
       "spouse or child",
       "relatives",
       "work by self",
       "government",
-    ]);
+    ];
+  else if (id === "age_group_decade") return ["<65", "-79", "-89", "≥90"];
+  else if (id === "sport") return ["no", "yes", "very"];
+  else if (id === "education_tri") return ["x", "y", "z"];
   else if (id === "f5_whocaresick")
-    createChartOfInter(myChart, data, [
+    return [
       "",
       "spouse",
       "son",
@@ -163,7 +375,31 @@ export const createCharts = (id, dom, data) => {
       "social service",
       "live-in caregiver",
       "nobody",
-    ]);
+    ];
+};
+export const createCharts = (id, dom, data) => {
+  echarts.dispose(dom);
+  var myChart = echarts.init(dom);
+  let labels = getLabelsForType(id);
+  const interIds = [
+    "Sex",
+    "a1_sex",
+    "BMI_cate",
+    "frailty_base_tri",
+    "residenc_byte",
+    "f64_sum",
+    "a51_byte",
+    "f31_sum",
+    "f5_whocaresick",
+    "age_group_decade",
+    "Insomnia",
+  ];
+  if (interIds.includes(id)) createChartOfInter(myChart, data, labels);
+  else if (id === "Age" || id === "trueage") {
+    createAgeRangeChart(myChart, data);
+  } else if (id === "Sleep duration") {
+    createChartWithIBound(myChart, data, [6, 9, 12], false, false, "hour");
+  } else if (id === "BMI") createBMIChart(myChart, data);
   else if (id === "g511_sbp")
     createChartWithIBound(
       myChart,
@@ -191,17 +427,13 @@ export const createCharts = (id, dom, data) => {
       true,
       "bpm"
     );
-  else if (id === "age_group_decade")
-    createChartOfInter(myChart, data, ["", "65-79", "80-89", "≥90"]);
   /*else if (id === 'follow_dura') {
         let max = 0;
         data.forEach(one => {
             if (one > max) max = one;
         })
         createChartOfIGap(myChart, data, 30, 0, Math.ceil(max / 30));
-    }*/ else {
-    creatAllRangeChart(myChart, data);
-  }
+    }*/ else creatAllRangeChart(myChart, data);
 };
 const createBMIChart = (myChart, data) => {
   let boundary = [18.5, 23.9, 27.9];
@@ -213,14 +445,36 @@ const createBMIChart = (myChart, data) => {
     else number[3]++;
   });
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: ["<18.5", "18.5-23.9", "24-27.9", ">=28"],
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -255,14 +509,36 @@ const createAgeRangeChart = (myChart, data) => {
   number[number.length - 1] = number[number.length - 1] + more.length;
   axis[axis.length - 1] = max - 10 + "~" + max;
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -323,14 +599,36 @@ const createChart1 = (myChart, data) => {
     }
   });
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -397,14 +695,36 @@ const createChartOfGap = (myChart, data, gap, min, max) => {
   number[number.length - 1] = number[number.length - 1] + more.length;
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -430,14 +750,36 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
   number[number.length - 1] = number[number.length - 1] + more.length;
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -465,19 +807,42 @@ const createChartOfInter = (myChart, data, labels) => {
       if (value.number === one) return true;
       else return false;
     });
+    if (index < 0) console.log(one);
     values[index].count++;
   });
   const option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: values.map((value) => {
         return value.label;
       }),
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {
@@ -524,15 +889,37 @@ const createChartWithIBound = (
     } else number[i]++;
   });
   let option = {
-    tooltip,
     grid,
     xAxis: {
       type: "category",
       data: axis,
+
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     yAxis: {
       type: "value",
       name: name,
+      axisLabel: {
+        fontSize: 9, // 设置字体大小
+        textStyle: {
+          color: "black",
+        },
+      },
+      axisLine: {
+        lineStyle: {
+          color: "black", //坐标轴的颜色
+        },
+      },
     },
     series: [
       {

@@ -35,6 +35,28 @@
             Relayout
           </el-button>
         </div>
+        <div class="line-types">
+          <div class="line-type">
+            <div
+              class="line-illustration"
+            ></div>
+            <div
+              class="line-name"
+            >
+              Positive effect
+            </div>
+          </div>
+          <div class="line-type">
+            <div
+              class="line-illustration"
+            ></div>
+            <div
+              class="line-name"
+            >
+              Negative effect
+            </div>
+          </div>
+        </div>
         <div class="algorithm-type">
           <div
             class="algorithm-title"
@@ -1273,5 +1295,26 @@ export default {
 }
 .right-side {
   width: max-content !important;
+}
+.line-types {
+  display: flex;
+  gap: 20px;
+}
+.line-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.line-illustration {
+  height: 0;
+  width: 40px;
+  border: 1.2px dashed #333333;
+}
+.line-type:first-of-type .line-illustration {
+  border-style: solid;
+}
+.line-name {
+  font-size: 16px;
 }
 </style>

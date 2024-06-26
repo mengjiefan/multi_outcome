@@ -206,3 +206,18 @@ export const clhls_index = [
 'g15a1_HT', 'g15b1_DM', 'g15c1_CVD', 'g15e1_COPD', 'g15n1_RA', 'g15o1_dementia',
 'g15k1_gastric', 'eye_base', 'g15j1_prostate', 'multimorbidity_base'
 ]
+
+export const getIndexOfDataset = async (dataset) => {
+  try {
+    let response = await axios({
+      method: "GET",
+      url: "http://localhost:8000/api/get_index",
+      params: {
+        dataset,
+      },
+    });
+    return response.data.index;
+  } catch (error) {
+    console.log("请求失败了", error);
+  }
+};

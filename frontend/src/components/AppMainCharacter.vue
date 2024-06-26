@@ -25,7 +25,7 @@
 import * as d3 from "d3";
 import { ukb_index, default_index, clhls_index } from "@/plugin/variable";
 import { ref } from "vue";
-import { createCharts } from "@/plugin/charts";
+import { createCharts,getLabelsForType } from "@/plugin/charts";
 export default {
   name: "AppMainCharacter",
   data() {
@@ -234,34 +234,34 @@ export default {
         });
     },
     drawHistogram(item, svg, histogram, x, y, height) {
-      // And apply this function to data to get the bins
-      var bins = histogram(item);
+      // // And apply this function to data to get the bins
+      // var bins = histogram(item);
 
-      y.domain([
-        0,
-        d3.max(bins, function (d) {
-          return d.length;
-        }),
-      ]); // d3.hist has to be called before the Y axis obviously
-      svg.append("g").call(d3.axisLeft(y));
+      // y.domain([
+      //   0,
+      //   d3.max(bins, function (d) {
+      //     return d.length;
+      //   }),
+      // ]); // d3.hist has to be called before the Y axis obviously
+      // svg.append("g").call(d3.axisLeft(y));
 
-      // append the bar rectangles to the svg element
-      svg
-        .selectAll("rect")
-        .data(bins)
-        .enter()
-        .append("rect")
-        .attr("x", 1)
-        .attr("transform", function (d) {
-          return "translate(" + x(d.x0) + "," + y(d.length) + ")";
-        })
-        .attr("width", function (d) {
-          return x(d.x1) - x(d.x0) - 1;
-        })
-        .attr("height", function (d) {
-          return height - y(d.length);
-        })
-        .style("fill", "rgb(92,111,196)");
+      // // append the bar rectangles to the svg element
+      // svg
+      //   .selectAll("rect")
+      //   .data(bins)
+      //   .enter()
+      //   .append("rect")
+      //   .attr("x", 1)
+      //   .attr("transform", function (d) {
+      //     return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+      //   })
+      //   .attr("width", function (d) {
+      //     return x(d.x1) - x(d.x0) - 1;
+      //   })
+      //   .attr("height", function (d) {
+      //     return height - y(d.length);
+      //   })
+      //   .style("fill", "rgb(92,111,196)");
     },
     drawMatrix() {
       let dataset = localStorage.getItem("DATATYPE");
@@ -353,6 +353,10 @@ export default {
             ) {
               _this.drawDiscreteChart(item, source, target, svg, x, y);
             } else if (discreateIndexes.includes(source)) {
+                let ylabels = getLabelsForType(target);
+                console.log(ylabels);
+                let xlabels = getLabelsForType(source);
+                console.log(xlabels);
               let histogram = d3
                 .histogram()
                 .domain(y.domain())
@@ -362,10 +366,12 @@ export default {
               item.forEach((row) => {
                 if (!disKinds.includes(row[source])) disKinds.push(row[source]);
               });
+              console.log(disKinds);
               let disAxis = d3
                 .scaleBand()
                 .range([0, width])
                 .domain(disKinds)
+                // .domain(ylabels)
                 .padding(0.05);
 
               _this.drawMixedChartX(
@@ -378,6 +384,8 @@ export default {
                 y
               );
             } else {
+              let ylabels = getLabelsForType(target);
+              let xlabels = getLabelsForType(source);
               let histogram = d3
                 .histogram()
                 .domain(x.domain())
@@ -391,6 +399,7 @@ export default {
                 .scaleBand()
                 .range([height, 0])
                 .domain(disKinds)
+                // .domain(ylabels)
                 .padding(0.05);
 
               _this.drawMixedChartY(
