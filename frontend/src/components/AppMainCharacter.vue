@@ -477,17 +477,9 @@ export default {
   z-index: 1;
 }
 .factor-title {
-  width: 150px;
-  position: absolute;
-  margin-top: 60px;
+  height: 20px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  color: white;
-  font-weight: bold;
-  font-size: 18px;
-  -webkit-text-stroke: 1px #000;
+  font-size: 14px;
 }
 .node-chart {
   position: relative;
