@@ -244,9 +244,10 @@ def get_aaai(request):
     linksList = []
     for i, row in enumerate(dag):
         for j, element in enumerate(row):
-            source = nodesList[i]
-            target = nodesList[j]
-            linksList.append({'source':source, "target":target, 'value':1})
+            if element != 0:
+                source = nodesList[i]
+                target = nodesList[j]
+                linksList.append({'source':source, "target":target, 'value':1})
     return JsonResponse({'linksList': linksList})
 
 def numpy_to_json(obj):
@@ -287,9 +288,10 @@ def get_temp_result(request):
     linksList = []
     for i, row in enumerate(best_MSE_graph):
         for j, element in enumerate(row):
-            source = nodes[i]
-            target = nodes[j]
-            linksList.append({'source': source, 'target': target, 'value': 1})
+            if element != 0:
+                source = nodes[i]
+                target = nodes[j]
+                linksList.append({'source': source, 'target': target, 'value': 1})
     if epoch_loss:
         return JsonResponse({'linksList': linksList,
                          'epoch': epoch_loss['epoch'],
