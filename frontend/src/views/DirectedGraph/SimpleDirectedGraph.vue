@@ -45,7 +45,7 @@
               class="line-name"
               :style="[{ color: getColor(linkConfigs[0]?.name)?.active }]"
             >
-              Positive value
+              Positive effect
             </div>
           </div>
           <div class="line-type">
@@ -57,7 +57,7 @@
               class="line-name"
               :style="[{ color: getColor(linkConfigs[0]?.name)?.active }]"
             >
-              Negative value
+              Negative effect
             </div>
           </div>
         </div>
