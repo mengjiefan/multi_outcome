@@ -3,7 +3,7 @@ This visual analysis tool supports the causal analysis of single and multiple ou
 
 Our visual analysis method includes two stages. In the first stage, users can explore and edit single causal graphs based on our progressive comparative visualization of various causal discovery methods combined with their domain knowledge. In the second stage, users can select graphs of interested outcomes and compare them using the supergraph or subgraphs with the new comparable graph layout. Our method features several new techniques that address general issues in causal analysis and visual comparison.
 
-More information can be found in the paper "Visual Analysis of Multi-outcome Causal Graphs" by Mengjie Fan, Jinlu Yu, Daniel Weiskopf, Nan Cao, Huai-Yu Wang, and Liang Zhou. (open access, IEEE VIS 2024).
+More information can be found in the paper "Visual Analysis of Multi-outcome Causal Graphs" by Mengjie Fan, Jinlu Yu, Daniel Weiskopf, Nan Cao, Huai-Yu Wang, and Liang Zhou. (IEEE VIS 2024).
 
 If you use our approach, please cite our paper: (to be added)
 
