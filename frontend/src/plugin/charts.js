@@ -25,7 +25,7 @@ export const createChart = (dom, values) => {
       type: "category",
       boundaryGap: false,
       data: axis,
-
+      tooltip,
       axisLabel: {
         fontSize: 9, // 设置字体大小
         textStyle: {
@@ -446,6 +446,7 @@ const createBMIChart = (myChart, data) => {
   });
   const option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: ["<18.5", "18.5-23.9", "24-27.9", ">=28"],
@@ -510,6 +511,7 @@ const createAgeRangeChart = (myChart, data) => {
   axis[axis.length - 1] = max - 10 + "~" + max;
   const option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: axis,
@@ -600,6 +602,7 @@ const createChart1 = (myChart, data) => {
   });
   const option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: axis,
@@ -696,6 +699,7 @@ const createChartOfGap = (myChart, data, gap, min, max) => {
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: axis,
@@ -750,6 +754,7 @@ const createChartOfIGap = (myChart, data, gap, min, max) => {
   number[number.length - 1] = number[number.length - 1] + more.length;
   axis[axis.length - 1] = (max - gap).toFixed(2) + "~" + max;
   const option = {
+    tooltip,
     grid,
     xAxis: {
       type: "category",
@@ -812,6 +817,7 @@ const createChartOfInter = (myChart, data, labels) => {
   });
   const option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: values.map((value) => {
@@ -890,6 +896,7 @@ const createChartWithIBound = (
   });
   let option = {
     grid,
+    tooltip,
     xAxis: {
       type: "category",
       data: axis,
