@@ -385,7 +385,7 @@ export default {
         this.linkConfigs[index].linksList = response.data.links;
         this.linkConfigs[index].ifWait = false;
         this.saveData();
-        if (index === 0) this.setGraph();
+        if (index === 0 && response.data.links?.length) this.setGraph();
         else if (this.paper) this.drawLinks(index);
       } catch (error) {
         console.log("请求失败了", error);
