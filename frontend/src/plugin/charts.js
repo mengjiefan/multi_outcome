@@ -375,7 +375,7 @@ const createBubble = (myChart, source, target, item) => {
   myChart.setOption(option);
 };
 export const getLabelsForType = (id) => {
-  if (id === "Sex" || id === "a1_sex") return ["", "male", "female"];
+  if (id === "Sex" || id === "a1_sex") return ["", "M", "F"];
   else if (id === "Insomnia") {
     return ["Rarely", "Sometimes", "Usually"];
   } else if (id === "BMI_cate") return ["<18.5", "-23.9", "-27.9", "≥28"];

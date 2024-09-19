@@ -16,11 +16,11 @@
       <div class="line-types">
         <div class="line-type">
           <div class="line-illustration"></div>
-          <div class="line-name">Positive value</div>
+          <div class="line-name">Positive effect</div>
         </div>
         <div class="line-type">
           <div class="line-illustration"></div>
-          <div class="line-name">Negative value</div>
+          <div class="line-name">Negative effect</div>
         </div>
       </div>
       <div class="graph-directors">
