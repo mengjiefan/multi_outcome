@@ -66,10 +66,12 @@ def runAAAI(dataset, target_variables):
     data_file = "./myApp/data/" + dataset + ".csv"
 
     df = pd.read_csv(data_file)
-    if len(df) < 3000:
-        df = df.sample(n=3000, replace=True, random_state=42)
-    else:
-        df = df.sample(n=3000, random_state=42)  # 抽取 3000 行样本
+    # if len(df) < 3000:
+    #     df = df.sample(n=3000, replace=True, random_state=42)
+    # else:
+    #     df = df.sample(n=3000, random_state=42)  # 抽取 3000 行样本
+    # 抽取样本，不允许重复抽样
+    df = df.sample(n=min(len(df), 3000), replace=False, random_state=42) # 确定要抽取的行数，若数据行数不足3000行，则抽取全部行
     df = df[target_variables]
 
     index = allData[dataset]['index']
