@@ -5,7 +5,18 @@ Our visual analysis method includes two stages. In the first stage, users can ex
 
 More information can be found in the paper "Visual Analysis of Multi-outcome Causal Graphs" by Mengjie Fan, Jinlu Yu, Daniel Weiskopf, Nan Cao, Huai-Yu Wang, and Liang Zhou. (IEEE VIS 2024).
 
-If you use our approach, please cite our paper: (to be added)
+If you use our approach, please cite our paper: 
+@ARTICLE{Fan2024,
+  author={Fan, Mengjie and Yu, Jinlu and Weiskopf, Daniel and Cao, Nan and Wang, Huai-Yu and Zhou, Liang},
+  journal={IEEE Transactions on Visualization and Computer Graphics}, 
+  title={Visual Analysis of Multi-outcome Causal Graphs}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-11},
+  keywords={Visualization;Data visualization;Layout;Cause effect analysis;Medical diagnostic imaging;Diseases;Cognition;Causal graph visualization and visual analysis;causal discovery;comparative visualization;visual analysis in medicine},
+  doi={10.1109/TVCG.2024.3456346}}
+
 
 # Installations
 Before running our program, the visualizations need to be build and installed. Our program was tested on Windows.
